@@ -2,9 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
   <title>StockPulse — Personal Stock Dashboard</title>
-  <meta name="description" content="Personal stock dashboard with real-time prices, watchlist tracking, and sector market overview." />
+  <meta name="description" content="Personal stock dashboard with real-time prices, watchlist tracking, and sector overview." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -33,177 +33,190 @@
       --amber-bg: rgba(245, 158, 11, 0.1);
       --blue: #3b82f6;
       --blue-bg: rgba(59, 130, 246, 0.1);
-      --radius: 14px;
+      --radius: 12px;
       --radius-sm: 8px;
       --radius-xs: 6px;
       --radius-pill: 50px;
-      --shadow-sm: 0 2px 8px rgba(0,0,0,0.3);
       --shadow-md: 0 4px 20px rgba(0,0,0,0.4);
       --shadow-lg: 0 8px 40px rgba(0,0,0,0.5);
       --shadow-glow: 0 0 30px rgba(124, 58, 237, 0.15);
       --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
       --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
       --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
     }
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html { font-size: 14px; }
+    html { font-size: 14px; -webkit-tap-highlight-color: transparent; }
     body {
       font-family: var(--font-sans);
       background: var(--bg-primary);
       color: var(--text-primary);
       min-height: 100vh;
+      min-height: 100dvh;
       overflow-x: hidden;
       -webkit-font-smoothing: antialiased;
     }
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: var(--border-primary); border-radius: 10px; }
-    ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
-    a { color: var(--accent-light); text-decoration: none; }
-    button { font-family: inherit; cursor: pointer; border: none; outline: none; }
+    button { font-family: inherit; cursor: pointer; border: none; outline: none; -webkit-tap-highlight-color: transparent; }
     input { font-family: inherit; outline: none; border: none; }
 
-    /* APP LAYOUT */
-    .app { display: flex; flex-direction: column; min-height: 100vh; }
+    /* ===== LAYOUT ===== */
+    .app { display: flex; flex-direction: column; height: 100vh; height: 100dvh; }
     .main-layout { display: flex; flex: 1; overflow: hidden; }
-    .content-area { flex: 1; overflow-y: auto; padding: 24px 28px; scrollbar-gutter: stable; }
+    .content-area { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 20px 24px; }
 
-    /* TOPBAR */
+    /* ===== TOPBAR ===== */
     .topbar {
-      height: 64px; background: var(--bg-secondary);
+      height: 56px; background: var(--bg-secondary);
       border-bottom: 1px solid var(--border-primary);
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 0 24px; flex-shrink: 0; position: sticky; top: 0; z-index: 100;
-      backdrop-filter: blur(20px);
+      display: flex; align-items: center; gap: 12px;
+      padding: 0 20px; flex-shrink: 0; position: relative; z-index: 100;
     }
-    .topbar-left { display: flex; align-items: center; gap: 12px; }
-    .logo { display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; }
+    .logo { display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; flex-shrink: 0; }
     .logo-icon {
-      width: 36px; height: 36px; border-radius: 10px;
+      width: 32px; height: 32px; border-radius: 8px;
       background: linear-gradient(135deg, #7c3aed, #a78bfa);
       display: flex; align-items: center; justify-content: center;
-      box-shadow: 0 0 20px rgba(124, 58, 237, 0.3);
-      animation: logoPulse 3s ease-in-out infinite;
+      box-shadow: 0 0 16px rgba(124, 58, 237, 0.25);
     }
-    @keyframes logoPulse {
-      0%, 100% { box-shadow: 0 0 20px rgba(124, 58, 237, 0.3); }
-      50% { box-shadow: 0 0 30px rgba(124, 58, 237, 0.5); }
-    }
-    .logo-icon svg { width: 20px; height: 20px; fill: white; }
-    .logo-text { font-size: 17px; font-weight: 700; letter-spacing: 0.5px; }
+    .logo-icon svg { width: 17px; height: 17px; fill: white; }
+    .logo-text { font-size: 15px; font-weight: 700; }
     .logo-text span { color: var(--accent-light); }
 
-    .nav-tabs { display: flex; align-items: center; gap: 4px; }
+    .nav-tabs { display: flex; align-items: center; gap: 2px; margin-left: 4px; }
     .nav-tab {
-      padding: 7px 14px; border-radius: var(--radius-xs);
+      padding: 6px 12px; border-radius: var(--radius-xs);
       background: transparent; color: var(--text-muted);
-      font-size: 13px; font-weight: 500; transition: var(--transition);
-      border: 1px solid transparent; display: flex; align-items: center; gap: 6px;
+      font-size: 12px; font-weight: 500; transition: var(--transition);
+      display: flex; align-items: center; gap: 5px;
     }
-    .nav-tab svg { width: 14px; height: 14px; fill: currentColor; }
+    .nav-tab svg { width: 13px; height: 13px; fill: currentColor; }
     .nav-tab:hover { color: var(--text-secondary); background: var(--bg-elevated); }
-    .nav-tab.active { background: var(--accent-glow); color: var(--accent-light); border-color: var(--border-accent); }
+    .nav-tab.active { background: var(--accent-glow); color: var(--accent-light); }
 
-    .search-wrap { position: relative; width: 360px; }
+    .search-wrap { position: relative; flex: 1; max-width: 400px; margin-left: auto; }
     .search-input {
-      width: 100%; height: 40px; padding: 0 16px 0 42px;
-      background: var(--bg-input); border: 1px solid var(--border-primary);
-      border-radius: var(--radius-pill); color: var(--text-primary); font-size: 13px; transition: var(--transition);
+      width: 100%; height: 36px; padding: 0 14px 0 36px;
+      background: var(--bg-input); border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-pill); color: var(--text-primary); font-size: 13px;
+      transition: var(--transition);
     }
     .search-input::placeholder { color: var(--text-muted); }
-    .search-input:focus { border-color: var(--accent); background: var(--bg-elevated); box-shadow: 0 0 0 3px var(--accent-glow); }
-    .search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); width: 18px; height: 18px; fill: var(--text-muted); pointer-events: none; }
-    .search-shortcut { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: 11px; color: var(--text-muted); background: var(--bg-card); padding: 2px 8px; border-radius: 4px; border: 1px solid var(--border-primary); pointer-events: none; }
-    .search-dropdown { position: absolute; top: calc(100% + 6px); left: 0; right: 0; background: var(--bg-card); border: 1px solid var(--border-primary); border-radius: var(--radius); box-shadow: var(--shadow-lg); max-height: 320px; overflow-y: auto; z-index: 200; display: none; animation: fadeSlideDown 0.15s ease; }
-    .search-dropdown.active { display: block; }
-    .search-item { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; cursor: pointer; transition: background 0.1s; border-bottom: 1px solid var(--border-subtle); }
+    .search-input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-glow); }
+    .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; fill: var(--text-muted); pointer-events: none; }
+    .search-shortcut { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-size: 10px; color: var(--text-muted); background: var(--bg-card); padding: 1px 6px; border-radius: 3px; border: 1px solid var(--border-subtle); pointer-events: none; }
+    .search-dropdown { position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: var(--bg-card); border: 1px solid var(--border-primary); border-radius: var(--radius); box-shadow: var(--shadow-lg); max-height: 300px; overflow-y: auto; z-index: 200; display: none; }
+    .search-dropdown.active { display: block; animation: fadeSlideDown 0.12s ease; }
+    .search-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; cursor: pointer; transition: background 0.1s; border-bottom: 1px solid var(--border-subtle); min-height: 44px; }
     .search-item:last-child { border-bottom: none; }
-    .search-item:hover { background: var(--bg-elevated); }
-    .search-item-symbol { font-weight: 600; color: var(--text-primary); font-size: 13px; }
-    .search-item-name { font-size: 12px; color: var(--text-secondary); margin-top: 2px; max-width: 210px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .search-item-type { font-size: 11px; color: var(--text-muted); background: var(--bg-input); padding: 2px 8px; border-radius: 4px; }
-    .search-empty { padding: 24px; text-align: center; color: var(--text-muted); font-size: 13px; }
+    .search-item:hover, .search-item:active { background: var(--bg-elevated); }
+    .search-item-symbol { font-weight: 600; font-size: 13px; }
+    .search-item-name { font-size: 11px; color: var(--text-secondary); margin-top: 1px; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .search-item-type { font-size: 10px; color: var(--text-muted); background: var(--bg-input); padding: 2px 7px; border-radius: 3px; }
+    .search-empty { padding: 20px; text-align: center; color: var(--text-muted); font-size: 13px; }
 
-    .topbar-right { display: flex; align-items: center; gap: 10px; }
-    .topbar-btn { width: 38px; height: 38px; border-radius: 50%; background: var(--bg-input); border: 1px solid var(--border-primary); display: flex; align-items: center; justify-content: center; transition: var(--transition); }
+    .topbar-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; margin-left: 8px; }
+    .topbar-btn { width: 34px; height: 34px; border-radius: 50%; background: var(--bg-input); border: 1px solid var(--border-subtle); display: flex; align-items: center; justify-content: center; transition: var(--transition); }
     .topbar-btn:hover { background: var(--bg-elevated); border-color: var(--accent); }
-    .topbar-btn svg { width: 18px; height: 18px; fill: var(--text-secondary); }
+    .topbar-btn svg { width: 16px; height: 16px; fill: var(--text-secondary); }
     .topbar-btn:hover svg { fill: var(--accent-light); }
 
-    .market-badge { display: flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: var(--radius-pill); font-size: 11px; font-weight: 600; letter-spacing: 0.3px; }
-    .market-badge .dot { width: 7px; height: 7px; border-radius: 50%; }
+    .market-badge { display: flex; align-items: center; gap: 5px; padding: 5px 10px; border-radius: var(--radius-pill); font-size: 10px; font-weight: 600; letter-spacing: 0.3px; }
+    .market-badge .dot { width: 6px; height: 6px; border-radius: 50%; }
     .market-badge.open { background: var(--green-bg); color: var(--green); }
     .market-badge.open .dot { background: var(--green); animation: dotBlink 1.5s infinite; }
-    .market-badge.closed { background: rgba(90,90,114,0.15); color: var(--text-muted); }
+    .market-badge.closed { background: rgba(90,90,114,0.12); color: var(--text-muted); }
     .market-badge.closed .dot { background: var(--text-muted); }
     .market-badge.pre-market { background: var(--blue-bg); color: var(--blue); }
     .market-badge.pre-market .dot { background: var(--blue); animation: dotBlink 1.5s infinite; }
     .market-badge.after-hours { background: var(--amber-bg); color: var(--amber); }
     .market-badge.after-hours .dot { background: var(--amber); animation: dotBlink 1.5s infinite; }
-    @keyframes dotBlink { 0%,100%{ opacity:1; } 50%{ opacity:0.3; } }
+    @keyframes dotBlink { 0%,100%{opacity:1} 50%{opacity:0.3} }
 
-    .last-update-wrap { display: flex; align-items: center; gap: 8px; }
-    .countdown-badge { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text-muted); background: var(--bg-card); padding: 5px 10px; border-radius: var(--radius-pill); border: 1px solid var(--border-subtle); }
-    .countdown-badge svg { width: 12px; height: 12px; fill: var(--text-muted); }
-    .countdown-num { font-family: var(--font-mono); font-weight: 600; color: var(--accent-light); }
-    .last-update { font-size: 11px; color: var(--text-muted); display: flex; align-items: center; gap: 4px; }
-    .last-update svg { width: 12px; height: 12px; fill: var(--text-muted); }
-    .refresh-flash { animation: flashPulse 0.5s ease; }
-    @keyframes flashPulse { 0%{opacity:0.3;} 100%{opacity:1;} }
+    .info-badges { display: flex; align-items: center; gap: 6px; }
+    .mini-badge { font-size: 10px; color: var(--text-muted); display: flex; align-items: center; gap: 3px; white-space: nowrap; }
+    .mini-badge svg { width: 11px; height: 11px; fill: var(--text-muted); }
+    .mini-badge .cd { font-family: var(--font-mono); color: var(--accent-light); font-weight: 600; }
 
-    /* PAGE VIEWS */
+    /* ===== PAGE VIEWS ===== */
     .page-view { display: none; }
-    .page-view.active { display: block; animation: fadeIn 0.3s ease; }
+    .page-view.active { display: block; animation: fadeIn 0.25s ease; }
 
-    /* DASHBOARD */
-    .dash-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 24px; }
-    .dash-greeting h1 { font-size: 22px; font-weight: 800; margin-bottom: 4px; }
-    .dash-greeting p { font-size: 13px; color: var(--text-secondary); }
+    /* ===== DASHBOARD ===== */
+    .dash-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .dash-greeting h1 { font-size: 18px; font-weight: 800; }
+    .dash-greeting p { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+    .refresh-btn { height: 32px; padding: 0 12px; border-radius: var(--radius-xs); background: var(--bg-elevated); border: 1px solid var(--border-subtle); color: var(--text-secondary); font-size: 12px; font-weight: 500; display: flex; align-items: center; gap: 5px; transition: var(--transition); }
+    .refresh-btn:hover { border-color: var(--accent); color: var(--accent-light); }
+    .refresh-btn svg { width: 13px; height: 13px; fill: currentColor; }
 
-    .summary-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 28px; }
-    .summary-card { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius); padding: 18px 20px; display: flex; align-items: center; gap: 14px; transition: var(--transition); }
-    .summary-card:hover { border-color: var(--border-primary); background: var(--bg-card-hover); }
-    .summary-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-    .summary-icon svg { width: 22px; height: 22px; fill: white; }
-    .si-accent { background: linear-gradient(135deg, #7c3aed, #6d28d9); box-shadow: 0 4px 14px rgba(124,58,237,0.3); }
-    .si-green { background: linear-gradient(135deg, #10b981, #059669); box-shadow: 0 4px 14px rgba(16,185,129,0.3); }
-    .si-red { background: linear-gradient(135deg, #ef4444, #dc2626); box-shadow: 0 4px 14px rgba(239,68,68,0.3); }
-    .si-amber { background: linear-gradient(135deg, #f59e0b, #d97706); box-shadow: 0 4px 14px rgba(245,158,11,0.3); }
-    .summary-num { font-family: var(--font-mono); font-size: 22px; font-weight: 700; color: var(--text-primary); }
-    .summary-lbl { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+    /* Summary — horizontal scroll on mobile */
+    .summary-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
+    .summary-card {
+      background: var(--bg-card); border: 1px solid var(--border-subtle);
+      border-radius: var(--radius); padding: 14px;
+      display: flex; align-items: center; gap: 10px;
+      transition: var(--transition); min-width: 0;
+    }
+    .summary-card:hover { border-color: var(--border-primary); }
+    .summary-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .summary-icon svg { width: 18px; height: 18px; fill: white; }
+    .si-accent { background: linear-gradient(135deg, #7c3aed, #6d28d9); }
+    .si-green  { background: linear-gradient(135deg, #10b981, #059669); }
+    .si-red    { background: linear-gradient(135deg, #ef4444, #dc2626); }
+    .si-amber  { background: linear-gradient(135deg, #f59e0b, #d97706); }
+    .summary-num { font-family: var(--font-mono); font-size: 18px; font-weight: 700; line-height: 1.2; }
+    .summary-lbl { font-size: 11px; color: var(--text-secondary); }
 
-    .dash-section { margin-bottom: 32px; }
-    .section-title { font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
-    .section-title svg { width: 17px; height: 17px; fill: var(--accent-light); }
+    .section-title { font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 6px; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-secondary); }
+    .section-title svg { width: 14px; height: 14px; fill: var(--accent-light); }
+    .dash-section { margin-bottom: 24px; }
 
-    /* WATCHLIST TABLE */
+    /* Watchlist table (desktop) / cards (mobile) */
     .table-wrap { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius); overflow: hidden; }
     .wl-table { width: 100%; border-collapse: collapse; }
-    .wl-table th { text-align: left; font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600; padding: 12px 16px; border-bottom: 1px solid var(--border-subtle); }
+    .wl-table th { text-align: left; font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600; padding: 10px 14px; border-bottom: 1px solid var(--border-subtle); }
     .wl-table th.r { text-align: right; }
-    .wl-table td { padding: 14px 16px; border-bottom: 1px solid var(--border-subtle); vertical-align: middle; }
+    .wl-table td { padding: 10px 14px; border-bottom: 1px solid var(--border-subtle); vertical-align: middle; }
     .wl-table tr:last-child td { border-bottom: none; }
     .wl-table tbody tr { transition: background 0.1s; cursor: pointer; }
     .wl-table tbody tr:hover td { background: var(--bg-card-hover); }
-    .wl-symbol { font-weight: 700; font-size: 14px; }
-    .wl-name { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
-    .wl-price { font-family: var(--font-mono); font-size: 14px; font-weight: 600; }
-    .wl-chg { font-family: var(--font-mono); font-size: 13px; font-weight: 500; }
-    .wl-chg.up { color: var(--green); }
-    .wl-chg.down { color: var(--red); }
-    .pct-badge { display: inline-flex; align-items: center; padding: 4px 10px; border-radius: var(--radius-pill); font-size: 12px; font-weight: 600; font-family: var(--font-mono); }
+    .wl-sym { font-weight: 700; font-size: 13px; }
+    .wl-name { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+    .wl-price { font-family: var(--font-mono); font-size: 13px; font-weight: 600; }
+    .wl-chg { font-family: var(--font-mono); font-size: 12px; font-weight: 500; }
+    .wl-chg.up { color: var(--green); } .wl-chg.down { color: var(--red); }
+    .pct-badge { display: inline-flex; padding: 3px 8px; border-radius: var(--radius-pill); font-size: 11px; font-weight: 600; font-family: var(--font-mono); }
     .pct-badge.up { background: var(--green-bg); color: var(--green); }
     .pct-badge.down { background: var(--red-bg); color: var(--red); }
-    .pct-badge.flat { background: rgba(90,90,114,0.12); color: var(--text-muted); }
-    .view-btn { padding: 5px 12px; border-radius: var(--radius-xs); background: var(--bg-elevated); border: 1px solid var(--border-primary); color: var(--text-secondary); font-size: 12px; font-weight: 500; transition: var(--transition); }
-    .view-btn:hover { border-color: var(--accent); color: var(--accent-light); }
+    .pct-badge.flat { background: rgba(90,90,114,0.1); color: var(--text-muted); }
     td.r { text-align: right; }
 
-    /* SECTORS GRID */
-    .sectors-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
-    .sector-card { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius); padding: 18px 20px; transition: var(--transition); position: relative; overflow: hidden; }
-    .sector-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+    /* Mobile watchlist cards */
+    .wl-cards { display: none; }
+    .wl-card-item {
+      background: var(--bg-card); border: 1px solid var(--border-subtle);
+      border-radius: var(--radius); padding: 14px;
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 8px; cursor: pointer;
+      transition: var(--transition); min-height: 56px;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .wl-card-item:active { background: var(--bg-card-hover); }
+    .wl-card-left { flex: 1; min-width: 0; }
+    .wl-card-right { text-align: right; flex-shrink: 0; }
+
+    /* Sectors */
+    .sectors-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
+    .sector-card {
+      background: var(--bg-card); border: 1px solid var(--border-subtle);
+      border-radius: var(--radius); padding: 14px 16px;
+      transition: var(--transition); position: relative; overflow: hidden;
+    }
+    .sector-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; }
     .sector-card.tech::before { background: linear-gradient(90deg, #7c3aed, #a78bfa); }
     .sector-card.finance::before { background: linear-gradient(90deg, #3b82f6, #60a5fa); }
     .sector-card.health::before { background: linear-gradient(90deg, #10b981, #34d399); }
@@ -214,209 +227,261 @@
     .sector-card.realestate::before { background: linear-gradient(90deg, #ec4899, #f472b6); }
     .sector-card.utilities::before { background: linear-gradient(90deg, #06b6d4, #22d3ee); }
     .sector-card.comm::before { background: linear-gradient(90deg, #8b5cf6, #c4b5fd); }
-    .sector-card:hover { border-color: var(--border-primary); background: var(--bg-card-hover); transform: translateY(-2px); box-shadow: var(--shadow-md); }
-    .sector-name { font-size: 14px; font-weight: 700; margin-bottom: 10px; }
-    .sector-tickers { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
-    .sector-ticker { padding: 3px 9px; border-radius: var(--radius-xs); background: var(--bg-elevated); border: 1px solid var(--border-subtle); font-size: 12px; font-weight: 600; color: var(--text-secondary); cursor: pointer; transition: var(--transition); }
-    .sector-ticker:hover { border-color: var(--accent); color: var(--accent-light); }
-    .sector-footer { display: flex; align-items: center; justify-content: space-between; }
-    .sector-etf { font-size: 11px; color: var(--text-muted); }
-    .sector-perf { font-family: var(--font-mono); font-size: 13px; font-weight: 600; }
-    .sector-perf.up { color: var(--green); }
-    .sector-perf.down { color: var(--red); }
-    .sector-perf.loading { color: var(--text-muted); }
+    .sector-card:hover { border-color: var(--border-primary); background: var(--bg-card-hover); }
+    .sector-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+    .sector-name { font-size: 13px; font-weight: 700; }
+    .sector-perf { font-family: var(--font-mono); font-size: 12px; font-weight: 600; }
+    .sector-perf.up { color: var(--green); } .sector-perf.down { color: var(--red); } .sector-perf.loading { color: var(--text-muted); }
+    .sector-tickers { display: flex; flex-wrap: wrap; gap: 4px; }
+    .sector-ticker {
+      padding: 3px 8px; border-radius: var(--radius-xs);
+      background: var(--bg-elevated); border: 1px solid var(--border-subtle);
+      font-size: 11px; font-weight: 600; color: var(--text-secondary);
+      cursor: pointer; transition: var(--transition);
+      min-height: 28px; display: flex; align-items: center;
+    }
+    .sector-ticker:hover, .sector-ticker:active { border-color: var(--accent); color: var(--accent-light); }
 
-    /* STOCK DETAIL PAGE */
-    .stock-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 20px; }
-    .stock-identity { display: flex; align-items: center; gap: 16px; }
-    .stock-logo-wrap { width: 52px; height: 52px; border-radius: 14px; background: var(--bg-elevated); border: 1px solid var(--border-primary); display: flex; align-items: center; justify-content: center; overflow: hidden; }
-    .stock-logo-wrap img { width: 100%; height: 100%; object-fit: contain; padding: 6px; }
-    .stock-logo-wrap svg { width: 28px; height: 28px; fill: var(--text-muted); }
-    .stock-symbol-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
-    .stock-symbol { font-size: 22px; font-weight: 800; letter-spacing: 0.5px; background: linear-gradient(135deg, var(--text-primary), var(--accent-light)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-    .stock-exchange { font-size: 10px; font-weight: 600; color: var(--text-muted); background: var(--bg-input); padding: 2px 8px; border-radius: 4px; border: 1px solid var(--border-subtle); }
-    .stock-company-name { font-size: 13px; color: var(--text-secondary); }
-    .stock-actions { display: flex; align-items: center; gap: 10px; }
-    .btn-wishlist { display: flex; align-items: center; gap: 6px; padding: 10px 18px; border-radius: var(--radius-sm); background: var(--bg-elevated); border: 1px solid var(--border-primary); color: var(--text-secondary); font-size: 13px; font-weight: 500; transition: var(--transition); }
+    /* ===== STOCK DETAIL ===== */
+    .stock-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 16px; gap: 12px; }
+    .stock-identity { display: flex; align-items: center; gap: 12px; min-width: 0; }
+    .stock-logo-wrap { width: 44px; height: 44px; border-radius: 12px; background: var(--bg-elevated); border: 1px solid var(--border-subtle); display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0; }
+    .stock-logo-wrap img { width: 100%; height: 100%; object-fit: contain; padding: 5px; }
+    .stock-logo-wrap svg { width: 24px; height: 24px; fill: var(--text-muted); }
+    .stock-symbol-row { display: flex; align-items: center; gap: 6px; margin-bottom: 2px; }
+    .stock-symbol { font-size: 20px; font-weight: 800; background: linear-gradient(135deg, var(--text-primary), var(--accent-light)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .stock-exchange { font-size: 9px; font-weight: 600; color: var(--text-muted); background: var(--bg-input); padding: 2px 6px; border-radius: 3px; }
+    .stock-company-name { font-size: 12px; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .stock-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+    .btn-wishlist { display: flex; align-items: center; gap: 5px; padding: 8px 14px; border-radius: var(--radius-sm); background: var(--bg-elevated); border: 1px solid var(--border-subtle); color: var(--text-secondary); font-size: 12px; font-weight: 500; transition: var(--transition); min-height: 36px; }
     .btn-wishlist:hover { border-color: var(--accent); color: var(--accent-light); }
     .btn-wishlist.active { background: var(--accent-glow); border-color: var(--accent); color: var(--accent-light); }
-    .btn-wishlist svg { width: 16px; height: 16px; }
-    .btn-refresh { width: 38px; height: 38px; border-radius: var(--radius-sm); background: var(--bg-elevated); border: 1px solid var(--border-primary); display: flex; align-items: center; justify-content: center; transition: var(--transition); }
+    .btn-wishlist svg { width: 14px; height: 14px; }
+    .btn-refresh { width: 36px; height: 36px; border-radius: var(--radius-sm); background: var(--bg-elevated); border: 1px solid var(--border-subtle); display: flex; align-items: center; justify-content: center; transition: var(--transition); }
     .btn-refresh:hover { border-color: var(--accent); }
-    .btn-refresh svg { width: 16px; height: 16px; fill: var(--text-secondary); transition: var(--transition); }
-    .btn-refresh:hover svg { fill: var(--accent-light); }
+    .btn-refresh svg { width: 14px; height: 14px; fill: var(--text-secondary); }
     .btn-refresh.spinning svg { animation: spin 0.8s linear infinite; }
     @keyframes spin { 100% { transform: rotate(360deg); } }
 
-    .price-section { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 24px; margin-bottom: 24px; }
-    .price-main { font-family: var(--font-mono); font-size: 48px; font-weight: 700; letter-spacing: -1px; line-height: 1; }
-    .price-change-group { display: flex; flex-direction: column; gap: 4px; padding-bottom: 4px; }
-    .price-change { display: flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 16px; font-weight: 600; }
-    .price-change .arrow { font-size: 12px; }
-    .price-change.up { color: var(--green); }
-    .price-change.down { color: var(--red); }
-    .price-change.flat { color: var(--text-muted); }
-    .price-session-label { font-size: 11px; color: var(--text-muted); font-family: var(--font-sans); }
+    .price-section { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 16px; margin-bottom: 18px; }
+    .price-main { font-family: var(--font-mono); font-size: 40px; font-weight: 700; letter-spacing: -1px; line-height: 1; }
+    .price-change-group { display: flex; flex-direction: column; gap: 2px; padding-bottom: 3px; }
+    .price-change { display: flex; align-items: center; gap: 5px; font-family: var(--font-mono); font-size: 14px; font-weight: 600; }
+    .price-change .arrow { font-size: 10px; }
+    .price-change.up { color: var(--green); } .price-change.down { color: var(--red); } .price-change.flat { color: var(--text-muted); }
+    .price-session-label { font-size: 10px; color: var(--text-muted); font-family: var(--font-sans); }
 
-    .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
-    .stat-card { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius); padding: 16px 18px; transition: var(--transition); }
-    .stat-card:hover { border-color: var(--border-primary); background: var(--bg-card-hover); }
-    .stat-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; font-weight: 500; margin-bottom: 8px; }
-    .stat-value { font-family: var(--font-mono); font-size: 18px; font-weight: 600; }
+    .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 16px; }
+    .stat-card { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius); padding: 12px 14px; }
+    .stat-card:hover { border-color: var(--border-primary); }
+    .stat-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 4px; }
+    .stat-value { font-family: var(--font-mono); font-size: 15px; font-weight: 600; }
 
-    .extra-info-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 24px; }
-    .info-card { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius); padding: 16px 18px; transition: var(--transition); }
-    .info-card:hover { border-color: var(--border-primary); background: var(--bg-card-hover); }
-    .info-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 6px; }
-    .info-value { font-size: 14px; font-weight: 600; }
+    .extra-info-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .info-card { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius); padding: 12px 14px; }
+    .info-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 4px; }
+    .info-value { font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .info-value.mono { font-family: var(--font-mono); }
 
-    /* WISHLIST SIDEBAR */
-    .wishlist-panel { width: 300px; min-width: 300px; border-left: 1px solid var(--border-primary); background: var(--bg-secondary); display: flex; flex-direction: column; height: calc(100vh - 64px); overflow: hidden; }
-    .wishlist-header { padding: 16px; border-bottom: 1px solid var(--border-primary); display: flex; align-items: center; justify-content: space-between; }
-    .wishlist-title { font-size: 12px; font-weight: 700; display: flex; align-items: center; gap: 8px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
-    .wishlist-title svg { width: 15px; height: 15px; fill: var(--accent-light); }
-    .wishlist-count { font-size: 11px; font-weight: 600; color: var(--accent-light); background: var(--accent-glow); padding: 2px 8px; border-radius: var(--radius-pill); border: 1px solid var(--border-accent); }
-    .wishlist-list { flex: 1; overflow-y: auto; padding: 6px; }
-    .wishlist-item { display: flex; align-items: center; padding: 10px; border-radius: var(--radius-sm); cursor: pointer; transition: var(--transition); gap: 10px; border: 1px solid transparent; margin-bottom: 2px; }
+    /* ===== WISHLIST SIDEBAR (Desktop) ===== */
+    .wishlist-panel {
+      width: 280px; min-width: 280px; border-left: 1px solid var(--border-primary);
+      background: var(--bg-secondary); display: flex; flex-direction: column;
+      height: calc(100vh - 56px); overflow: hidden;
+    }
+    .wishlist-header { padding: 12px 14px; border-bottom: 1px solid var(--border-primary); display: flex; align-items: center; justify-content: space-between; }
+    .wishlist-title { font-size: 11px; font-weight: 700; display: flex; align-items: center; gap: 6px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+    .wishlist-title svg { width: 13px; height: 13px; fill: var(--accent-light); }
+    .wishlist-count { font-size: 10px; font-weight: 600; color: var(--accent-light); background: var(--accent-glow); padding: 2px 7px; border-radius: var(--radius-pill); }
+    .wishlist-list { flex: 1; overflow-y: auto; padding: 4px; }
+    .wishlist-item {
+      display: flex; align-items: center; padding: 8px;
+      border-radius: var(--radius-sm); cursor: pointer;
+      transition: var(--transition); gap: 8px;
+      border: 1px solid transparent; margin-bottom: 1px;
+    }
     .wishlist-item:hover { background: var(--bg-card); border-color: var(--border-subtle); }
     .wishlist-item.active { background: var(--accent-glow); border-color: var(--border-accent); }
     .wishlist-item-info { flex: 1; min-width: 0; }
-    .wishlist-item-symbol { font-size: 13px; font-weight: 700; }
-    .wishlist-item-name { font-size: 11px; color: var(--text-muted); margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .wishlist-item-symbol { font-size: 12px; font-weight: 700; }
+    .wishlist-item-name { font-size: 10px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .wishlist-item-price { text-align: right; }
-    .wishlist-item-price-val { font-family: var(--font-mono); font-size: 13px; font-weight: 600; }
-    .wishlist-item-change { font-family: var(--font-mono); font-size: 11px; margin-top: 1px; }
-    .wishlist-item-change.up { color: var(--green); }
-    .wishlist-item-change.down { color: var(--red); }
-    .wishlist-item-remove { width: 22px; height: 22px; border-radius: 50%; background: transparent; display: flex; align-items: center; justify-content: center; opacity: 0; transition: var(--transition); flex-shrink: 0; }
+    .wishlist-item-price-val { font-family: var(--font-mono); font-size: 12px; font-weight: 600; }
+    .wishlist-item-change { font-family: var(--font-mono); font-size: 10px; }
+    .wishlist-item-change.up { color: var(--green); } .wishlist-item-change.down { color: var(--red); }
+    .wishlist-item-remove { width: 20px; height: 20px; border-radius: 50%; background: transparent; display: flex; align-items: center; justify-content: center; opacity: 0; transition: var(--transition); flex-shrink: 0; }
     .wishlist-item:hover .wishlist-item-remove { opacity: 1; }
     .wishlist-item-remove:hover { background: var(--red-bg); }
-    .wishlist-item-remove svg { width: 12px; height: 12px; fill: var(--red); }
-    .wishlist-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 20px; gap: 10px; }
-    .wishlist-empty svg { width: 40px; height: 40px; fill: var(--text-muted); opacity: 0.3; }
-    .wishlist-empty p { font-size: 12px; color: var(--text-muted); text-align: center; line-height: 1.6; }
-    .wishlist-footer { padding: 12px; border-top: 1px solid var(--border-primary); }
-    .btn-add-wishlist { width: 100%; padding: 9px; border-radius: var(--radius-sm); background: var(--bg-card); border: 1px dashed var(--border-primary); color: var(--text-secondary); font-size: 12px; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 6px; transition: var(--transition); }
+    .wishlist-item-remove svg { width: 11px; height: 11px; fill: var(--red); }
+    .wishlist-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 32px 16px; gap: 8px; }
+    .wishlist-empty svg { width: 32px; height: 32px; fill: var(--text-muted); opacity: 0.25; }
+    .wishlist-empty p { font-size: 11px; color: var(--text-muted); text-align: center; line-height: 1.5; }
+    .wishlist-footer { padding: 10px; border-top: 1px solid var(--border-primary); }
+    .btn-add-wishlist { width: 100%; padding: 8px; border-radius: var(--radius-sm); background: var(--bg-card); border: 1px dashed var(--border-primary); color: var(--text-secondary); font-size: 11px; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 5px; transition: var(--transition); }
     .btn-add-wishlist:hover { border-color: var(--accent); color: var(--accent-light); border-style: solid; }
-    .btn-add-wishlist svg { width: 14px; height: 14px; }
+    .btn-add-wishlist svg { width: 13px; height: 13px; }
 
-    /* MODALS */
+    /* ===== MOBILE BOTTOM NAV ===== */
+    .mobile-nav {
+      display: none; position: fixed; bottom: 0; left: 0; right: 0;
+      background: var(--bg-secondary); border-top: 1px solid var(--border-primary);
+      padding: 6px 0 calc(6px + var(--safe-bottom));
+      z-index: 200; flex-shrink: 0;
+    }
+    .mobile-nav-inner { display: flex; justify-content: space-around; }
+    .mnav-btn {
+      display: flex; flex-direction: column; align-items: center; gap: 2px;
+      background: transparent; color: var(--text-muted); padding: 6px 12px;
+      border-radius: var(--radius-sm); transition: var(--transition);
+      font-size: 10px; font-weight: 500; min-width: 56px;
+    }
+    .mnav-btn svg { width: 20px; height: 20px; fill: currentColor; }
+    .mnav-btn.active { color: var(--accent-light); }
+    .mnav-btn:active { background: var(--bg-elevated); }
+
+    /* Mobile watchlist overlay */
+    .mobile-wl-overlay {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+      z-index: 300; align-items: flex-end;
+    }
+    .mobile-wl-overlay.active { display: flex; animation: fadeIn 0.15s ease; }
+    .mobile-wl-sheet {
+      width: 100%; max-height: 70vh; background: var(--bg-secondary);
+      border-top-left-radius: 18px; border-top-right-radius: 18px;
+      display: flex; flex-direction: column; animation: slideUp 0.25s ease;
+      padding-bottom: var(--safe-bottom);
+    }
+    .mobile-wl-handle { width: 36px; height: 4px; border-radius: 2px; background: var(--border-primary); margin: 10px auto 0; flex-shrink: 0; }
+    .mobile-wl-header { padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; }
+    .mobile-wl-list { flex: 1; overflow-y: auto; padding: 4px 12px 12px; }
+    @keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
+
+    /* Dash empty */
+    .dash-empty { background: var(--bg-card); border: 1px dashed var(--border-primary); border-radius: var(--radius); padding: 28px; text-align: center; color: var(--text-muted); font-size: 12px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+    .dash-empty svg { width: 32px; height: 32px; fill: var(--text-muted); opacity: 0.25; }
+
+    /* Welcome */
+    .welcome-state { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 50vh; gap: 12px; }
+    .welcome-icon { width: 64px; height: 64px; border-radius: 16px; background: linear-gradient(135deg, rgba(124,58,237,0.12), rgba(167,139,250,0.06)); border: 1px solid var(--border-accent); display: flex; align-items: center; justify-content: center; }
+    .welcome-icon svg { width: 32px; height: 32px; fill: var(--accent-light); }
+    .welcome-state h2 { font-size: 18px; font-weight: 700; }
+    .welcome-state p { font-size: 13px; color: var(--text-secondary); max-width: 320px; text-align: center; }
+
+    /* Settings modal */
     .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); z-index: 1000; display: none; align-items: center; justify-content: center; }
-    .modal-overlay.active { display: flex; animation: fadeIn 0.2s ease; }
-    .modal { background: var(--bg-card); border: 1px solid var(--border-primary); border-radius: 18px; padding: 32px; max-width: 480px; width: 90%; box-shadow: var(--shadow-lg); animation: fadeSlideUp 0.3s ease; }
-    .modal-icon { width: 56px; height: 56px; border-radius: 14px; background: linear-gradient(135deg, var(--accent), var(--accent-light)); display: flex; align-items: center; justify-content: center; margin-bottom: 20px; box-shadow: var(--shadow-glow); }
-    .modal-icon svg { width: 28px; height: 28px; fill: white; }
-    .modal h2 { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
-    .modal p { font-size: 13px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 20px; }
-    .modal-input-group { margin-bottom: 20px; }
-    .modal-label { font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 8px; display: block; }
-    .modal-input { width: 100%; height: 44px; padding: 0 16px; background: var(--bg-input); border: 1px solid var(--border-primary); border-radius: var(--radius-sm); color: var(--text-primary); font-size: 13px; font-family: var(--font-mono); transition: var(--transition); }
-    .modal-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+    .modal-overlay.active { display: flex; animation: fadeIn 0.15s ease; }
+    .modal { background: var(--bg-card); border: 1px solid var(--border-primary); border-radius: 16px; padding: 28px; max-width: 420px; width: 90%; box-shadow: var(--shadow-lg); }
+    .modal-icon { width: 48px; height: 48px; border-radius: 12px; background: linear-gradient(135deg, var(--accent), var(--accent-light)); display: flex; align-items: center; justify-content: center; margin-bottom: 16px; }
+    .modal-icon svg { width: 24px; height: 24px; fill: white; }
+    .modal h2 { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+    .modal p { font-size: 12px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 16px; }
+    .modal-input-group { margin-bottom: 16px; }
+    .modal-label { font-size: 11px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; display: block; }
+    .modal-input { width: 100%; height: 40px; padding: 0 14px; background: var(--bg-input); border: 1px solid var(--border-primary); border-radius: var(--radius-sm); color: var(--text-primary); font-size: 13px; font-family: var(--font-mono); }
+    .modal-input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-glow); }
     .modal-input.error { border-color: var(--red); }
-    .modal-error { font-size: 12px; color: var(--red); margin-top: 6px; display: none; }
+    .modal-error { font-size: 11px; color: var(--red); margin-top: 4px; display: none; }
     .modal-error.visible { display: block; }
-    .modal-actions { display: flex; gap: 10px; }
-    .btn-primary { flex: 1; padding: 12px 20px; border-radius: var(--radius-sm); background: linear-gradient(135deg, var(--accent), #6d28d9); color: white; font-size: 14px; font-weight: 600; transition: var(--transition); box-shadow: 0 4px 14px rgba(124, 58, 237, 0.3); }
-    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(124, 58, 237, 0.4); }
-    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-    .btn-secondary { padding: 12px 20px; border-radius: var(--radius-sm); background: var(--bg-elevated); border: 1px solid var(--border-primary); color: var(--text-secondary); font-size: 14px; font-weight: 500; transition: var(--transition); }
-    .btn-secondary:hover { border-color: var(--text-muted); color: var(--text-primary); }
-    .modal-steps { margin-bottom: 20px; }
-    .modal-step { display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border-subtle); }
-    .modal-step:last-child { border-bottom: none; }
-    .step-num { width: 24px; height: 24px; border-radius: 50%; background: var(--accent-glow); color: var(--accent-light); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; border: 1px solid var(--border-accent); }
-    .step-text { font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
-    .step-text a { color: var(--accent-light); font-weight: 500; }
+    .modal-actions { display: flex; gap: 8px; }
+    .btn-primary { flex: 1; padding: 10px 16px; border-radius: var(--radius-sm); background: linear-gradient(135deg, var(--accent), #6d28d9); color: white; font-size: 13px; font-weight: 600; min-height: 40px; }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-secondary { padding: 10px 16px; border-radius: var(--radius-sm); background: var(--bg-elevated); border: 1px solid var(--border-primary); color: var(--text-secondary); font-size: 13px; font-weight: 500; min-height: 40px; }
 
-    /* WELCOME */
-    .welcome-state { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 60vh; gap: 16px; }
-    .welcome-icon { width: 80px; height: 80px; border-radius: 20px; background: linear-gradient(135deg, rgba(124,58,237,0.15), rgba(167,139,250,0.08)); border: 1px solid var(--border-accent); display: flex; align-items: center; justify-content: center; margin-bottom: 8px; }
-    .welcome-icon svg { width: 40px; height: 40px; fill: var(--accent-light); }
-    .welcome-state h2 { font-size: 22px; font-weight: 700; }
-    .welcome-state p { font-size: 14px; color: var(--text-secondary); max-width: 380px; text-align: center; }
+    /* Toast */
+    .toast-container { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 2000; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+    .toast { padding: 10px 16px; border-radius: var(--radius-sm); background: var(--bg-elevated); border: 1px solid var(--border-primary); color: var(--text-primary); font-size: 12px; font-weight: 500; box-shadow: var(--shadow-md); animation: fadeSlideUp 0.2s ease; display: flex; align-items: center; gap: 6px; max-width: 300px; white-space: nowrap; }
+    .toast.success { border-color: var(--green); } .toast.error { border-color: var(--red); }
+    .toast-icon { width: 15px; height: 15px; flex-shrink: 0; }
 
-    /* EMPTY STATE */
-    .dash-empty { background: var(--bg-card); border: 1px dashed var(--border-primary); border-radius: var(--radius); padding: 40px; text-align: center; color: var(--text-muted); font-size: 13px; display: flex; flex-direction: column; align-items: center; gap: 12px; }
-    .dash-empty svg { width: 40px; height: 40px; fill: var(--text-muted); opacity: 0.3; }
-
-    /* TOAST */
-    .toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 2000; display: flex; flex-direction: column; gap: 8px; }
-    .toast { padding: 12px 20px; border-radius: var(--radius-sm); background: var(--bg-elevated); border: 1px solid var(--border-primary); color: var(--text-primary); font-size: 13px; font-weight: 500; box-shadow: var(--shadow-md); animation: fadeSlideUp 0.3s ease; display: flex; align-items: center; gap: 8px; max-width: 340px; }
-    .toast.success { border-color: var(--green); }
-    .toast.error { border-color: var(--red); }
-    .toast-icon { width: 18px; height: 18px; flex-shrink: 0; }
-
-    /* ANIMATIONS */
+    /* Animations */
     @keyframes fadeIn { from{opacity:0} to{opacity:1} }
-    @keyframes fadeSlideUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
-    @keyframes fadeSlideDown { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes fadeSlideUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes fadeSlideDown { from{opacity:0;transform:translateY(-4px)} to{opacity:1;transform:translateY(0)} }
 
-    /* RESPONSIVE */
-    @media (max-width: 1200px) {
-      .wishlist-panel { width: 260px; min-width: 260px; }
-      .summary-strip { grid-template-columns: repeat(2,1fr); }
+    /* ===== RESPONSIVE ===== */
+    /* Tablet */
+    @media (max-width: 1100px) {
+      .wishlist-panel { width: 240px; min-width: 240px; }
     }
-    @media (max-width: 900px) {
-      .wishlist-panel { display: none; }
-      .stats-grid { grid-template-columns: repeat(2,1fr); }
-      .extra-info-grid { grid-template-columns: repeat(2,1fr); }
-    }
-    @media (max-width: 640px) {
-      .content-area { padding: 16px; }
-      .price-main { font-size: 36px; }
-      .topbar { padding: 0 12px; }
+
+    /* Mobile */
+    @media (max-width: 768px) {
+      /* Hide desktop sidebar, show bottom nav */
+      .wishlist-panel { display: none !important; }
+      .mobile-nav { display: block; }
       .nav-tabs { display: none; }
-      .summary-strip { grid-template-columns: 1fr 1fr; }
-      .sectors-grid { grid-template-columns: 1fr; }
-      .search-wrap { width: 180px; }
       .search-shortcut { display: none; }
+      .info-badges { display: none; }
+      .market-badge span { display: none; }
+      .market-badge { padding: 5px 7px; }
+
+      /* Content needs bottom padding for nav */
+      .content-area {
+        padding: 14px 14px calc(70px + var(--safe-bottom));
+      }
+
+      /* Search full width */
+      .search-wrap { max-width: none; }
+      .topbar { gap: 8px; padding: 0 12px; height: 50px; }
+      .logo-text { display: none; }
+      .logo-icon { width: 30px; height: 30px; border-radius: 7px; }
+      .logo-icon svg { width: 15px; height: 15px; }
+      .topbar-btn { width: 30px; height: 30px; }
+      .topbar-btn svg { width: 14px; height: 14px; }
+
+      /* Summary strip: 2x2 grid */
+      .summary-strip { grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+      .summary-card { padding: 12px; gap: 8px; }
+      .summary-icon { width: 32px; height: 32px; border-radius: 8px; }
+      .summary-icon svg { width: 15px; height: 15px; }
+      .summary-num { font-size: 16px; }
+
+      /* Dashboard header */
+      .dash-header { margin-bottom: 12px; }
+      .dash-greeting h1 { font-size: 16px; }
+      .dash-greeting p { font-size: 11px; }
+
+      /* Table → Cards on mobile */
+      .table-wrap { display: none; }
+      .wl-cards { display: block; }
+
+      /* Sectors 1 col */
+      .sectors-grid { grid-template-columns: 1fr; gap: 8px; }
+
+      /* Stock detail mobile */
+      .stock-header { flex-direction: column; gap: 10px; }
+      .stock-actions { width: 100%; }
+      .btn-wishlist { flex: 1; justify-content: center; }
+      .price-main { font-size: 34px; }
+      .price-change { font-size: 13px; }
+      .stats-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+      .extra-info-grid { grid-template-columns: 1fr; gap: 8px; }
+      .stat-card { padding: 10px 12px; }
+      .stat-value { font-size: 14px; }
+
+      /* Search dropdown */
+      .search-dropdown { left: -12px; right: -12px; border-radius: 0 0 var(--radius) var(--radius); }
+
+      /* Toast above bottom nav */
+      .toast-container { bottom: calc(70px + var(--safe-bottom) + 8px); }
+    }
+
+    @media (max-width: 360px) {
+      .summary-strip { grid-template-columns: 1fr 1fr; }
+      .summary-lbl { font-size: 10px; }
     }
   </style>
 </head>
 <body>
 
-<!-- ONBOARDING -->
-<div class="modal-overlay" id="onboardingModal">
-  <div class="modal">
-    <div class="modal-icon">
-      <svg viewBox="0 0 24 24"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg>
-    </div>
-    <h2>Welcome to StockPulse</h2>
-    <p>Connect your free Finnhub API key to get started. Your key will be saved permanently.</p>
-    <div class="modal-steps">
-      <div class="modal-step">
-        <div class="step-num">1</div>
-        <div class="step-text">Visit <a href="https://finnhub.io/register" target="_blank" rel="noopener">finnhub.io/register</a> and create a free account</div>
-      </div>
-      <div class="modal-step">
-        <div class="step-num">2</div>
-        <div class="step-text">Copy your API key from the Finnhub dashboard</div>
-      </div>
-      <div class="modal-step">
-        <div class="step-num">3</div>
-        <div class="step-text">Paste it below — it's saved in your browser and never leaves your device!</div>
-      </div>
-    </div>
-    <div class="modal-input-group">
-      <label class="modal-label">Finnhub API Key</label>
-      <input type="text" class="modal-input" id="onboardingApiKey" placeholder="e.g. csXXXXXXXXXXXXXXXXXX" />
-      <div class="modal-error" id="onboardingError">Invalid API key. Please try again.</div>
-    </div>
-    <div class="modal-actions">
-      <button class="btn-primary" id="onboardingSubmit" onclick="saveApiKeyFromOnboarding()">Get Started</button>
-    </div>
-  </div>
-</div>
-
-<!-- SETTINGS -->
+<!-- Settings Modal -->
 <div class="modal-overlay" id="settingsModal">
   <div class="modal">
     <div class="modal-icon">
       <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
     </div>
     <h2>Settings</h2>
-    <p>Update your Finnhub API key. It's stored securely in your browser's local storage.</p>
+    <p>Update your Finnhub API key.</p>
     <div class="modal-input-group">
       <label class="modal-label">Finnhub API Key</label>
       <input type="text" class="modal-input" id="settingsApiKey" placeholder="Your API key..." />
@@ -424,190 +489,111 @@
     </div>
     <div class="modal-actions">
       <button class="btn-secondary" onclick="closeSettings()">Cancel</button>
-      <button class="btn-primary" onclick="saveApiKeyFromSettings()">Save Key</button>
+      <button class="btn-primary" onclick="saveApiKeyFromSettings()">Save</button>
     </div>
   </div>
 </div>
 
-<!-- APP -->
+<!-- App -->
 <div class="app">
   <header class="topbar">
-    <div class="topbar-left">
-      <div class="logo" onclick="switchPage('dashboard')">
-        <div class="logo-icon">
-          <svg viewBox="0 0 24 24"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg>
-        </div>
-        <div class="logo-text">Stock<span>Pulse</span></div>
-      </div>
-      <nav class="nav-tabs">
-        <button class="nav-tab active" id="tab-dashboard" onclick="switchPage('dashboard')">
-          <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
-          Dashboard
-        </button>
-        <button class="nav-tab" id="tab-stock" onclick="switchPage('stock')" style="display:none;">
-          <svg viewBox="0 0 24 24"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg>
-          <span id="stockTabLabel">Stock</span>
-        </button>
-      </nav>
+    <div class="logo" onclick="switchPage('dashboard')">
+      <div class="logo-icon"><svg viewBox="0 0 24 24"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg></div>
+      <div class="logo-text">Stock<span>Pulse</span></div>
     </div>
+    <nav class="nav-tabs">
+      <button class="nav-tab active" id="tab-dashboard" onclick="switchPage('dashboard')">
+        <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+        Dashboard
+      </button>
+      <button class="nav-tab" id="tab-stock" style="display:none" onclick="switchPage('stock')">
+        <svg viewBox="0 0 24 24"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg>
+        <span id="stockTabLabel">Stock</span>
+      </button>
+    </nav>
     <div class="search-wrap">
       <svg class="search-icon" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
-      <input type="text" class="search-input" id="searchInput" placeholder="Search stocks... (e.g. AAPL, TSLA)" autocomplete="off" />
+      <input type="text" class="search-input" id="searchInput" placeholder="Search stocks..." autocomplete="off" />
       <span class="search-shortcut">&#x2318;K</span>
       <div class="search-dropdown" id="searchDropdown"></div>
     </div>
     <div class="topbar-right">
-      <div class="last-update-wrap">
-        <div class="last-update" id="lastUpdateBadge" title="Last updated">
-          <svg viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67V7z"/></svg>
-          <span id="lastUpdateText">—</span>
-        </div>
-        <div class="countdown-badge" title="Auto-refresh countdown">
-          <svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
-          <span class="countdown-num" id="countdownNum">30</span>s
-        </div>
+      <div class="info-badges">
+        <div class="mini-badge" title="Last updated"><svg viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67V7z"/></svg><span id="lastUpdateText">—</span></div>
+        <div class="mini-badge" title="Auto-refresh"><svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg><span class="cd" id="countdownNum">30</span>s</div>
       </div>
-      <div class="market-badge closed" id="marketBadge">
-        <div class="dot"></div>
-        <span id="marketBadgeText">Market Closed</span>
-      </div>
-      <button class="topbar-btn" onclick="openSettings()" title="Settings">
-        <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
-      </button>
+      <div class="market-badge closed" id="marketBadge"><div class="dot"></div><span id="marketBadgeText">Closed</span></div>
+      <button class="topbar-btn" onclick="openSettings()" title="Settings"><svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg></button>
     </div>
   </header>
 
   <div class="main-layout">
     <main class="content-area">
-
-      <!-- DASHBOARD PAGE -->
+      <!-- DASHBOARD -->
       <div class="page-view active" id="page-dashboard">
         <div class="dash-header">
           <div class="dash-greeting">
-            <h1 id="dashGreeting">Good Morning ☀️</h1>
+            <h1 id="dashGreeting">Good Evening 🌙</h1>
             <p id="dashDate"></p>
           </div>
-          <button class="btn-secondary" id="dashRefreshBtn" onclick="fullRefresh()" style="display:flex;align-items:center;gap:6px;font-size:13px;height:38px;padding:0 16px;">
-            <svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:currentColor"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
-            Refresh All
+          <button class="refresh-btn" id="dashRefreshBtn" onclick="fullRefresh()">
+            <svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+            Refresh
           </button>
         </div>
 
-        <!-- Summary strip -->
         <div class="summary-strip">
-          <div class="summary-card">
-            <div class="summary-icon si-accent">
-              <svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
-            </div>
-            <div>
-              <div class="summary-num" id="summaryTotal">—</div>
-              <div class="summary-lbl">Watchlist Stocks</div>
-            </div>
-          </div>
-          <div class="summary-card">
-            <div class="summary-icon si-green">
-              <svg viewBox="0 0 24 24"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg>
-            </div>
-            <div>
-              <div class="summary-num" id="summaryGainers">—</div>
-              <div class="summary-lbl">Gainers Today</div>
-            </div>
-          </div>
-          <div class="summary-card">
-            <div class="summary-icon si-red">
-              <svg viewBox="0 0 24 24"><path d="M20.5 5.51l-6 6.01-4-4L2 17.09l1.41 1.41 7.09-7.97 4 4L22 6.92z"/></svg>
-            </div>
-            <div>
-              <div class="summary-num" id="summaryLosers">—</div>
-              <div class="summary-lbl">Losers Today</div>
-            </div>
-          </div>
-          <div class="summary-card">
-            <div class="summary-icon si-amber">
-              <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-            </div>
-            <div>
-              <div class="summary-num" id="summaryBest">—</div>
-              <div class="summary-lbl">Best Performer</div>
-            </div>
-          </div>
+          <div class="summary-card"><div class="summary-icon si-accent"><svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></div><div><div class="summary-num" id="summaryTotal">—</div><div class="summary-lbl">Watchlist</div></div></div>
+          <div class="summary-card"><div class="summary-icon si-green"><svg viewBox="0 0 24 24"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg></div><div><div class="summary-num" id="summaryGainers">—</div><div class="summary-lbl">Gainers</div></div></div>
+          <div class="summary-card"><div class="summary-icon si-red"><svg viewBox="0 0 24 24"><path d="M20.5 5.51l-6 6.01-4-4L2 17.09l1.41 1.41 7.09-7.97 4 4L22 6.92z"/></svg></div><div><div class="summary-num" id="summaryLosers">—</div><div class="summary-lbl">Losers</div></div></div>
+          <div class="summary-card"><div class="summary-icon si-amber"><svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></div><div><div class="summary-num" id="summaryBest">—</div><div class="summary-lbl">Best</div></div></div>
         </div>
 
-        <!-- Watchlist overview -->
         <div class="dash-section">
-          <div class="section-title">
-            <svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
-            Watchlist Overview
-          </div>
+          <div class="section-title"><svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>Watchlist</div>
           <div id="dashWatchlist"></div>
         </div>
 
-        <!-- Sectors -->
         <div class="dash-section">
-          <div class="section-title">
-            <svg viewBox="0 0 24 24"><path d="M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z"/></svg>
-            Market Sectors
-          </div>
+          <div class="section-title"><svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>Sectors</div>
           <div class="sectors-grid" id="sectorsGrid"></div>
         </div>
       </div>
 
-      <!-- STOCK DETAIL PAGE -->
+      <!-- STOCK DETAIL -->
       <div class="page-view" id="page-stock">
         <div class="welcome-state" id="welcomeState">
-          <div class="welcome-icon">
-            <svg viewBox="0 0 24 24"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg>
-          </div>
+          <div class="welcome-icon"><svg viewBox="0 0 24 24"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg></div>
           <h2>Track Your Stocks</h2>
-          <p>Search for a stock symbol above to view real-time prices and add it to your watchlist.</p>
+          <p>Search for a stock symbol to view real-time prices.</p>
         </div>
-
-        <div id="stockDetail" style="display:none;">
+        <div id="stockDetail" style="display:none">
           <div class="stock-header">
             <div class="stock-identity">
-              <div class="stock-logo-wrap" id="stockLogo">
-                <svg viewBox="0 0 24 24"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg>
-              </div>
-              <div>
-                <div class="stock-symbol-row">
-                  <span class="stock-symbol" id="stockSymbol">AAPL</span>
-                  <span class="stock-exchange" id="stockExchange">NASDAQ</span>
-                </div>
+              <div class="stock-logo-wrap" id="stockLogo"><svg viewBox="0 0 24 24"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg></div>
+              <div style="min-width:0">
+                <div class="stock-symbol-row"><span class="stock-symbol" id="stockSymbol">AAPL</span><span class="stock-exchange" id="stockExchange">NASDAQ</span></div>
                 <div class="stock-company-name" id="stockCompanyName">Apple Inc.</div>
               </div>
             </div>
             <div class="stock-actions">
-              <button class="btn-wishlist" id="btnWishlist" onclick="toggleWishlist()">
-                <svg viewBox="0 0 24 24" id="wishlistIcon"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
-                <span id="wishlistBtnText">Add to Watchlist</span>
-              </button>
-              <button class="btn-refresh" id="btnRefresh" onclick="refreshData()" title="Refresh">
-                <svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
-              </button>
+              <button class="btn-wishlist" id="btnWishlist" onclick="toggleWishlist()"><svg viewBox="0 0 24 24" id="wishlistIcon"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg><span id="wishlistBtnText">Add</span></button>
+              <button class="btn-refresh" id="btnRefresh" onclick="refreshData()" title="Refresh"><svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg></button>
             </div>
           </div>
-
           <div class="price-section">
-            <div>
-              <div class="price-main" id="priceMain">$0.00</div>
-            </div>
+            <div><div class="price-main" id="priceMain">$0.00</div></div>
             <div class="price-change-group">
-              <div class="price-change flat" id="priceChange">
-                <span class="arrow" id="priceArrow">—</span>
-                <span id="priceChangeVal">$0.00</span>
-                <span id="priceChangePct">(0.00%)</span>
-              </div>
+              <div class="price-change flat" id="priceChange"><span class="arrow" id="priceArrow">—</span><span id="priceChangeVal">$0.00</span><span id="priceChangePct">(0.00%)</span></div>
               <div class="price-session-label" id="priceSessionLabel">Market Price</div>
             </div>
           </div>
-
           <div class="stats-grid">
             <div class="stat-card"><div class="stat-label">Open</div><div class="stat-value" id="statOpen">—</div></div>
             <div class="stat-card"><div class="stat-label">High</div><div class="stat-value" id="statHigh">—</div></div>
             <div class="stat-card"><div class="stat-label">Low</div><div class="stat-value" id="statLow">—</div></div>
             <div class="stat-card"><div class="stat-label">Prev Close</div><div class="stat-value" id="statPrevClose">—</div></div>
           </div>
-
           <div class="extra-info-grid">
             <div class="info-card"><div class="info-label">Industry</div><div class="info-value" id="infoIndustry">—</div></div>
             <div class="info-card"><div class="info-label">Country</div><div class="info-value" id="infoCountry">—</div></div>
@@ -615,635 +601,283 @@
           </div>
         </div>
       </div>
-
     </main>
 
-    <!-- WISHLIST SIDEBAR -->
-    <aside class="wishlist-panel">
+    <!-- Desktop sidebar -->
+    <aside class="wishlist-panel" id="desktopWishlist">
       <div class="wishlist-header">
-        <div class="wishlist-title">
-          <svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
-          Watchlist
-        </div>
+        <div class="wishlist-title"><svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>Watchlist</div>
         <span class="wishlist-count" id="wishlistCount">0</span>
       </div>
       <div class="wishlist-list" id="wishlistList"></div>
       <div class="wishlist-footer">
-        <button class="btn-add-wishlist" onclick="toggleWishlist()">
-          <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
-          Add Current Stock
-        </button>
+        <button class="btn-add-wishlist" onclick="toggleWishlist()"><svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>Add Current</button>
       </div>
     </aside>
+  </div>
+</div>
+
+<!-- Mobile Bottom Nav -->
+<nav class="mobile-nav">
+  <div class="mobile-nav-inner">
+    <button class="mnav-btn active" id="mnav-dashboard" onclick="switchPage('dashboard')">
+      <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+      Dashboard
+    </button>
+    <button class="mnav-btn" id="mnav-stock" onclick="switchPage('stock')">
+      <svg viewBox="0 0 24 24"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg>
+      Stock
+    </button>
+    <button class="mnav-btn" id="mnav-watchlist" onclick="openMobileWatchlist()">
+      <svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+      Watchlist
+    </button>
+    <button class="mnav-btn" id="mnav-settings" onclick="openSettings()">
+      <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+      Settings
+    </button>
+  </div>
+</nav>
+
+<!-- Mobile Watchlist Sheet -->
+<div class="mobile-wl-overlay" id="mobileWlOverlay" onclick="if(event.target===this)closeMobileWatchlist()">
+  <div class="mobile-wl-sheet">
+    <div class="mobile-wl-handle"></div>
+    <div class="mobile-wl-header">
+      <div class="wishlist-title"><svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>Watchlist <span class="wishlist-count" id="mobileWlCount">0</span></div>
+      <button class="topbar-btn" onclick="closeMobileWatchlist()" style="width:28px;height:28px"><svg viewBox="0 0 24 24" style="width:14px;height:14px"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>
+    </div>
+    <div class="mobile-wl-list" id="mobileWlList"></div>
   </div>
 </div>
 
 <div class="toast-container" id="toastContainer"></div>
 
 <script>
-// ===== SECTORS =====
 const SECTORS = [
-  { id: 'tech',       name: 'Technology',              cssClass: 'tech',       etf: 'XLK',  tickers: ['AAPL','MSFT','NVDA','META','GOOGL','AVGO','AMD','INTC','ORCL','CRM'] },
-  { id: 'finance',    name: 'Financials',              cssClass: 'finance',    etf: 'XLF',  tickers: ['JPM','BAC','WFC','GS','MS','V','MA','AXP','BLK','BRK.B'] },
-  { id: 'health',     name: 'Healthcare',              cssClass: 'health',     etf: 'XLV',  tickers: ['JNJ','UNH','PFE','ABBV','MRK','LLY','TMO','MDT','DHR','AMGN'] },
-  { id: 'energy',     name: 'Energy',                  cssClass: 'energy',     etf: 'XLE',  tickers: ['XOM','CVX','COP','EOG','SLB','MPC','PSX','VLO','OXY','HES'] },
-  { id: 'consumer',   name: 'Consumer Discretionary',  cssClass: 'consumer',   etf: 'XLY',  tickers: ['AMZN','HD','NKE','MCD','SBUX','TGT','LOW','BKNG','F','GM'] },
-  { id: 'industrial', name: 'Industrials',             cssClass: 'industrial', etf: 'XLI',  tickers: ['CAT','HON','GE','UPS','RTX','BA','DE','MMM','LMT','EMR'] },
-  { id: 'materials',  name: 'Materials',               cssClass: 'materials',  etf: 'XLB',  tickers: ['LIN','APD','ECL','NEM','FCX','NUE','ALB','MOS','PPG','VMC'] },
-  { id: 'realestate', name: 'Real Estate',             cssClass: 'realestate', etf: 'XLRE', tickers: ['PLD','AMT','EQIX','PSA','O','SPG','WELL','CCI','AVB','EQR'] },
-  { id: 'utilities',  name: 'Utilities',               cssClass: 'utilities',  etf: 'XLU',  tickers: ['NEE','DUK','SO','D','SRE','AEP','EXC','PCG','ED','AWK'] },
-  { id: 'comm',       name: 'Communication Services',  cssClass: 'comm',       etf: 'XLC',  tickers: ['META','GOOGL','NFLX','DIS','CMCSA','VZ','T','EA','TTWO','WBD'] },
+  { id:'tech',      name:'Technology',             css:'tech',      etf:'XLK', tickers:['AAPL','MSFT','NVDA','META','GOOGL','AVGO','AMD','INTC','ORCL','CRM'] },
+  { id:'finance',   name:'Financials',             css:'finance',   etf:'XLF', tickers:['JPM','BAC','WFC','GS','MS','V','MA','AXP','BLK'] },
+  { id:'health',    name:'Healthcare',             css:'health',    etf:'XLV', tickers:['JNJ','UNH','PFE','ABBV','MRK','LLY','TMO','AMGN'] },
+  { id:'energy',    name:'Energy',                 css:'energy',    etf:'XLE', tickers:['XOM','CVX','COP','EOG','SLB','MPC','OXY'] },
+  { id:'consumer',  name:'Consumer',               css:'consumer',  etf:'XLY', tickers:['AMZN','HD','NKE','MCD','SBUX','TGT','LOW'] },
+  { id:'industrial',name:'Industrials',            css:'industrial',etf:'XLI', tickers:['CAT','HON','GE','UPS','RTX','BA','DE'] },
+  { id:'materials', name:'Materials',              css:'materials', etf:'XLB', tickers:['LIN','APD','ECL','NEM','FCX','NUE'] },
+  { id:'realestate',name:'Real Estate',            css:'realestate',etf:'XLRE',tickers:['PLD','AMT','EQIX','PSA','O','SPG'] },
+  { id:'utilities', name:'Utilities',              css:'utilities', etf:'XLU', tickers:['NEE','DUK','SO','D','SRE','AEP'] },
+  { id:'comm',      name:'Comm Services',          css:'comm',      etf:'XLC', tickers:['META','GOOGL','NFLX','DIS','VZ','T'] },
 ];
 
-// ===== STATE =====
 const HARDCODED_API_KEY = 'd9vjs4pr01qgk75onskgd9vjs4pr01qgk75onsl0';
-// Save hardcoded key to localStorage so settings modal can display it
 localStorage.setItem('stockpulse_api_key', HARDCODED_API_KEY);
 
-const state = {
-  apiKey: HARDCODED_API_KEY,
-  currentSymbol: '',
-  currentProfile: null,
-  currentQuote: null,
-  wishlist: JSON.parse(localStorage.getItem('stockpulse_wishlist') || '[]'),
-  searchTimeout: null,
-  autoRefreshTimer: null,
-  countdownTimer: null,
-  countdown: 30,
-  currentPage: 'dashboard',
-  sectorData: {},
+const S = {
+  apiKey: HARDCODED_API_KEY, sym: '', profile: null, quote: null,
+  wl: JSON.parse(localStorage.getItem('stockpulse_wishlist')||'[]'),
+  searchTO: null, refreshTimer: null, cdTimer: null, cd: 30,
+  page: 'dashboard', sectors: {},
 };
 
-// ===== INIT =====
-document.addEventListener('DOMContentLoaded', () => {
-  // API key is hardcoded — always start the app directly
-  initApp();
-  setupEventListeners();
-  updateGreeting();
-});
+document.addEventListener('DOMContentLoaded', () => { initApp(); setupEvents(); updateGreeting(); });
 
 function initApp() {
-  updateMarketStatus();
-  setInterval(updateMarketStatus, 60000);
-  renderWishlist();
-  renderSectors();
-  updateDashboard();
-  // Initial data loads
+  updateMarketStatus(); setInterval(updateMarketStatus, 60000);
+  renderWishlist(); renderSectors(); updateDashboard();
   updateWishlistPrices().then(updateDashboard);
-  loadSectorData();
-  startAutoRefresh();
-  updateLastRefresh();
+  loadSectorData(); startAutoRefresh(); updateLastRefresh();
 }
 
 function startAutoRefresh() {
-  clearInterval(state.autoRefreshTimer);
-  clearInterval(state.countdownTimer);
-  state.countdown = 30;
-  document.getElementById('countdownNum').textContent = state.countdown;
-
-  state.countdownTimer = setInterval(() => {
-    state.countdown = Math.max(0, state.countdown - 1);
-    document.getElementById('countdownNum').textContent = state.countdown;
-  }, 1000);
-
-  state.autoRefreshTimer = setInterval(async () => {
-    state.countdown = 30;
+  clearInterval(S.refreshTimer); clearInterval(S.cdTimer);
+  S.cd = 30; document.getElementById('countdownNum').textContent = S.cd;
+  S.cdTimer = setInterval(() => { S.cd = Math.max(0, S.cd-1); document.getElementById('countdownNum').textContent = S.cd; }, 1000);
+  S.refreshTimer = setInterval(async () => {
+    S.cd = 30;
     try {
       await updateWishlistPrices();
-      if (state.currentSymbol && state.currentPage === 'stock') {
-        await refreshCurrentQuote();
-      }
-      await loadSectorData();
-      updateDashboard();
-      updateLastRefresh();
-    } catch (e) { console.error('Auto-refresh error', e); }
+      if (S.sym && S.page==='stock') await refreshCurrentQuote();
+      await loadSectorData(); updateDashboard(); updateLastRefresh();
+    } catch(e) { console.error(e); }
   }, 30000);
 }
 
 function updateGreeting() {
   const h = new Date().getHours();
-  const greet = h < 12 ? 'Good Morning ☀️' : h < 17 ? 'Good Afternoon 🌤' : 'Good Evening 🌙';
-  document.getElementById('dashGreeting').textContent = greet;
-  document.getElementById('dashDate').textContent = new Date().toLocaleDateString('en-US', {
-    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
-  });
+  document.getElementById('dashGreeting').textContent = h<12?'Good Morning ☀️':h<17?'Good Afternoon 🌤':'Good Evening 🌙';
+  document.getElementById('dashDate').textContent = new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'short',day:'numeric'});
 }
-
 function updateLastRefresh() {
-  const t = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   const el = document.getElementById('lastUpdateText');
-  if (el) {
-    el.textContent = t;
-    el.classList.remove('refresh-flash');
-    void el.offsetWidth;
-    el.classList.add('refresh-flash');
-  }
+  if(el) el.textContent = new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
 }
 
-// ===== PAGE SWITCHING =====
 function switchPage(page) {
-  state.currentPage = page;
-  document.querySelectorAll('.page-view').forEach(p => p.classList.remove('active'));
-  document.getElementById('page-' + page).classList.add('active');
-  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-  const tab = document.getElementById('tab-' + page);
-  if (tab) tab.classList.add('active');
+  S.page = page;
+  document.querySelectorAll('.page-view').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+page)?.classList.add('active');
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+page)?.classList.add('active');
+  document.querySelectorAll('.mnav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('mnav-'+page)?.classList.add('active');
 }
 
-// ===== API =====
-const API_BASE = 'https://finnhub.io/api/v1';
-
-async function apiCall(endpoint, params = {}) {
-  params.token = state.apiKey;
-  const url = API_BASE + endpoint + '?' + new URLSearchParams(params);
-  const res = await fetch(url);
-  if (res.status === 401) throw new Error('Invalid API key');
-  if (res.status === 429) throw new Error('Rate limit exceeded');
-  if (!res.ok) throw new Error('API error: ' + res.status);
-  return res.json();
+// Mobile watchlist
+function openMobileWatchlist() { document.getElementById('mobileWlOverlay').classList.add('active'); renderMobileWishlist(); }
+function closeMobileWatchlist() { document.getElementById('mobileWlOverlay').classList.remove('active'); }
+function renderMobileWishlist() {
+  document.getElementById('mobileWlCount').textContent = S.wl.length;
+  const list = document.getElementById('mobileWlList');
+  if(!S.wl.length) { list.innerHTML = '<div class="wishlist-empty"><svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg><p>Empty watchlist</p></div>'; return; }
+  list.innerHTML = S.wl.map(s => {
+    const q=s._quote, p=q?'$'+fmtNum(q.c):'—', pct=q?q.dp:null, d=pct!==null?(pct>=0?'up':'down'):'';
+    return `<div class="wl-card-item" onclick="loadStock('${esc(s.symbol)}');closeMobileWatchlist()">
+      <div class="wl-card-left"><div class="wl-sym">${esc(s.symbol)}</div><div class="wl-name">${esc(s.name||'')}</div></div>
+      <div class="wl-card-right"><div class="wl-price">${p}</div><div class="wl-chg ${d}">${pct!==null?(pct>=0?'+':'')+pct.toFixed(2)+'%':''}</div></div>
+    </div>`;
+  }).join('');
 }
 
-const fetchQuote   = sym => apiCall('/quote', { symbol: sym });
-const fetchProfile = sym => apiCall('/stock/profile2', { symbol: sym });
-const fetchSearch  = q   => apiCall('/search', { q });
+// API
+const API = 'https://finnhub.io/api/v1';
+async function api(ep, p={}) { p.token=S.apiKey; const r=await fetch(API+ep+'?'+new URLSearchParams(p)); if(r.status===401)throw new Error('Invalid API key'); if(r.status===429)throw new Error('Rate limited'); if(!r.ok)throw new Error('API error'); return r.json(); }
+const fetchQ=s=>api('/quote',{symbol:s}), fetchP=s=>api('/stock/profile2',{symbol:s}), fetchS=q=>api('/search',{q});
 
-// ===== SEARCH =====
-async function searchSymbols(query) {
+// Search
+async function searchSymbols(q) {
   try {
-    const data = await fetchSearch(query);
-    const dd = document.getElementById('searchDropdown');
-    if (!data.result || !data.result.length) {
-      dd.innerHTML = '<div class="search-empty">No results found</div>';
-      dd.classList.add('active');
-      return;
-    }
-    const filtered = data.result.filter(r => ['Common Stock','ADR','ETF',null,undefined,''].includes(r.type)).slice(0, 8);
-    if (!filtered.length) {
-      dd.innerHTML = '<div class="search-empty">No stock results found</div>';
-      dd.classList.add('active');
-      return;
-    }
-    dd.innerHTML = filtered.map(r => `
-      <div class="search-item" onclick="selectSearchResult('${escHtml(r.symbol)}')">
-        <div>
-          <div class="search-item-symbol">${escHtml(r.symbol)}</div>
-          <div class="search-item-name">${escHtml(r.description || '')}</div>
-        </div>
-        <span class="search-item-type">${escHtml(r.type || 'Stock')}</span>
-      </div>`).join('');
+    const data=await fetchS(q); const dd=document.getElementById('searchDropdown');
+    if(!data.result?.length){dd.innerHTML='<div class="search-empty">No results</div>';dd.classList.add('active');return;}
+    const f=data.result.filter(r=>['Common Stock','ADR','ETF',null,undefined,''].includes(r.type)).slice(0,6);
+    if(!f.length){dd.innerHTML='<div class="search-empty">No stocks found</div>';dd.classList.add('active');return;}
+    dd.innerHTML=f.map(r=>`<div class="search-item" onclick="selectSearch('${esc(r.symbol)}')"><div><div class="search-item-symbol">${esc(r.symbol)}</div><div class="search-item-name">${esc(r.description||'')}</div></div><span class="search-item-type">${esc(r.type||'Stock')}</span></div>`).join('');
     dd.classList.add('active');
-  } catch (e) { console.error('Search:', e); }
+  } catch(e){console.error(e);}
 }
+function selectSearch(sym){document.getElementById('searchInput').value='';closeDD();loadStock(sym);}
+function closeDD(){document.getElementById('searchDropdown').classList.remove('active');}
 
-function selectSearchResult(symbol) {
-  document.getElementById('searchInput').value = '';
-  closeSearchDropdown();
-  loadStock(symbol);
-}
-
-function closeSearchDropdown() {
-  document.getElementById('searchDropdown').classList.remove('active');
-}
-
-// ===== LOAD STOCK =====
-async function loadStock(symbol) {
-  symbol = symbol.toUpperCase();
-  state.currentSymbol = symbol;
-
-  // Show stock tab and switch page
-  const stockTab = document.getElementById('tab-stock');
-  stockTab.style.display = 'flex';
-  document.getElementById('stockTabLabel').textContent = symbol;
-
-  document.getElementById('welcomeState').style.display = 'none';
-  document.getElementById('stockDetail').style.display = 'block';
-  switchPage('stock');
-  updateWishlistButton();
-  renderWishlist();
-
+// Load stock
+async function loadStock(sym) {
+  sym=sym.toUpperCase(); S.sym=sym;
+  document.getElementById('tab-stock').style.display='flex';
+  document.getElementById('stockTabLabel').textContent=sym;
+  document.getElementById('welcomeState').style.display='none';
+  document.getElementById('stockDetail').style.display='block';
+  switchPage('stock'); updateWishlistButton(); renderWishlist();
   try {
-    const [quoteRes, profileRes] = await Promise.allSettled([
-      fetchQuote(symbol),
-      fetchProfile(symbol)
-    ]);
-
-    if (quoteRes.status === 'fulfilled' && quoteRes.value.c) {
-      state.currentQuote = quoteRes.value;
-      renderQuote(quoteRes.value);
-    } else {
-      showToast('Could not load quote for ' + symbol, 'error');
-    }
-
-    if (profileRes.status === 'fulfilled' && profileRes.value.name) {
-      state.currentProfile = profileRes.value;
-      renderProfile(profileRes.value);
-    } else {
-      document.getElementById('stockSymbol').textContent = symbol;
-      document.getElementById('stockCompanyName').textContent = '';
-      document.getElementById('stockExchange').textContent = '';
-      document.getElementById('stockLogo').innerHTML = '<svg viewBox="0 0 24 24"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg>';
-      document.getElementById('infoIndustry').textContent = '—';
-      document.getElementById('infoCountry').textContent = '—';
-      document.getElementById('infoMarketCap').textContent = '—';
-    }
-
+    const [qr,pr]=await Promise.allSettled([fetchQ(sym),fetchP(sym)]);
+    if(qr.status==='fulfilled'&&qr.value.c){S.quote=qr.value;renderQuote(qr.value);}else showToast('No quote for '+sym,'error');
+    if(pr.status==='fulfilled'&&pr.value.name){S.profile=pr.value;renderProfile(pr.value);}
+    else{document.getElementById('stockSymbol').textContent=sym;document.getElementById('stockCompanyName').textContent='';document.getElementById('stockExchange').textContent='';document.getElementById('stockLogo').innerHTML='<svg viewBox="0 0 24 24"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg>';document.getElementById('infoIndustry').textContent='—';document.getElementById('infoCountry').textContent='—';document.getElementById('infoMarketCap').textContent='—';}
     updateLastRefresh();
-  } catch (err) {
-    showToast(err.message, 'error');
-  }
+  } catch(e){showToast(e.message,'error');}
 }
 
 function renderProfile(p) {
-  document.getElementById('stockSymbol').textContent = p.ticker || state.currentSymbol;
-  document.getElementById('stockCompanyName').textContent = p.name || '';
-  document.getElementById('stockExchange').textContent = p.exchange || '';
-  document.getElementById('infoIndustry').textContent = p.finnhubIndustry || '—';
-  document.getElementById('infoCountry').textContent = p.country || '—';
-  document.getElementById('infoMarketCap').textContent = p.marketCapitalization ? formatMarketCap(p.marketCapitalization) : '—';
-
-  const logoWrap = document.getElementById('stockLogo');
-  logoWrap.innerHTML = p.logo
-    ? `<img src="${p.logo}" alt="${escHtml(p.name)}" onerror="this.parentElement.innerHTML='<svg viewBox=\\'0 0 24 24\\'><path d=\\'M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z\\'/></svg>'" />`
-    : '<svg viewBox="0 0 24 24"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg>';
+  document.getElementById('stockSymbol').textContent=p.ticker||S.sym;
+  document.getElementById('stockCompanyName').textContent=p.name||'';
+  document.getElementById('stockExchange').textContent=p.exchange||'';
+  document.getElementById('infoIndustry').textContent=p.finnhubIndustry||'—';
+  document.getElementById('infoCountry').textContent=p.country||'—';
+  document.getElementById('infoMarketCap').textContent=p.marketCapitalization?fmtCap(p.marketCapitalization):'—';
+  const lw=document.getElementById('stockLogo');
+  lw.innerHTML=p.logo?`<img src="${p.logo}" alt="${esc(p.name)}" onerror="this.parentElement.innerHTML='<svg viewBox=\\'0 0 24 24\\'><path d=\\'M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z\\'/></svg>'" />`:'<svg viewBox="0 0 24 24"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg>';
 }
 
 function renderQuote(q) {
-  const price = q.c, change = q.d, pct = q.dp;
-  const up = change > 0, down = change < 0;
-  const dir = up ? 'up' : down ? 'down' : 'flat';
-
-  document.getElementById('priceMain').textContent = '$' + fmtNum(price);
-  document.getElementById('priceMain').style.color = up ? 'var(--green)' : down ? 'var(--red)' : 'var(--text-primary)';
-
-  const el = document.getElementById('priceChange');
-  el.className = 'price-change ' + dir;
-  document.getElementById('priceArrow').textContent = up ? '▲' : down ? '▼' : '—';
-  document.getElementById('priceChangeVal').textContent = (up ? '+' : down ? '-' : '') + '$' + Math.abs(change).toFixed(2);
-  document.getElementById('priceChangePct').textContent = '(' + (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%)';
-
-  const sessionMap = { regular: 'Market Price · Real-time', 'post-market': 'After Hours', 'pre-market': 'Pre-Market', closed: 'At Close' };
-  document.getElementById('priceSessionLabel').textContent = sessionMap[getMarketSession()] || 'At Close';
-
-  document.getElementById('statOpen').textContent = q.o ? '$' + fmtNum(q.o) : '—';
-  document.getElementById('statHigh').textContent = q.h ? '$' + fmtNum(q.h) : '—';
-  document.getElementById('statLow').textContent  = q.l ? '$' + fmtNum(q.l) : '—';
-  document.getElementById('statPrevClose').textContent = q.pc ? '$' + fmtNum(q.pc) : '—';
+  const c=q.c,d=q.d,dp=q.dp,up=d>0,dn=d<0,dir=up?'up':dn?'down':'flat';
+  document.getElementById('priceMain').textContent='$'+fmtNum(c);
+  document.getElementById('priceMain').style.color=up?'var(--green)':dn?'var(--red)':'var(--text-primary)';
+  document.getElementById('priceChange').className='price-change '+dir;
+  document.getElementById('priceArrow').textContent=up?'▲':dn?'▼':'—';
+  document.getElementById('priceChangeVal').textContent=(up?'+':dn?'-':'')+'$'+Math.abs(d).toFixed(2);
+  document.getElementById('priceChangePct').textContent='('+(dp>=0?'+':'')+dp.toFixed(2)+'%)';
+  const sm={regular:'Real-time','post-market':'After Hours','pre-market':'Pre-Market',closed:'At Close'};
+  document.getElementById('priceSessionLabel').textContent=sm[getSession()]||'At Close';
+  document.getElementById('statOpen').textContent=q.o?'$'+fmtNum(q.o):'—';
+  document.getElementById('statHigh').textContent=q.h?'$'+fmtNum(q.h):'—';
+  document.getElementById('statLow').textContent=q.l?'$'+fmtNum(q.l):'—';
+  document.getElementById('statPrevClose').textContent=q.pc?'$'+fmtNum(q.pc):'—';
 }
 
-async function refreshCurrentQuote() {
-  if (!state.currentSymbol) return;
-  try {
-    const q = await fetchQuote(state.currentSymbol);
-    if (q && q.c) { state.currentQuote = q; renderQuote(q); }
-  } catch {}
-}
+async function refreshCurrentQuote(){if(!S.sym)return;try{const q=await fetchQ(S.sym);if(q&&q.c){S.quote=q;renderQuote(q);}}catch{}}
+async function refreshData(){if(!S.sym)return;const b=document.getElementById('btnRefresh');b.classList.add('spinning');try{await loadStock(S.sym);showToast('Refreshed','success');}catch{showToast('Failed','error');}setTimeout(()=>b.classList.remove('spinning'),800);}
+async function fullRefresh(){const b=document.getElementById('dashRefreshBtn');b.disabled=true;b.textContent='⟳ ...';try{await updateWishlistPrices();if(S.sym)await refreshCurrentQuote();await loadSectorData();updateDashboard();updateLastRefresh();showToast('Refreshed','success');}catch{showToast('Error','error');}b.disabled=false;b.innerHTML='<svg viewBox="0 0 24 24" style="width:13px;height:13px;fill:currentColor"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>Refresh';}
 
-async function refreshData() {
-  if (!state.currentSymbol) return;
-  const btn = document.getElementById('btnRefresh');
-  btn.classList.add('spinning');
-  try {
-    await loadStock(state.currentSymbol);
-    showToast('Refreshed', 'success');
-  } catch { showToast('Refresh failed', 'error'); }
-  setTimeout(() => btn.classList.remove('spinning'), 800);
-}
-
-async function fullRefresh() {
-  const btn = document.getElementById('dashRefreshBtn');
-  btn.disabled = true;
-  btn.innerHTML = '&#x27F3; Refreshing...';
-  try {
-    await updateWishlistPrices();
-    if (state.currentSymbol) await refreshCurrentQuote();
-    await loadSectorData();
-    updateDashboard();
-    updateLastRefresh();
-    showToast('All data refreshed', 'success');
-  } catch { showToast('Refresh error', 'error'); }
-  btn.disabled = false;
-  btn.innerHTML = '<svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:currentColor"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg> Refresh All';
-}
-
-// ===== SECTOR DATA =====
-async function loadSectorData() {
-  for (const s of SECTORS) {
-    try {
-      const q = await fetchQuote(s.etf);
-      if (q && q.c) state.sectorData[s.etf] = q;
-      await sleep(120);
-    } catch {}
-  }
-  renderSectors();
-}
-
-function renderSectors() {
-  document.getElementById('sectorsGrid').innerHTML = SECTORS.map(s => {
-    const etf = state.sectorData[s.etf];
-    const pct = etf ? etf.dp : null;
-    const cls = pct === null ? 'loading' : pct >= 0 ? 'up' : 'down';
-    const txt = pct === null ? '—' : (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%';
-    const visibleTickers = s.tickers.slice(0, 5);
-    return `<div class="sector-card ${s.cssClass}">
-      <div class="sector-name">${escHtml(s.name)}</div>
-      <div class="sector-tickers">
-        ${visibleTickers.map(t => `<span class="sector-ticker" onclick="loadStock('${t}');event.stopPropagation();">${t}</span>`).join('')}
-        <span class="sector-ticker" style="opacity:0.5;cursor:default;">+${s.tickers.length - visibleTickers.length}</span>
-      </div>
-      <div class="sector-footer">
-        <span class="sector-etf">ETF: <strong>${s.etf}</strong></span>
-        <span class="sector-perf ${cls}">${txt}</span>
-      </div>
-    </div>`;
+// Sectors
+async function loadSectorData(){for(const s of SECTORS){try{const q=await fetchQ(s.etf);if(q&&q.c)S.sectors[s.etf]=q;await slp(120);}catch{}}renderSectors();}
+function renderSectors(){
+  document.getElementById('sectorsGrid').innerHTML=SECTORS.map(s=>{
+    const e=S.sectors[s.etf],p=e?e.dp:null,cl=p===null?'loading':p>=0?'up':'down',tx=p===null?'—':(p>=0?'+':'')+p.toFixed(2)+'%';
+    const vis=s.tickers.slice(0,4);
+    return `<div class="sector-card ${s.css}"><div class="sector-top"><div class="sector-name">${esc(s.name)}</div><span class="sector-perf ${cl}">${tx}</span></div><div class="sector-tickers">${vis.map(t=>`<span class="sector-ticker" onclick="loadStock('${t}');event.stopPropagation()">${t}</span>`).join('')}<span class="sector-ticker" style="opacity:.4;cursor:default">+${s.tickers.length-vis.length}</span></div></div>`;
   }).join('');
 }
 
-// ===== DASHBOARD =====
+// Dashboard
 function updateDashboard() {
-  const total = state.wishlist.length;
-  const withData = state.wishlist.filter(s => s._quote);
-  const gainers = withData.filter(s => s._quote.dp >= 0).length;
-  const losers  = withData.filter(s => s._quote.dp < 0).length;
-  let best = withData.length ? withData.reduce((a, b) => a._quote.dp > b._quote.dp ? a : b) : null;
+  const wd=S.wl.filter(s=>s._quote),ga=wd.filter(s=>s._quote.dp>=0).length,lo=wd.filter(s=>s._quote.dp<0).length;
+  let best=wd.length?wd.reduce((a,b)=>a._quote.dp>b._quote.dp?a:b):null;
+  document.getElementById('summaryTotal').textContent=S.wl.length;
+  document.getElementById('summaryGainers').textContent=ga;
+  document.getElementById('summaryLosers').textContent=lo;
+  document.getElementById('summaryBest').textContent=best?best.symbol+' '+(best._quote.dp>=0?'+':'')+best._quote.dp.toFixed(2)+'%':'—';
 
-  document.getElementById('summaryTotal').textContent = total;
-  document.getElementById('summaryGainers').textContent = gainers;
-  document.getElementById('summaryLosers').textContent = losers;
-  document.getElementById('summaryBest').textContent = best
-    ? best.symbol + ' ' + (best._quote.dp >= 0 ? '+' : '') + best._quote.dp.toFixed(2) + '%'
-    : '—';
+  const c=document.getElementById('dashWatchlist');
+  if(!S.wl.length){c.innerHTML='<div class="dash-empty"><svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg><span>Empty watchlist — search to add stocks</span></div>';return;}
 
-  const container = document.getElementById('dashWatchlist');
-  if (!state.wishlist.length) {
-    container.innerHTML = `<div class="dash-empty">
-      <svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
-      <span>Your watchlist is empty. Search for stocks and add them.</span>
-    </div>`;
-    return;
-  }
+  // Desktop table
+  const rows=S.wl.map(s=>{const q=s._quote,p=q?'$'+fmtNum(q.c):'—',pct=q?q.dp:null,d=pct===null?'flat':pct>=0?'up':'down',pt=pct!==null?(pct>=0?'+':'')+pct.toFixed(2)+'%':'—',ct=q?(q.d>=0?'+':'')+q.d.toFixed(2):'—';
+    return `<tr onclick="loadStock('${esc(s.symbol)}')"><td><div class="wl-sym">${esc(s.symbol)}</div><div class="wl-name">${esc(s.name||'')}</div></td><td><div class="wl-price">${p}</div></td><td><div class="wl-chg ${d}">${ct}</div></td><td><span class="pct-badge ${d}">${pt}</span></td></tr>`;}).join('');
 
-  const rows = state.wishlist.map(stock => {
-    const q = stock._quote;
-    const price = q ? '$' + fmtNum(q.c) : '—';
-    const pct = q ? q.dp : null;
-    const dir = pct === null ? 'flat' : pct >= 0 ? 'up' : 'down';
-    const pctText = pct !== null ? (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%' : '—';
-    const changeText = q ? (q.d >= 0 ? '+' : '') + '$' + Math.abs(q.d).toFixed(2) : '—';
-    return `<tr onclick="loadStock('${escHtml(stock.symbol)}')">
-      <td><div class="wl-symbol">${escHtml(stock.symbol)}</div><div class="wl-name">${escHtml(stock.name || '')}</div></td>
-      <td><div class="wl-price">${price}</div></td>
-      <td><div class="wl-chg ${dir}">${changeText}</div></td>
-      <td><span class="pct-badge ${dir}">${pctText}</span></td>
-      <td class="r"><button class="view-btn" onclick="loadStock('${escHtml(stock.symbol)}');event.stopPropagation();">View →</button></td>
-    </tr>`;
-  }).join('');
+  // Mobile cards
+  const cards=S.wl.map(s=>{const q=s._quote,p=q?'$'+fmtNum(q.c):'—',pct=q?q.dp:null,d=pct!==null?(pct>=0?'up':'down'):'',pt=pct!==null?(pct>=0?'+':'')+pct.toFixed(2)+'%':'';
+    return `<div class="wl-card-item" onclick="loadStock('${esc(s.symbol)}')"><div class="wl-card-left"><div class="wl-sym">${esc(s.symbol)}</div><div class="wl-name">${esc(s.name||'')}</div></div><div class="wl-card-right"><div class="wl-price">${p}</div><div class="wl-chg ${d}">${pt}</div></div></div>`;}).join('');
 
-  container.innerHTML = `<div class="table-wrap">
-    <table class="wl-table">
-      <thead><tr>
-        <th>Symbol</th><th>Price</th><th>Change</th><th>% Change</th><th class="r">Action</th>
-      </tr></thead>
-      <tbody>${rows}</tbody>
-    </table>
-  </div>`;
+  c.innerHTML=`<div class="table-wrap"><table class="wl-table"><thead><tr><th>Symbol</th><th>Price</th><th>Change</th><th>%</th></tr></thead><tbody>${rows}</tbody></table></div><div class="wl-cards">${cards}</div>`;
 }
 
-// ===== MARKET STATUS =====
-function getMarketSession() {
-  const now = new Date();
-  const utcH = now.getUTCHours(), utcM = now.getUTCMinutes(), day = now.getUTCDay();
-  const totalMin = utcH * 60 + utcM;
-  const isDST = now.getUTCMonth() >= 2 && now.getUTCMonth() <= 10;
-  const etOffset = isDST ? -4 : -5;
-  const etMin = ((totalMin + etOffset * 60) % 1440 + 1440) % 1440;
-  let etDay = day;
-  if (totalMin + etOffset * 60 < 0) etDay = (day - 1 + 7) % 7;
-  if (totalMin + etOffset * 60 >= 1440) etDay = (day + 1) % 7;
-  if (etDay === 0 || etDay === 6) return 'closed';
-  if (etMin >= 240 && etMin < 570) return 'pre-market';
-  if (etMin >= 570 && etMin < 960) return 'regular';
-  if (etMin >= 960 && etMin < 1200) return 'post-market';
-  return 'closed';
-}
+// Market status
+function getSession(){const n=new Date(),uH=n.getUTCHours(),uM=n.getUTCMinutes(),d=n.getUTCDay(),t=uH*60+uM,dst=n.getUTCMonth()>=2&&n.getUTCMonth()<=10,o=dst?-4:-5,et=((t+o*60)%1440+1440)%1440;let ed=d;if(t+o*60<0)ed=(d-1+7)%7;if(t+o*60>=1440)ed=(d+1)%7;if(ed===0||ed===6)return'closed';if(et>=240&&et<570)return'pre-market';if(et>=570&&et<960)return'regular';if(et>=960&&et<1200)return'post-market';return'closed';}
+function updateMarketStatus(){const s=getSession(),b=document.getElementById('marketBadge'),t=document.getElementById('marketBadgeText');b.className='market-badge';const m={regular:['open','Open'],'pre-market':['pre-market','Pre'],'post-market':['after-hours','After'],closed:['closed','Closed']};const[cl,lb]=m[s]||m.closed;b.classList.add(cl);t.textContent=lb;}
 
-function updateMarketStatus() {
-  const session = getMarketSession();
-  const badge = document.getElementById('marketBadge');
-  const text  = document.getElementById('marketBadgeText');
-  badge.className = 'market-badge';
-  const map = { regular: ['open','Market Open'], 'pre-market': ['pre-market','Pre-Market'], 'post-market': ['after-hours','After Hours'], closed: ['closed','Market Closed'] };
-  const [cls, lbl] = map[session] || map.closed;
-  badge.classList.add(cls);
-  text.textContent = lbl;
-}
+// Wishlist
+function toggleWishlist(){if(!S.sym)return;const i=S.wl.findIndex(w=>w.symbol===S.sym);if(i>=0){S.wl.splice(i,1);showToast(S.sym+' removed','success');}else{S.wl.push({symbol:S.sym,name:S.profile?S.profile.name:S.sym});showToast(S.sym+' added','success');}saveWl();renderWishlist();updateWishlistButton();updateWishlistPrices().then(updateDashboard);}
+function removeWl(sym,ev){if(ev)ev.stopPropagation();S.wl=S.wl.filter(w=>w.symbol!==sym);saveWl();renderWishlist();updateWishlistButton();updateDashboard();showToast(sym+' removed','success');}
+function saveWl(){localStorage.setItem('stockpulse_wishlist',JSON.stringify(S.wl.map(({symbol,name})=>({symbol,name}))));}
+function updateWishlistButton(){const b=document.getElementById('btnWishlist'),ic=document.getElementById('wishlistIcon'),tx=document.getElementById('wishlistBtnText'),isIn=S.wl.some(w=>w.symbol===S.sym);if(isIn){b.classList.add('active');ic.innerHTML='<path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>';tx.textContent='★';}else{b.classList.remove('active');ic.innerHTML='<path d="M22 9.24l-7.19-.62L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27 18.18 21l-1.63-7.03L22 9.24zM12 15.4l-3.76 2.27 1-4.28-3.32-2.88 4.38-.38L12 6.1l1.71 4.04 4.38.38-3.32 2.88 1 4.28L12 15.4z"/>';tx.textContent='Add';}}
 
-// ===== WISHLIST =====
-function toggleWishlist() {
-  if (!state.currentSymbol) return;
-  const idx = state.wishlist.findIndex(w => w.symbol === state.currentSymbol);
-  if (idx >= 0) {
-    state.wishlist.splice(idx, 1);
-    showToast(state.currentSymbol + ' removed from watchlist', 'success');
-  } else {
-    const name = state.currentProfile ? state.currentProfile.name : state.currentSymbol;
-    state.wishlist.push({ symbol: state.currentSymbol, name });
-    showToast(state.currentSymbol + ' added to watchlist', 'success');
-  }
-  saveWishlist();
-  renderWishlist();
-  updateWishlistButton();
-  updateWishlistPrices().then(updateDashboard);
-}
-
-function removeFromWishlist(symbol, ev) {
-  if (ev) ev.stopPropagation();
-  state.wishlist = state.wishlist.filter(w => w.symbol !== symbol);
-  saveWishlist();
-  renderWishlist();
-  updateWishlistButton();
-  updateDashboard();
-  showToast(symbol + ' removed', 'success');
-}
-
-function saveWishlist() {
-  localStorage.setItem('stockpulse_wishlist', JSON.stringify(
-    state.wishlist.map(({ symbol, name }) => ({ symbol, name }))
-  ));
-}
-
-function updateWishlistButton() {
-  const btn  = document.getElementById('btnWishlist');
-  const icon = document.getElementById('wishlistIcon');
-  const text = document.getElementById('wishlistBtnText');
-  const isIn = state.wishlist.some(w => w.symbol === state.currentSymbol);
-  if (isIn) {
-    btn.classList.add('active');
-    icon.innerHTML = '<path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>';
-    text.textContent = 'In Watchlist';
-  } else {
-    btn.classList.remove('active');
-    icon.innerHTML = '<path d="M22 9.24l-7.19-.62L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27 18.18 21l-1.63-7.03L22 9.24zM12 15.4l-3.76 2.27 1-4.28-3.32-2.88 4.38-.38L12 6.1l1.71 4.04 4.38.38-3.32 2.88 1 4.28L12 15.4z"/>';
-    text.textContent = 'Add to Watchlist';
-  }
-}
-
-function renderWishlist() {
-  const list  = document.getElementById('wishlistList');
-  const count = document.getElementById('wishlistCount');
-  count.textContent = state.wishlist.length;
-
-  if (!state.wishlist.length) {
-    list.innerHTML = `<div class="wishlist-empty">
-      <svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
-      <p>Your watchlist is empty.<br/>Search for stocks and add them here.</p>
-    </div>`;
-    return;
-  }
-
-  list.innerHTML = state.wishlist.map(stock => {
-    const isActive = stock.symbol === state.currentSymbol;
-    const q = stock._quote;
-    const price = q ? '$' + fmtNum(q.c) : '—';
-    const pct = q ? q.dp : null;
-    const dir = pct !== null ? (pct >= 0 ? 'up' : 'down') : '';
-    const pctText = pct !== null ? (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%' : '';
-    return `<div class="wishlist-item${isActive ? ' active' : ''}" onclick="loadStock('${escHtml(stock.symbol)}')">
-      <div class="wishlist-item-info">
-        <div class="wishlist-item-symbol">${escHtml(stock.symbol)}</div>
-        <div class="wishlist-item-name">${escHtml(stock.name || stock.symbol)}</div>
-      </div>
-      <div class="wishlist-item-price">
-        <div class="wishlist-item-price-val">${price}</div>
-        <div class="wishlist-item-change ${dir}">${pctText}</div>
-      </div>
-      <button class="wishlist-item-remove" onclick="removeFromWishlist('${escHtml(stock.symbol)}', event)" title="Remove">
-        <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
-      </button>
-    </div>`;
+function renderWishlist(){
+  const list=document.getElementById('wishlistList'),cnt=document.getElementById('wishlistCount');
+  cnt.textContent=S.wl.length;
+  if(!S.wl.length){list.innerHTML='<div class="wishlist-empty"><svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg><p>Empty watchlist</p></div>';return;}
+  list.innerHTML=S.wl.map(s=>{const a=s.symbol===S.sym,q=s._quote,p=q?'$'+fmtNum(q.c):'—',pct=q?q.dp:null,d=pct!==null?(pct>=0?'up':'down'):'',pt=pct!==null?(pct>=0?'+':'')+pct.toFixed(2)+'%':'';
+    return `<div class="wishlist-item${a?' active':''}" onclick="loadStock('${esc(s.symbol)}')"><div class="wishlist-item-info"><div class="wishlist-item-symbol">${esc(s.symbol)}</div><div class="wishlist-item-name">${esc(s.name||s.symbol)}</div></div><div class="wishlist-item-price"><div class="wishlist-item-price-val">${p}</div><div class="wishlist-item-change ${d}">${pt}</div></div><button class="wishlist-item-remove" onclick="removeWl('${esc(s.symbol)}',event)"><svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button></div>`;
   }).join('');
 }
 
-async function updateWishlistPrices() {
-  if (!state.wishlist.length) return;
-  for (let i = 0; i < state.wishlist.length; i++) {
-    try {
-      const q = await fetchQuote(state.wishlist[i].symbol);
-      if (q && q.c) state.wishlist[i]._quote = q;
-    } catch {}
-    if (i < state.wishlist.length - 1) await sleep(150);
-  }
-  renderWishlist();
+async function updateWishlistPrices(){if(!S.wl.length)return;for(let i=0;i<S.wl.length;i++){try{const q=await fetchQ(S.wl[i].symbol);if(q&&q.c)S.wl[i]._quote=q;}catch{}if(i<S.wl.length-1)await slp(150);}renderWishlist();}
+
+// Settings
+function openSettings(){document.getElementById('settingsApiKey').value=S.apiKey;document.getElementById('settingsModal').classList.add('active');}
+function closeSettings(){document.getElementById('settingsModal').classList.remove('active');document.getElementById('settingsError').classList.remove('visible');document.getElementById('settingsApiKey').classList.remove('error');}
+async function saveApiKeyFromSettings(){const inp=document.getElementById('settingsApiKey'),err=document.getElementById('settingsError'),k=inp.value.trim();if(!k){inp.classList.add('error');err.textContent='Enter a key.';err.classList.add('visible');return;}try{S.apiKey=k;const r=await fetchQ('AAPL');if(r&&r.c){localStorage.setItem('stockpulse_api_key',k);closeSettings();showToast('Key saved!','success');}else throw new Error();}catch{inp.classList.add('error');err.textContent='Invalid key.';err.classList.add('visible');S.apiKey=HARDCODED_API_KEY;}}
+
+// Events
+function setupEvents(){
+  const si=document.getElementById('searchInput');
+  si.addEventListener('input',e=>{clearTimeout(S.searchTO);const q=e.target.value.trim();if(!q){closeDD();return;}S.searchTO=setTimeout(()=>searchSymbols(q),300);});
+  si.addEventListener('keydown',e=>{if(e.key==='Enter'){const q=si.value.trim().toUpperCase();if(q){loadStock(q);closeDD();si.value='';si.blur();}}if(e.key==='Escape'){closeDD();si.blur();}});
+  document.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key==='k'){e.preventDefault();si.focus();}});
+  document.addEventListener('click',e=>{if(!e.target.closest('.search-wrap'))closeDD();});
+  document.getElementById('settingsModal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeSettings();});
 }
 
-// ===== MODALS =====
-function showOnboarding() {
-  document.getElementById('onboardingModal').classList.add('active');
-}
-
-async function saveApiKeyFromOnboarding() {
-  const input = document.getElementById('onboardingApiKey');
-  const error = document.getElementById('onboardingError');
-  const key = input.value.trim();
-  if (!key) { input.classList.add('error'); error.textContent = 'Please enter an API key.'; error.classList.add('visible'); return; }
-  const btn = document.getElementById('onboardingSubmit');
-  try {
-    btn.disabled = true; btn.textContent = 'Validating...';
-    state.apiKey = key;
-    const r = await fetchQuote('AAPL');
-    if (r && r.c) {
-      localStorage.setItem('stockpulse_api_key', key);
-      document.getElementById('onboardingModal').classList.remove('active');
-      showToast('API key saved! Welcome to StockPulse 🎉', 'success');
-      initApp();
-    } else { throw new Error('Invalid response'); }
-  } catch (err) {
-    input.classList.add('error');
-    error.textContent = err.message === 'Invalid API key' ? 'Invalid API key. Please check and try again.' : 'Could not validate. Please try again.';
-    error.classList.add('visible');
-    state.apiKey = '';
-  } finally {
-    btn.disabled = false; btn.textContent = 'Get Started';
-  }
-}
-
-function openSettings() {
-  document.getElementById('settingsApiKey').value = state.apiKey;
-  document.getElementById('settingsModal').classList.add('active');
-}
-
-function closeSettings() {
-  document.getElementById('settingsModal').classList.remove('active');
-  document.getElementById('settingsError').classList.remove('visible');
-  document.getElementById('settingsApiKey').classList.remove('error');
-}
-
-async function saveApiKeyFromSettings() {
-  const input = document.getElementById('settingsApiKey');
-  const error = document.getElementById('settingsError');
-  const key = input.value.trim();
-  if (!key) { input.classList.add('error'); error.textContent = 'Please enter a key.'; error.classList.add('visible'); return; }
-  try {
-    state.apiKey = key;
-    const r = await fetchQuote('AAPL');
-    if (r && r.c) {
-      localStorage.setItem('stockpulse_api_key', key);
-      closeSettings();
-      showToast('API key updated!', 'success');
-    } else { throw new Error(); }
-  } catch {
-    input.classList.add('error'); error.textContent = 'Invalid API key.'; error.classList.add('visible');
-    state.apiKey = localStorage.getItem('stockpulse_api_key') || '';
-  }
-}
-
-// ===== EVENTS =====
-function setupEventListeners() {
-  const si = document.getElementById('searchInput');
-  si.addEventListener('input', e => {
-    clearTimeout(state.searchTimeout);
-    const q = e.target.value.trim();
-    if (!q) { closeSearchDropdown(); return; }
-    state.searchTimeout = setTimeout(() => searchSymbols(q), 300);
-  });
-  si.addEventListener('keydown', e => {
-    if (e.key === 'Enter') { const q = si.value.trim().toUpperCase(); if (q) { loadStock(q); closeSearchDropdown(); si.value = ''; si.blur(); } }
-    if (e.key === 'Escape') { closeSearchDropdown(); si.blur(); }
-  });
-  document.addEventListener('keydown', e => { if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); si.focus(); } });
-  document.addEventListener('click', e => { if (!e.target.closest('.search-wrap')) closeSearchDropdown(); });
-  document.getElementById('settingsModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeSettings(); });
-}
-
-// ===== UTILITIES =====
-function fmtNum(n) {
-  if (n == null) return '0.00';
-  return Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-
-function formatMarketCap(cap) {
-  if (cap >= 1000000) return '$' + (cap / 1000000).toFixed(2) + 'T';
-  if (cap >= 1000) return '$' + (cap / 1000).toFixed(2) + 'B';
-  return '$' + cap.toFixed(2) + 'M';
-}
-
-function escHtml(str) {
-  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
-function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
-
-function showToast(msg, type = 'success') {
-  const c = document.getElementById('toastContainer');
-  const t = document.createElement('div');
-  t.className = 'toast ' + type;
-  const icon = type === 'success'
-    ? '<svg class="toast-icon" viewBox="0 0 24 24"><path fill="#10b981" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>'
-    : '<svg class="toast-icon" viewBox="0 0 24 24"><path fill="#ef4444" d="M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z"/></svg>';
-  t.innerHTML = icon + ' ' + msg;
-  c.appendChild(t);
-  setTimeout(() => { t.style.opacity = '0'; t.style.transform = 'translateY(8px)'; t.style.transition = '0.3s ease'; setTimeout(() => t.remove(), 300); }, 3000);
-}
+// Utils
+function fmtNum(n){return n==null?'0.00':Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function fmtCap(c){return c>=1e6?'$'+(c/1e6).toFixed(2)+'T':c>=1e3?'$'+(c/1e3).toFixed(2)+'B':'$'+c.toFixed(0)+'M';}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function slp(ms){return new Promise(r=>setTimeout(r,ms));}
+function showToast(m,t='success'){const c=document.getElementById('toastContainer'),el=document.createElement('div');el.className='toast '+t;const ic=t==='success'?'<svg class="toast-icon" viewBox="0 0 24 24"><path fill="#10b981" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>':'<svg class="toast-icon" viewBox="0 0 24 24"><path fill="#ef4444" d="M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z"/></svg>';el.innerHTML=ic+' '+m;c.appendChild(el);setTimeout(()=>{el.style.opacity='0';el.style.transition='.2s';setTimeout(()=>el.remove(),200);},2500);}
 </script>
-
 </body>
 </html>
