@@ -4,13 +4,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>StockPulse — Personal Stock Dashboard</title>
-  <meta name="description" content="Personal stock dashboard with real-time prices, charts, after-hours data, and watchlist tracking." />
+  <meta name="description" content="Personal stock dashboard with real-time prices, watchlist tracking, and sector market overview." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
   <style>
-    /* ===== DESIGN TOKENS ===== */
     :root {
       --bg-primary: #08080c;
       --bg-secondary: #0e0e14;
@@ -35,8 +33,6 @@
       --amber-bg: rgba(245, 158, 11, 0.1);
       --blue: #3b82f6;
       --blue-bg: rgba(59, 130, 246, 0.1);
-      --glass-bg: rgba(19, 19, 27, 0.85);
-      --glass-border: rgba(255, 255, 255, 0.06);
       --radius: 14px;
       --radius-sm: 8px;
       --radius-xs: 6px;
@@ -50,7 +46,6 @@
       --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
     }
 
-    /* ===== RESET & BASE ===== */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html { font-size: 14px; }
     body {
@@ -60,31 +55,21 @@
       min-height: 100vh;
       overflow-x: hidden;
       -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
     }
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: var(--border-primary); border-radius: 10px; }
     ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
     a { color: var(--accent-light); text-decoration: none; }
-    a:hover { text-decoration: underline; }
     button { font-family: inherit; cursor: pointer; border: none; outline: none; }
     input { font-family: inherit; outline: none; border: none; }
 
-    /* ===== APP LAYOUT ===== */
+    /* APP LAYOUT */
     .app { display: flex; flex-direction: column; min-height: 100vh; }
     .main-layout { display: flex; flex: 1; overflow: hidden; }
-    .content-area {
-      flex: 1; overflow-y: auto; padding: 24px 28px;
-      scrollbar-gutter: stable;
-    }
-    .wishlist-panel {
-      width: 320px; min-width: 320px; border-left: 1px solid var(--border-primary);
-      background: var(--bg-secondary); display: flex; flex-direction: column;
-      height: calc(100vh - 64px); overflow: hidden;
-    }
+    .content-area { flex: 1; overflow-y: auto; padding: 24px 28px; scrollbar-gutter: stable; }
 
-    /* ===== TOPBAR ===== */
+    /* TOPBAR */
     .topbar {
       height: 64px; background: var(--bg-secondary);
       border-bottom: 1px solid var(--border-primary);
@@ -92,8 +77,8 @@
       padding: 0 24px; flex-shrink: 0; position: sticky; top: 0; z-index: 100;
       backdrop-filter: blur(20px);
     }
-    .topbar-left { display: flex; align-items: center; gap: 16px; }
-    .logo { display: flex; align-items: center; gap: 10px; cursor: default; }
+    .topbar-left { display: flex; align-items: center; gap: 12px; }
+    .logo { display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; }
     .logo-icon {
       width: 36px; height: 36px; border-radius: 10px;
       background: linear-gradient(135deg, #7c3aed, #a78bfa);
@@ -109,68 +94,45 @@
     .logo-text { font-size: 17px; font-weight: 700; letter-spacing: 0.5px; }
     .logo-text span { color: var(--accent-light); }
 
-    /* Search */
-    .search-wrap { position: relative; width: 420px; }
+    .nav-tabs { display: flex; align-items: center; gap: 4px; }
+    .nav-tab {
+      padding: 7px 14px; border-radius: var(--radius-xs);
+      background: transparent; color: var(--text-muted);
+      font-size: 13px; font-weight: 500; transition: var(--transition);
+      border: 1px solid transparent; display: flex; align-items: center; gap: 6px;
+    }
+    .nav-tab svg { width: 14px; height: 14px; fill: currentColor; }
+    .nav-tab:hover { color: var(--text-secondary); background: var(--bg-elevated); }
+    .nav-tab.active { background: var(--accent-glow); color: var(--accent-light); border-color: var(--border-accent); }
+
+    .search-wrap { position: relative; width: 360px; }
     .search-input {
       width: 100%; height: 40px; padding: 0 16px 0 42px;
       background: var(--bg-input); border: 1px solid var(--border-primary);
-      border-radius: var(--radius-pill); color: var(--text-primary);
-      font-size: 13px; transition: var(--transition);
+      border-radius: var(--radius-pill); color: var(--text-primary); font-size: 13px; transition: var(--transition);
     }
     .search-input::placeholder { color: var(--text-muted); }
-    .search-input:focus {
-      border-color: var(--accent); background: var(--bg-elevated);
-      box-shadow: 0 0 0 3px var(--accent-glow);
-    }
-    .search-icon {
-      position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
-      width: 18px; height: 18px; fill: var(--text-muted); pointer-events: none;
-    }
-    .search-shortcut {
-      position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
-      font-size: 11px; color: var(--text-muted); background: var(--bg-card);
-      padding: 2px 8px; border-radius: 4px; border: 1px solid var(--border-primary);
-      pointer-events: none;
-    }
-    .search-dropdown {
-      position: absolute; top: calc(100% + 6px); left: 0; right: 0;
-      background: var(--bg-card); border: 1px solid var(--border-primary);
-      border-radius: var(--radius); box-shadow: var(--shadow-lg);
-      max-height: 320px; overflow-y: auto; z-index: 200;
-      display: none; animation: fadeSlideDown 0.15s ease;
-    }
+    .search-input:focus { border-color: var(--accent); background: var(--bg-elevated); box-shadow: 0 0 0 3px var(--accent-glow); }
+    .search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); width: 18px; height: 18px; fill: var(--text-muted); pointer-events: none; }
+    .search-shortcut { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: 11px; color: var(--text-muted); background: var(--bg-card); padding: 2px 8px; border-radius: 4px; border: 1px solid var(--border-primary); pointer-events: none; }
+    .search-dropdown { position: absolute; top: calc(100% + 6px); left: 0; right: 0; background: var(--bg-card); border: 1px solid var(--border-primary); border-radius: var(--radius); box-shadow: var(--shadow-lg); max-height: 320px; overflow-y: auto; z-index: 200; display: none; animation: fadeSlideDown 0.15s ease; }
     .search-dropdown.active { display: block; }
-    .search-item {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 12px 16px; cursor: pointer; transition: background 0.1s;
-      border-bottom: 1px solid var(--border-subtle);
-    }
+    .search-item { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; cursor: pointer; transition: background 0.1s; border-bottom: 1px solid var(--border-subtle); }
     .search-item:last-child { border-bottom: none; }
     .search-item:hover { background: var(--bg-elevated); }
     .search-item-symbol { font-weight: 600; color: var(--text-primary); font-size: 13px; }
-    .search-item-name { font-size: 12px; color: var(--text-secondary); margin-top: 2px; max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .search-item-name { font-size: 12px; color: var(--text-secondary); margin-top: 2px; max-width: 210px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .search-item-type { font-size: 11px; color: var(--text-muted); background: var(--bg-input); padding: 2px 8px; border-radius: 4px; }
     .search-empty { padding: 24px; text-align: center; color: var(--text-muted); font-size: 13px; }
 
-    /* Topbar Right */
     .topbar-right { display: flex; align-items: center; gap: 10px; }
-    .topbar-btn {
-      width: 38px; height: 38px; border-radius: 50%;
-      background: var(--bg-input); border: 1px solid var(--border-primary);
-      display: flex; align-items: center; justify-content: center;
-      transition: var(--transition); position: relative;
-    }
+    .topbar-btn { width: 38px; height: 38px; border-radius: 50%; background: var(--bg-input); border: 1px solid var(--border-primary); display: flex; align-items: center; justify-content: center; transition: var(--transition); }
     .topbar-btn:hover { background: var(--bg-elevated); border-color: var(--accent); }
     .topbar-btn svg { width: 18px; height: 18px; fill: var(--text-secondary); }
     .topbar-btn:hover svg { fill: var(--accent-light); }
-    .market-badge {
-      display: flex; align-items: center; gap: 6px;
-      padding: 6px 14px; border-radius: var(--radius-pill);
-      font-size: 11px; font-weight: 600; letter-spacing: 0.3px;
-    }
-    .market-badge .dot {
-      width: 7px; height: 7px; border-radius: 50%;
-    }
+
+    .market-badge { display: flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: var(--radius-pill); font-size: 11px; font-weight: 600; letter-spacing: 0.3px; }
+    .market-badge .dot { width: 7px; height: 7px; border-radius: 50%; }
     .market-badge.open { background: var(--green-bg); color: var(--green); }
     .market-badge.open .dot { background: var(--green); animation: dotBlink 1.5s infinite; }
     .market-badge.closed { background: rgba(90,90,114,0.15); color: var(--text-muted); }
@@ -181,423 +143,280 @@
     .market-badge.after-hours .dot { background: var(--amber); animation: dotBlink 1.5s infinite; }
     @keyframes dotBlink { 0%,100%{ opacity:1; } 50%{ opacity:0.3; } }
 
-    /* ===== STOCK INFO ===== */
-    .stock-header {
-      display: flex; align-items: flex-start; justify-content: space-between;
-      margin-bottom: 20px; animation: fadeIn 0.3s ease;
-    }
+    .last-update-wrap { display: flex; align-items: center; gap: 8px; }
+    .countdown-badge { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text-muted); background: var(--bg-card); padding: 5px 10px; border-radius: var(--radius-pill); border: 1px solid var(--border-subtle); }
+    .countdown-badge svg { width: 12px; height: 12px; fill: var(--text-muted); }
+    .countdown-num { font-family: var(--font-mono); font-weight: 600; color: var(--accent-light); }
+    .last-update { font-size: 11px; color: var(--text-muted); display: flex; align-items: center; gap: 4px; }
+    .last-update svg { width: 12px; height: 12px; fill: var(--text-muted); }
+    .refresh-flash { animation: flashPulse 0.5s ease; }
+    @keyframes flashPulse { 0%{opacity:0.3;} 100%{opacity:1;} }
+
+    /* PAGE VIEWS */
+    .page-view { display: none; }
+    .page-view.active { display: block; animation: fadeIn 0.3s ease; }
+
+    /* DASHBOARD */
+    .dash-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 24px; }
+    .dash-greeting h1 { font-size: 22px; font-weight: 800; margin-bottom: 4px; }
+    .dash-greeting p { font-size: 13px; color: var(--text-secondary); }
+
+    .summary-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 28px; }
+    .summary-card { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius); padding: 18px 20px; display: flex; align-items: center; gap: 14px; transition: var(--transition); }
+    .summary-card:hover { border-color: var(--border-primary); background: var(--bg-card-hover); }
+    .summary-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .summary-icon svg { width: 22px; height: 22px; fill: white; }
+    .si-accent { background: linear-gradient(135deg, #7c3aed, #6d28d9); box-shadow: 0 4px 14px rgba(124,58,237,0.3); }
+    .si-green { background: linear-gradient(135deg, #10b981, #059669); box-shadow: 0 4px 14px rgba(16,185,129,0.3); }
+    .si-red { background: linear-gradient(135deg, #ef4444, #dc2626); box-shadow: 0 4px 14px rgba(239,68,68,0.3); }
+    .si-amber { background: linear-gradient(135deg, #f59e0b, #d97706); box-shadow: 0 4px 14px rgba(245,158,11,0.3); }
+    .summary-num { font-family: var(--font-mono); font-size: 22px; font-weight: 700; color: var(--text-primary); }
+    .summary-lbl { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+
+    .dash-section { margin-bottom: 32px; }
+    .section-title { font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+    .section-title svg { width: 17px; height: 17px; fill: var(--accent-light); }
+
+    /* WATCHLIST TABLE */
+    .table-wrap { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius); overflow: hidden; }
+    .wl-table { width: 100%; border-collapse: collapse; }
+    .wl-table th { text-align: left; font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600; padding: 12px 16px; border-bottom: 1px solid var(--border-subtle); }
+    .wl-table th.r { text-align: right; }
+    .wl-table td { padding: 14px 16px; border-bottom: 1px solid var(--border-subtle); vertical-align: middle; }
+    .wl-table tr:last-child td { border-bottom: none; }
+    .wl-table tbody tr { transition: background 0.1s; cursor: pointer; }
+    .wl-table tbody tr:hover td { background: var(--bg-card-hover); }
+    .wl-symbol { font-weight: 700; font-size: 14px; }
+    .wl-name { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+    .wl-price { font-family: var(--font-mono); font-size: 14px; font-weight: 600; }
+    .wl-chg { font-family: var(--font-mono); font-size: 13px; font-weight: 500; }
+    .wl-chg.up { color: var(--green); }
+    .wl-chg.down { color: var(--red); }
+    .pct-badge { display: inline-flex; align-items: center; padding: 4px 10px; border-radius: var(--radius-pill); font-size: 12px; font-weight: 600; font-family: var(--font-mono); }
+    .pct-badge.up { background: var(--green-bg); color: var(--green); }
+    .pct-badge.down { background: var(--red-bg); color: var(--red); }
+    .pct-badge.flat { background: rgba(90,90,114,0.12); color: var(--text-muted); }
+    .view-btn { padding: 5px 12px; border-radius: var(--radius-xs); background: var(--bg-elevated); border: 1px solid var(--border-primary); color: var(--text-secondary); font-size: 12px; font-weight: 500; transition: var(--transition); }
+    .view-btn:hover { border-color: var(--accent); color: var(--accent-light); }
+    td.r { text-align: right; }
+
+    /* SECTORS GRID */
+    .sectors-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+    .sector-card { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius); padding: 18px 20px; transition: var(--transition); position: relative; overflow: hidden; }
+    .sector-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+    .sector-card.tech::before { background: linear-gradient(90deg, #7c3aed, #a78bfa); }
+    .sector-card.finance::before { background: linear-gradient(90deg, #3b82f6, #60a5fa); }
+    .sector-card.health::before { background: linear-gradient(90deg, #10b981, #34d399); }
+    .sector-card.energy::before { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+    .sector-card.consumer::before { background: linear-gradient(90deg, #f97316, #fb923c); }
+    .sector-card.industrial::before { background: linear-gradient(90deg, #64748b, #94a3b8); }
+    .sector-card.materials::before { background: linear-gradient(90deg, #84cc16, #a3e635); }
+    .sector-card.realestate::before { background: linear-gradient(90deg, #ec4899, #f472b6); }
+    .sector-card.utilities::before { background: linear-gradient(90deg, #06b6d4, #22d3ee); }
+    .sector-card.comm::before { background: linear-gradient(90deg, #8b5cf6, #c4b5fd); }
+    .sector-card:hover { border-color: var(--border-primary); background: var(--bg-card-hover); transform: translateY(-2px); box-shadow: var(--shadow-md); }
+    .sector-name { font-size: 14px; font-weight: 700; margin-bottom: 10px; }
+    .sector-tickers { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+    .sector-ticker { padding: 3px 9px; border-radius: var(--radius-xs); background: var(--bg-elevated); border: 1px solid var(--border-subtle); font-size: 12px; font-weight: 600; color: var(--text-secondary); cursor: pointer; transition: var(--transition); }
+    .sector-ticker:hover { border-color: var(--accent); color: var(--accent-light); }
+    .sector-footer { display: flex; align-items: center; justify-content: space-between; }
+    .sector-etf { font-size: 11px; color: var(--text-muted); }
+    .sector-perf { font-family: var(--font-mono); font-size: 13px; font-weight: 600; }
+    .sector-perf.up { color: var(--green); }
+    .sector-perf.down { color: var(--red); }
+    .sector-perf.loading { color: var(--text-muted); }
+
+    /* STOCK DETAIL PAGE */
+    .stock-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 20px; }
     .stock-identity { display: flex; align-items: center; gap: 16px; }
-    .stock-logo-wrap {
-      width: 52px; height: 52px; border-radius: 14px;
-      background: var(--bg-elevated); border: 1px solid var(--border-primary);
-      display: flex; align-items: center; justify-content: center; overflow: hidden;
-    }
+    .stock-logo-wrap { width: 52px; height: 52px; border-radius: 14px; background: var(--bg-elevated); border: 1px solid var(--border-primary); display: flex; align-items: center; justify-content: center; overflow: hidden; }
     .stock-logo-wrap img { width: 100%; height: 100%; object-fit: contain; padding: 6px; }
     .stock-logo-wrap svg { width: 28px; height: 28px; fill: var(--text-muted); }
-    .stock-name-group { display: flex; flex-direction: column; gap: 4px; }
-    .stock-symbol-row { display: flex; align-items: center; gap: 8px; }
-    .stock-symbol {
-      font-size: 22px; font-weight: 800; letter-spacing: 0.5px;
-      background: linear-gradient(135deg, var(--text-primary), var(--accent-light));
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-    .stock-exchange {
-      font-size: 10px; font-weight: 600; color: var(--text-muted);
-      background: var(--bg-input); padding: 2px 8px; border-radius: 4px;
-      border: 1px solid var(--border-subtle); letter-spacing: 0.5px;
-    }
-    .stock-company-name { font-size: 13px; color: var(--text-secondary); font-weight: 400; }
+    .stock-symbol-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+    .stock-symbol { font-size: 22px; font-weight: 800; letter-spacing: 0.5px; background: linear-gradient(135deg, var(--text-primary), var(--accent-light)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .stock-exchange { font-size: 10px; font-weight: 600; color: var(--text-muted); background: var(--bg-input); padding: 2px 8px; border-radius: 4px; border: 1px solid var(--border-subtle); }
+    .stock-company-name { font-size: 13px; color: var(--text-secondary); }
     .stock-actions { display: flex; align-items: center; gap: 10px; }
-    .btn-wishlist {
-      display: flex; align-items: center; gap: 6px;
-      padding: 10px 18px; border-radius: var(--radius-sm);
-      background: var(--bg-elevated); border: 1px solid var(--border-primary);
-      color: var(--text-secondary); font-size: 13px; font-weight: 500;
-      transition: var(--transition);
-    }
+    .btn-wishlist { display: flex; align-items: center; gap: 6px; padding: 10px 18px; border-radius: var(--radius-sm); background: var(--bg-elevated); border: 1px solid var(--border-primary); color: var(--text-secondary); font-size: 13px; font-weight: 500; transition: var(--transition); }
     .btn-wishlist:hover { border-color: var(--accent); color: var(--accent-light); }
-    .btn-wishlist.active {
-      background: var(--accent-glow); border-color: var(--accent);
-      color: var(--accent-light);
-    }
+    .btn-wishlist.active { background: var(--accent-glow); border-color: var(--accent); color: var(--accent-light); }
     .btn-wishlist svg { width: 16px; height: 16px; }
-    .btn-refresh {
-      width: 38px; height: 38px; border-radius: var(--radius-sm);
-      background: var(--bg-elevated); border: 1px solid var(--border-primary);
-      display: flex; align-items: center; justify-content: center;
-      transition: var(--transition);
-    }
+    .btn-refresh { width: 38px; height: 38px; border-radius: var(--radius-sm); background: var(--bg-elevated); border: 1px solid var(--border-primary); display: flex; align-items: center; justify-content: center; transition: var(--transition); }
     .btn-refresh:hover { border-color: var(--accent); }
     .btn-refresh svg { width: 16px; height: 16px; fill: var(--text-secondary); transition: var(--transition); }
     .btn-refresh:hover svg { fill: var(--accent-light); }
     .btn-refresh.spinning svg { animation: spin 0.8s linear infinite; }
     @keyframes spin { 100% { transform: rotate(360deg); } }
 
-    /* Price Display */
-    .price-section {
-      display: flex; flex-wrap: wrap; align-items: flex-end; gap: 24px;
-      margin-bottom: 24px; animation: fadeIn 0.4s ease;
-    }
-    .price-main {
-      font-family: var(--font-mono); font-size: 42px; font-weight: 700;
-      letter-spacing: -1px; line-height: 1;
-    }
+    .price-section { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 24px; margin-bottom: 24px; }
+    .price-main { font-family: var(--font-mono); font-size: 48px; font-weight: 700; letter-spacing: -1px; line-height: 1; }
     .price-change-group { display: flex; flex-direction: column; gap: 4px; padding-bottom: 4px; }
-    .price-change {
-      display: flex; align-items: center; gap: 6px;
-      font-family: var(--font-mono); font-size: 16px; font-weight: 600;
-    }
+    .price-change { display: flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 16px; font-weight: 600; }
     .price-change .arrow { font-size: 12px; }
     .price-change.up { color: var(--green); }
     .price-change.down { color: var(--red); }
     .price-change.flat { color: var(--text-muted); }
-    .price-session-label {
-      font-size: 11px; color: var(--text-muted); font-weight: 400;
-      font-family: var(--font-sans);
-    }
-    .extended-price {
-      display: flex; align-items: center; gap: 10px; padding-bottom: 4px;
-      padding-left: 16px; border-left: 2px solid var(--border-primary);
-    }
-    .extended-label {
-      font-size: 11px; color: var(--text-muted); font-weight: 500;
-      text-transform: uppercase; letter-spacing: 0.5px;
-      min-width: 80px;
-    }
-    .extended-value {
-      font-family: var(--font-mono); font-size: 15px; font-weight: 600;
-    }
-    .extended-change {
-      font-family: var(--font-mono); font-size: 13px; font-weight: 500;
-    }
+    .price-session-label { font-size: 11px; color: var(--text-muted); font-family: var(--font-sans); }
 
-    /* Stats Row */
-    .stats-grid {
-      display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
-      margin-bottom: 24px; animation: fadeIn 0.5s ease;
-    }
-    .stat-card {
-      background: var(--bg-card); border: 1px solid var(--border-subtle);
-      border-radius: var(--radius); padding: 16px 18px;
-      transition: var(--transition);
-    }
+    .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+    .stat-card { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius); padding: 16px 18px; transition: var(--transition); }
     .stat-card:hover { border-color: var(--border-primary); background: var(--bg-card-hover); }
-    .stat-label {
-      font-size: 11px; color: var(--text-muted); text-transform: uppercase;
-      letter-spacing: 0.8px; font-weight: 500; margin-bottom: 8px;
-    }
-    .stat-value {
-      font-family: var(--font-mono); font-size: 18px; font-weight: 600;
-      color: var(--text-primary);
-    }
+    .stat-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; font-weight: 500; margin-bottom: 8px; }
+    .stat-value { font-family: var(--font-mono); font-size: 18px; font-weight: 600; }
 
-    /* ===== CHART SECTION ===== */
-    .chart-section {
-      background: var(--bg-card); border: 1px solid var(--border-subtle);
-      border-radius: var(--radius); overflow: hidden;
-      animation: fadeIn 0.5s ease;
-    }
-    .chart-toolbar {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 16px 20px; border-bottom: 1px solid var(--border-subtle);
-    }
-    .chart-title { font-size: 14px; font-weight: 600; color: var(--text-primary); }
-    .time-filters { display: flex; gap: 4px; }
-    .time-btn {
-      padding: 6px 14px; border-radius: var(--radius-xs);
-      background: transparent; color: var(--text-muted);
-      font-size: 12px; font-weight: 600; letter-spacing: 0.3px;
-      transition: var(--transition); border: 1px solid transparent;
-    }
-    .time-btn:hover { color: var(--text-secondary); background: var(--bg-elevated); }
-    .time-btn.active {
-      background: var(--accent); color: white;
-      box-shadow: 0 0 12px rgba(124, 58, 237, 0.3);
-    }
-    .chart-type-btns { display: flex; gap: 4px; }
-    .chart-type-btn {
-      padding: 6px 10px; border-radius: var(--radius-xs);
-      background: transparent; color: var(--text-muted);
-      font-size: 12px; transition: var(--transition);
-      border: 1px solid transparent;
-    }
-    .chart-type-btn:hover { color: var(--text-secondary); }
-    .chart-type-btn.active { background: var(--bg-elevated); color: var(--text-primary); border-color: var(--border-primary); }
-    .chart-container {
-      width: 100%; height: 420px; position: relative;
-    }
-    .chart-loading {
-      position: absolute; inset: 0; display: flex;
-      align-items: center; justify-content: center;
-      background: var(--bg-card); z-index: 10;
-    }
-    .chart-loading.hidden { display: none; }
-    .loader {
-      width: 32px; height: 32px; border: 3px solid var(--border-primary);
-      border-top-color: var(--accent); border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-    }
+    .extra-info-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 24px; }
+    .info-card { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius); padding: 16px 18px; transition: var(--transition); }
+    .info-card:hover { border-color: var(--border-primary); background: var(--bg-card-hover); }
+    .info-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 6px; }
+    .info-value { font-size: 14px; font-weight: 600; }
+    .info-value.mono { font-family: var(--font-mono); }
 
-    /* ===== WISHLIST PANEL ===== */
-    .wishlist-header {
-      padding: 20px; border-bottom: 1px solid var(--border-primary);
-      display: flex; align-items: center; justify-content: space-between;
-    }
-    .wishlist-title {
-      font-size: 15px; font-weight: 700; display: flex;
-      align-items: center; gap: 8px;
-    }
-    .wishlist-title svg { width: 18px; height: 18px; fill: var(--accent-light); }
-    .wishlist-count {
-      font-size: 11px; font-weight: 600; color: var(--accent-light);
-      background: var(--accent-glow); padding: 2px 8px;
-      border-radius: var(--radius-pill); border: 1px solid var(--border-accent);
-    }
-    .wishlist-list { flex: 1; overflow-y: auto; padding: 8px; }
-    .wishlist-item {
-      display: flex; align-items: center; padding: 12px;
-      border-radius: var(--radius-sm); cursor: pointer;
-      transition: var(--transition); gap: 12px;
-      border: 1px solid transparent; margin-bottom: 4px;
-    }
+    /* WISHLIST SIDEBAR */
+    .wishlist-panel { width: 300px; min-width: 300px; border-left: 1px solid var(--border-primary); background: var(--bg-secondary); display: flex; flex-direction: column; height: calc(100vh - 64px); overflow: hidden; }
+    .wishlist-header { padding: 16px; border-bottom: 1px solid var(--border-primary); display: flex; align-items: center; justify-content: space-between; }
+    .wishlist-title { font-size: 12px; font-weight: 700; display: flex; align-items: center; gap: 8px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+    .wishlist-title svg { width: 15px; height: 15px; fill: var(--accent-light); }
+    .wishlist-count { font-size: 11px; font-weight: 600; color: var(--accent-light); background: var(--accent-glow); padding: 2px 8px; border-radius: var(--radius-pill); border: 1px solid var(--border-accent); }
+    .wishlist-list { flex: 1; overflow-y: auto; padding: 6px; }
+    .wishlist-item { display: flex; align-items: center; padding: 10px; border-radius: var(--radius-sm); cursor: pointer; transition: var(--transition); gap: 10px; border: 1px solid transparent; margin-bottom: 2px; }
     .wishlist-item:hover { background: var(--bg-card); border-color: var(--border-subtle); }
     .wishlist-item.active { background: var(--accent-glow); border-color: var(--border-accent); }
     .wishlist-item-info { flex: 1; min-width: 0; }
-    .wishlist-item-symbol { font-size: 13px; font-weight: 700; color: var(--text-primary); }
-    .wishlist-item-name {
-      font-size: 11px; color: var(--text-muted); margin-top: 2px;
-      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-    }
+    .wishlist-item-symbol { font-size: 13px; font-weight: 700; }
+    .wishlist-item-name { font-size: 11px; color: var(--text-muted); margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .wishlist-item-price { text-align: right; }
-    .wishlist-item-price-val {
-      font-family: var(--font-mono); font-size: 13px; font-weight: 600;
-      color: var(--text-primary);
-    }
-    .wishlist-item-change {
-      font-family: var(--font-mono); font-size: 11px; font-weight: 500;
-      margin-top: 2px;
-    }
+    .wishlist-item-price-val { font-family: var(--font-mono); font-size: 13px; font-weight: 600; }
+    .wishlist-item-change { font-family: var(--font-mono); font-size: 11px; margin-top: 1px; }
     .wishlist-item-change.up { color: var(--green); }
     .wishlist-item-change.down { color: var(--red); }
-    .wishlist-item-remove {
-      width: 24px; height: 24px; border-radius: 50%;
-      background: transparent; display: flex; align-items: center;
-      justify-content: center; opacity: 0; transition: var(--transition);
-      flex-shrink: 0;
-    }
+    .wishlist-item-remove { width: 22px; height: 22px; border-radius: 50%; background: transparent; display: flex; align-items: center; justify-content: center; opacity: 0; transition: var(--transition); flex-shrink: 0; }
     .wishlist-item:hover .wishlist-item-remove { opacity: 1; }
     .wishlist-item-remove:hover { background: var(--red-bg); }
-    .wishlist-item-remove svg { width: 14px; height: 14px; fill: var(--red); }
-    .wishlist-empty {
-      display: flex; flex-direction: column; align-items: center;
-      justify-content: center; padding: 48px 24px; gap: 12px;
-    }
-    .wishlist-empty svg { width: 48px; height: 48px; fill: var(--text-muted); opacity: 0.4; }
-    .wishlist-empty p { font-size: 13px; color: var(--text-muted); text-align: center; }
-    .wishlist-footer { padding: 16px; border-top: 1px solid var(--border-primary); }
-    .btn-add-wishlist {
-      width: 100%; padding: 10px; border-radius: var(--radius-sm);
-      background: var(--bg-card); border: 1px dashed var(--border-primary);
-      color: var(--text-secondary); font-size: 13px; font-weight: 500;
-      display: flex; align-items: center; justify-content: center; gap: 6px;
-      transition: var(--transition);
-    }
+    .wishlist-item-remove svg { width: 12px; height: 12px; fill: var(--red); }
+    .wishlist-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 20px; gap: 10px; }
+    .wishlist-empty svg { width: 40px; height: 40px; fill: var(--text-muted); opacity: 0.3; }
+    .wishlist-empty p { font-size: 12px; color: var(--text-muted); text-align: center; line-height: 1.6; }
+    .wishlist-footer { padding: 12px; border-top: 1px solid var(--border-primary); }
+    .btn-add-wishlist { width: 100%; padding: 9px; border-radius: var(--radius-sm); background: var(--bg-card); border: 1px dashed var(--border-primary); color: var(--text-secondary); font-size: 12px; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 6px; transition: var(--transition); }
     .btn-add-wishlist:hover { border-color: var(--accent); color: var(--accent-light); border-style: solid; }
-    .btn-add-wishlist svg { width: 16px; height: 16px; }
+    .btn-add-wishlist svg { width: 14px; height: 14px; }
 
-    /* ===== MODALS ===== */
-    .modal-overlay {
-      position: fixed; inset: 0; background: rgba(0,0,0,0.7);
-      backdrop-filter: blur(8px); z-index: 1000;
-      display: none; align-items: center; justify-content: center;
-      animation: fadeIn 0.2s ease;
-    }
-    .modal-overlay.active { display: flex; }
-    .modal {
-      background: var(--bg-card); border: 1px solid var(--border-primary);
-      border-radius: 18px; padding: 32px; max-width: 480px; width: 90%;
-      box-shadow: var(--shadow-lg); animation: fadeSlideUp 0.3s ease;
-    }
-    .modal-icon {
-      width: 56px; height: 56px; border-radius: 14px;
-      background: linear-gradient(135deg, var(--accent), var(--accent-light));
-      display: flex; align-items: center; justify-content: center;
-      margin-bottom: 20px; box-shadow: var(--shadow-glow);
-    }
+    /* MODALS */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); z-index: 1000; display: none; align-items: center; justify-content: center; }
+    .modal-overlay.active { display: flex; animation: fadeIn 0.2s ease; }
+    .modal { background: var(--bg-card); border: 1px solid var(--border-primary); border-radius: 18px; padding: 32px; max-width: 480px; width: 90%; box-shadow: var(--shadow-lg); animation: fadeSlideUp 0.3s ease; }
+    .modal-icon { width: 56px; height: 56px; border-radius: 14px; background: linear-gradient(135deg, var(--accent), var(--accent-light)); display: flex; align-items: center; justify-content: center; margin-bottom: 20px; box-shadow: var(--shadow-glow); }
     .modal-icon svg { width: 28px; height: 28px; fill: white; }
     .modal h2 { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
     .modal p { font-size: 13px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 20px; }
     .modal-input-group { margin-bottom: 20px; }
     .modal-label { font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 8px; display: block; }
-    .modal-input {
-      width: 100%; height: 44px; padding: 0 16px;
-      background: var(--bg-input); border: 1px solid var(--border-primary);
-      border-radius: var(--radius-sm); color: var(--text-primary);
-      font-size: 13px; font-family: var(--font-mono); transition: var(--transition);
-    }
+    .modal-input { width: 100%; height: 44px; padding: 0 16px; background: var(--bg-input); border: 1px solid var(--border-primary); border-radius: var(--radius-sm); color: var(--text-primary); font-size: 13px; font-family: var(--font-mono); transition: var(--transition); }
     .modal-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
     .modal-input.error { border-color: var(--red); }
     .modal-error { font-size: 12px; color: var(--red); margin-top: 6px; display: none; }
     .modal-error.visible { display: block; }
     .modal-actions { display: flex; gap: 10px; }
-    .btn-primary {
-      flex: 1; padding: 12px 20px; border-radius: var(--radius-sm);
-      background: linear-gradient(135deg, var(--accent), #6d28d9);
-      color: white; font-size: 14px; font-weight: 600;
-      transition: var(--transition);
-      box-shadow: 0 4px 14px rgba(124, 58, 237, 0.3);
-    }
+    .btn-primary { flex: 1; padding: 12px 20px; border-radius: var(--radius-sm); background: linear-gradient(135deg, var(--accent), #6d28d9); color: white; font-size: 14px; font-weight: 600; transition: var(--transition); box-shadow: 0 4px 14px rgba(124, 58, 237, 0.3); }
     .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(124, 58, 237, 0.4); }
     .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-    .btn-secondary {
-      padding: 12px 20px; border-radius: var(--radius-sm);
-      background: var(--bg-elevated); border: 1px solid var(--border-primary);
-      color: var(--text-secondary); font-size: 14px; font-weight: 500;
-      transition: var(--transition);
-    }
+    .btn-secondary { padding: 12px 20px; border-radius: var(--radius-sm); background: var(--bg-elevated); border: 1px solid var(--border-primary); color: var(--text-secondary); font-size: 14px; font-weight: 500; transition: var(--transition); }
     .btn-secondary:hover { border-color: var(--text-muted); color: var(--text-primary); }
     .modal-steps { margin-bottom: 20px; }
-    .modal-step {
-      display: flex; gap: 12px; padding: 10px 0;
-      border-bottom: 1px solid var(--border-subtle);
-    }
+    .modal-step { display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border-subtle); }
     .modal-step:last-child { border-bottom: none; }
-    .step-num {
-      width: 24px; height: 24px; border-radius: 50%;
-      background: var(--accent-glow); color: var(--accent-light);
-      font-size: 12px; font-weight: 700; display: flex;
-      align-items: center; justify-content: center; flex-shrink: 0;
-      border: 1px solid var(--border-accent);
-    }
+    .step-num { width: 24px; height: 24px; border-radius: 50%; background: var(--accent-glow); color: var(--accent-light); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; border: 1px solid var(--border-accent); }
     .step-text { font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
     .step-text a { color: var(--accent-light); font-weight: 500; }
 
-    /* ===== SKELETON LOADING ===== */
-    .skeleton {
-      background: linear-gradient(90deg, var(--bg-card) 25%, var(--bg-elevated) 50%, var(--bg-card) 75%);
-      background-size: 200% 100%;
-      animation: shimmer 1.5s infinite;
-      border-radius: var(--radius-sm);
-    }
-    @keyframes shimmer { 0%{ background-position: 200% 0; } 100%{ background-position: -200% 0; } }
-    .skeleton-text { height: 16px; margin-bottom: 8px; }
-    .skeleton-text.lg { height: 40px; width: 200px; }
-    .skeleton-text.md { height: 20px; width: 160px; }
-    .skeleton-text.sm { height: 14px; width: 120px; }
+    /* WELCOME */
+    .welcome-state { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 60vh; gap: 16px; }
+    .welcome-icon { width: 80px; height: 80px; border-radius: 20px; background: linear-gradient(135deg, rgba(124,58,237,0.15), rgba(167,139,250,0.08)); border: 1px solid var(--border-accent); display: flex; align-items: center; justify-content: center; margin-bottom: 8px; }
+    .welcome-icon svg { width: 40px; height: 40px; fill: var(--accent-light); }
+    .welcome-state h2 { font-size: 22px; font-weight: 700; }
+    .welcome-state p { font-size: 14px; color: var(--text-secondary); max-width: 380px; text-align: center; }
 
-    /* ===== TOAST ===== */
-    .toast-container {
-      position: fixed; bottom: 24px; right: 24px; z-index: 2000;
-      display: flex; flex-direction: column; gap: 8px;
-    }
-    .toast {
-      padding: 12px 20px; border-radius: var(--radius-sm);
-      background: var(--bg-elevated); border: 1px solid var(--border-primary);
-      color: var(--text-primary); font-size: 13px; font-weight: 500;
-      box-shadow: var(--shadow-md); animation: fadeSlideUp 0.3s ease;
-      display: flex; align-items: center; gap: 8px; max-width: 340px;
-    }
+    /* EMPTY STATE */
+    .dash-empty { background: var(--bg-card); border: 1px dashed var(--border-primary); border-radius: var(--radius); padding: 40px; text-align: center; color: var(--text-muted); font-size: 13px; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+    .dash-empty svg { width: 40px; height: 40px; fill: var(--text-muted); opacity: 0.3; }
+
+    /* TOAST */
+    .toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 2000; display: flex; flex-direction: column; gap: 8px; }
+    .toast { padding: 12px 20px; border-radius: var(--radius-sm); background: var(--bg-elevated); border: 1px solid var(--border-primary); color: var(--text-primary); font-size: 13px; font-weight: 500; box-shadow: var(--shadow-md); animation: fadeSlideUp 0.3s ease; display: flex; align-items: center; gap: 8px; max-width: 340px; }
     .toast.success { border-color: var(--green); }
     .toast.error { border-color: var(--red); }
     .toast-icon { width: 18px; height: 18px; flex-shrink: 0; }
 
-    /* ===== WELCOME STATE ===== */
-    .welcome-state {
-      display: flex; flex-direction: column; align-items: center;
-      justify-content: center; min-height: 60vh; gap: 16px;
-      animation: fadeIn 0.5s ease;
-    }
-    .welcome-icon {
-      width: 80px; height: 80px; border-radius: 20px;
-      background: linear-gradient(135deg, rgba(124,58,237,0.15), rgba(167,139,250,0.08));
-      border: 1px solid var(--border-accent);
-      display: flex; align-items: center; justify-content: center;
-      margin-bottom: 8px;
-    }
-    .welcome-icon svg { width: 40px; height: 40px; fill: var(--accent-light); }
-    .welcome-state h2 { font-size: 22px; font-weight: 700; }
-    .welcome-state p { font-size: 14px; color: var(--text-secondary); max-width: 400px; text-align: center; }
+    /* ANIMATIONS */
+    @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+    @keyframes fadeSlideUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes fadeSlideDown { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:translateY(0)} }
 
-    /* ===== ANIMATIONS ===== */
-    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-    @keyframes fadeSlideUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
-    @keyframes fadeSlideDown { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
-
-    /* ===== ERROR STATE ===== */
-    .error-state {
-      display: flex; flex-direction: column; align-items: center;
-      justify-content: center; padding: 48px; gap: 12px;
-    }
-    .error-state svg { width: 40px; height: 40px; fill: var(--red); opacity: 0.6; }
-    .error-state h3 { font-size: 16px; font-weight: 600; }
-    .error-state p { font-size: 13px; color: var(--text-secondary); text-align: center; }
-
-    /* ===== RESPONSIVE ===== */
-    @media (max-width: 1100px) {
+    /* RESPONSIVE */
+    @media (max-width: 1200px) {
       .wishlist-panel { width: 260px; min-width: 260px; }
+      .summary-strip { grid-template-columns: repeat(2,1fr); }
     }
     @media (max-width: 900px) {
       .wishlist-panel { display: none; }
-      .search-wrap { width: 280px; }
-      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .stats-grid { grid-template-columns: repeat(2,1fr); }
+      .extra-info-grid { grid-template-columns: repeat(2,1fr); }
     }
-    @media (max-width: 600px) {
+    @media (max-width: 640px) {
+      .content-area { padding: 16px; }
+      .price-main { font-size: 36px; }
+      .topbar { padding: 0 12px; }
+      .nav-tabs { display: none; }
+      .summary-strip { grid-template-columns: 1fr 1fr; }
+      .sectors-grid { grid-template-columns: 1fr; }
       .search-wrap { width: 180px; }
       .search-shortcut { display: none; }
-      .content-area { padding: 16px; }
-      .price-main { font-size: 32px; }
-      .stats-grid { grid-template-columns: 1fr 1fr; }
-      .topbar { padding: 0 12px; }
-      .time-btn { padding: 6px 10px; font-size: 11px; }
     }
   </style>
 </head>
 <body>
 
-<!-- ===== ONBOARDING MODAL ===== -->
+<!-- ONBOARDING -->
 <div class="modal-overlay" id="onboardingModal">
   <div class="modal">
     <div class="modal-icon">
       <svg viewBox="0 0 24 24"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg>
     </div>
     <h2>Welcome to StockPulse</h2>
-    <p>To get started, you need a free Finnhub API key. It takes less than a minute to get one:</p>
+    <p>Connect your free Finnhub API key to get started. Your key will be saved permanently.</p>
     <div class="modal-steps">
       <div class="modal-step">
         <div class="step-num">1</div>
-        <div class="step-text">Go to <a href="https://finnhub.io/register" target="_blank" rel="noopener">finnhub.io/register</a> and create a free account</div>
+        <div class="step-text">Visit <a href="https://finnhub.io/register" target="_blank" rel="noopener">finnhub.io/register</a> and create a free account</div>
       </div>
       <div class="modal-step">
         <div class="step-num">2</div>
-        <div class="step-text">Copy your API key from the dashboard</div>
+        <div class="step-text">Copy your API key from the Finnhub dashboard</div>
       </div>
       <div class="modal-step">
         <div class="step-num">3</div>
-        <div class="step-text">Paste it below and start tracking stocks!</div>
+        <div class="step-text">Paste it below — it's saved in your browser and never leaves your device!</div>
       </div>
     </div>
     <div class="modal-input-group">
-      <label class="modal-label">Your Finnhub API Key</label>
+      <label class="modal-label">Finnhub API Key</label>
       <input type="text" class="modal-input" id="onboardingApiKey" placeholder="e.g. csXXXXXXXXXXXXXXXXXX" />
-      <div class="modal-error" id="onboardingError">Invalid API key. Please check and try again.</div>
+      <div class="modal-error" id="onboardingError">Invalid API key. Please try again.</div>
     </div>
     <div class="modal-actions">
-      <button class="btn-primary" id="onboardingSubmit" onclick="saveApiKeyFromOnboarding()">
-        Get Started
-      </button>
+      <button class="btn-primary" id="onboardingSubmit" onclick="saveApiKeyFromOnboarding()">Get Started</button>
     </div>
   </div>
 </div>
 
-<!-- ===== SETTINGS MODAL ===== -->
+<!-- SETTINGS -->
 <div class="modal-overlay" id="settingsModal">
   <div class="modal">
     <div class="modal-icon">
       <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
     </div>
     <h2>Settings</h2>
-    <p>Manage your Finnhub API key for stock data access.</p>
+    <p>Update your Finnhub API key. It's stored securely in your browser's local storage.</p>
     <div class="modal-input-group">
       <label class="modal-label">Finnhub API Key</label>
       <input type="text" class="modal-input" id="settingsApiKey" placeholder="Your API key..." />
@@ -605,148 +424,201 @@
     </div>
     <div class="modal-actions">
       <button class="btn-secondary" onclick="closeSettings()">Cancel</button>
-      <button class="btn-primary" onclick="saveApiKeyFromSettings()">Save</button>
+      <button class="btn-primary" onclick="saveApiKeyFromSettings()">Save Key</button>
     </div>
   </div>
 </div>
 
-<!-- ===== MAIN APP ===== -->
+<!-- APP -->
 <div class="app">
-  <!-- Topbar -->
   <header class="topbar">
     <div class="topbar-left">
-      <div class="logo">
+      <div class="logo" onclick="switchPage('dashboard')">
         <div class="logo-icon">
           <svg viewBox="0 0 24 24"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg>
         </div>
         <div class="logo-text">Stock<span>Pulse</span></div>
       </div>
+      <nav class="nav-tabs">
+        <button class="nav-tab active" id="tab-dashboard" onclick="switchPage('dashboard')">
+          <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+          Dashboard
+        </button>
+        <button class="nav-tab" id="tab-stock" onclick="switchPage('stock')" style="display:none;">
+          <svg viewBox="0 0 24 24"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg>
+          <span id="stockTabLabel">Stock</span>
+        </button>
+      </nav>
     </div>
     <div class="search-wrap">
       <svg class="search-icon" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
       <input type="text" class="search-input" id="searchInput" placeholder="Search stocks... (e.g. AAPL, TSLA)" autocomplete="off" />
-      <span class="search-shortcut">⌘K</span>
+      <span class="search-shortcut">&#x2318;K</span>
       <div class="search-dropdown" id="searchDropdown"></div>
     </div>
     <div class="topbar-right">
+      <div class="last-update-wrap">
+        <div class="last-update" id="lastUpdateBadge" title="Last updated">
+          <svg viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67V7z"/></svg>
+          <span id="lastUpdateText">—</span>
+        </div>
+        <div class="countdown-badge" title="Auto-refresh countdown">
+          <svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+          <span class="countdown-num" id="countdownNum">30</span>s
+        </div>
+      </div>
       <div class="market-badge closed" id="marketBadge">
         <div class="dot"></div>
         <span id="marketBadgeText">Market Closed</span>
       </div>
-      <button class="topbar-btn" id="settingsBtn" onclick="openSettings()" title="Settings">
+      <button class="topbar-btn" onclick="openSettings()" title="Settings">
         <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
       </button>
     </div>
   </header>
 
   <div class="main-layout">
-    <!-- Main Content Area -->
-    <main class="content-area" id="contentArea">
-      <!-- Welcome state (shown when no stock is selected) -->
-      <div class="welcome-state" id="welcomeState">
-        <div class="welcome-icon">
-          <svg viewBox="0 0 24 24"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg>
-        </div>
-        <h2>Track Your Stocks</h2>
-        <p>Search for a stock symbol above to view real-time prices, charts, and add to your watchlist.</p>
-      </div>
+    <main class="content-area">
 
-      <!-- Stock Detail (hidden initially) -->
-      <div id="stockDetail" style="display:none;">
-        <!-- Stock Header -->
-        <div class="stock-header" id="stockHeader">
-          <div class="stock-identity">
-            <div class="stock-logo-wrap" id="stockLogo">
+      <!-- DASHBOARD PAGE -->
+      <div class="page-view active" id="page-dashboard">
+        <div class="dash-header">
+          <div class="dash-greeting">
+            <h1 id="dashGreeting">Good Morning ☀️</h1>
+            <p id="dashDate"></p>
+          </div>
+          <button class="btn-secondary" id="dashRefreshBtn" onclick="fullRefresh()" style="display:flex;align-items:center;gap:6px;font-size:13px;height:38px;padding:0 16px;">
+            <svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:currentColor"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+            Refresh All
+          </button>
+        </div>
+
+        <!-- Summary strip -->
+        <div class="summary-strip">
+          <div class="summary-card">
+            <div class="summary-icon si-accent">
+              <svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+            </div>
+            <div>
+              <div class="summary-num" id="summaryTotal">—</div>
+              <div class="summary-lbl">Watchlist Stocks</div>
+            </div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-icon si-green">
               <svg viewBox="0 0 24 24"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg>
             </div>
-            <div class="stock-name-group">
-              <div class="stock-symbol-row">
-                <span class="stock-symbol" id="stockSymbol">AAPL</span>
-                <span class="stock-exchange" id="stockExchange">NASDAQ</span>
+            <div>
+              <div class="summary-num" id="summaryGainers">—</div>
+              <div class="summary-lbl">Gainers Today</div>
+            </div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-icon si-red">
+              <svg viewBox="0 0 24 24"><path d="M20.5 5.51l-6 6.01-4-4L2 17.09l1.41 1.41 7.09-7.97 4 4L22 6.92z"/></svg>
+            </div>
+            <div>
+              <div class="summary-num" id="summaryLosers">—</div>
+              <div class="summary-lbl">Losers Today</div>
+            </div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-icon si-amber">
+              <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            </div>
+            <div>
+              <div class="summary-num" id="summaryBest">—</div>
+              <div class="summary-lbl">Best Performer</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Watchlist overview -->
+        <div class="dash-section">
+          <div class="section-title">
+            <svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+            Watchlist Overview
+          </div>
+          <div id="dashWatchlist"></div>
+        </div>
+
+        <!-- Sectors -->
+        <div class="dash-section">
+          <div class="section-title">
+            <svg viewBox="0 0 24 24"><path d="M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z"/></svg>
+            Market Sectors
+          </div>
+          <div class="sectors-grid" id="sectorsGrid"></div>
+        </div>
+      </div>
+
+      <!-- STOCK DETAIL PAGE -->
+      <div class="page-view" id="page-stock">
+        <div class="welcome-state" id="welcomeState">
+          <div class="welcome-icon">
+            <svg viewBox="0 0 24 24"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg>
+          </div>
+          <h2>Track Your Stocks</h2>
+          <p>Search for a stock symbol above to view real-time prices and add it to your watchlist.</p>
+        </div>
+
+        <div id="stockDetail" style="display:none;">
+          <div class="stock-header">
+            <div class="stock-identity">
+              <div class="stock-logo-wrap" id="stockLogo">
+                <svg viewBox="0 0 24 24"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg>
               </div>
-              <div class="stock-company-name" id="stockCompanyName">Apple Inc.</div>
-            </div>
-          </div>
-          <div class="stock-actions">
-            <button class="btn-wishlist" id="btnWishlist" onclick="toggleWishlist()">
-              <svg viewBox="0 0 24 24" id="wishlistIcon"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
-              <span id="wishlistBtnText">Add to Watchlist</span>
-            </button>
-            <button class="btn-refresh" id="btnRefresh" onclick="refreshData()" title="Refresh">
-              <svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
-            </button>
-          </div>
-        </div>
-
-        <!-- Price Section -->
-        <div class="price-section" id="priceSection">
-          <div>
-            <div class="price-main" id="priceMain">$0.00</div>
-          </div>
-          <div class="price-change-group">
-            <div class="price-change flat" id="priceChange">
-              <span class="arrow" id="priceArrow">—</span>
-              <span id="priceChangeVal">$0.00</span>
-              <span id="priceChangePct">(0.00%)</span>
-            </div>
-            <div class="price-session-label" id="priceSessionLabel">Market Price</div>
-          </div>
-          <div class="extended-price" id="extendedPrice" style="display:none;">
-            <span class="extended-label" id="extendedLabel">After Hours</span>
-            <span class="extended-value" id="extendedValue">$0.00</span>
-            <span class="extended-change" id="extendedChange">+$0.00 (+0.00%)</span>
-          </div>
-        </div>
-
-        <!-- Stats Grid -->
-        <div class="stats-grid" id="statsGrid">
-          <div class="stat-card">
-            <div class="stat-label">Open</div>
-            <div class="stat-value" id="statOpen">—</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-label">High</div>
-            <div class="stat-value" id="statHigh">—</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-label">Low</div>
-            <div class="stat-value" id="statLow">—</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-label">Prev Close</div>
-            <div class="stat-value" id="statPrevClose">—</div>
-          </div>
-        </div>
-
-        <!-- Chart Section -->
-        <div class="chart-section">
-          <div class="chart-toolbar">
-            <div style="display:flex;align-items:center;gap:16px;">
-              <span class="chart-title">Price Chart</span>
-              <div class="chart-type-btns">
-                <button class="chart-type-btn active" id="btnArea" onclick="setChartType('area')">Area</button>
-                <button class="chart-type-btn" id="btnCandle" onclick="setChartType('candlestick')">Candlestick</button>
+              <div>
+                <div class="stock-symbol-row">
+                  <span class="stock-symbol" id="stockSymbol">AAPL</span>
+                  <span class="stock-exchange" id="stockExchange">NASDAQ</span>
+                </div>
+                <div class="stock-company-name" id="stockCompanyName">Apple Inc.</div>
               </div>
             </div>
-            <div class="time-filters" id="timeFilters">
-              <button class="time-btn active" data-range="1D" onclick="setTimeRange('1D')">1D</button>
-              <button class="time-btn" data-range="1W" onclick="setTimeRange('1W')">1W</button>
-              <button class="time-btn" data-range="1M" onclick="setTimeRange('1M')">1M</button>
-              <button class="time-btn" data-range="6M" onclick="setTimeRange('6M')">6M</button>
-              <button class="time-btn" data-range="YTD" onclick="setTimeRange('YTD')">YTD</button>
-              <button class="time-btn" data-range="1Y" onclick="setTimeRange('1Y')">1Y</button>
+            <div class="stock-actions">
+              <button class="btn-wishlist" id="btnWishlist" onclick="toggleWishlist()">
+                <svg viewBox="0 0 24 24" id="wishlistIcon"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+                <span id="wishlistBtnText">Add to Watchlist</span>
+              </button>
+              <button class="btn-refresh" id="btnRefresh" onclick="refreshData()" title="Refresh">
+                <svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+              </button>
             </div>
           </div>
-          <div class="chart-container" id="chartContainer">
-            <div class="chart-loading" id="chartLoading">
-              <div class="loader"></div>
+
+          <div class="price-section">
+            <div>
+              <div class="price-main" id="priceMain">$0.00</div>
             </div>
+            <div class="price-change-group">
+              <div class="price-change flat" id="priceChange">
+                <span class="arrow" id="priceArrow">—</span>
+                <span id="priceChangeVal">$0.00</span>
+                <span id="priceChangePct">(0.00%)</span>
+              </div>
+              <div class="price-session-label" id="priceSessionLabel">Market Price</div>
+            </div>
+          </div>
+
+          <div class="stats-grid">
+            <div class="stat-card"><div class="stat-label">Open</div><div class="stat-value" id="statOpen">—</div></div>
+            <div class="stat-card"><div class="stat-label">High</div><div class="stat-value" id="statHigh">—</div></div>
+            <div class="stat-card"><div class="stat-label">Low</div><div class="stat-value" id="statLow">—</div></div>
+            <div class="stat-card"><div class="stat-label">Prev Close</div><div class="stat-value" id="statPrevClose">—</div></div>
+          </div>
+
+          <div class="extra-info-grid">
+            <div class="info-card"><div class="info-label">Industry</div><div class="info-value" id="infoIndustry">—</div></div>
+            <div class="info-card"><div class="info-label">Country</div><div class="info-value" id="infoCountry">—</div></div>
+            <div class="info-card"><div class="info-label">Market Cap</div><div class="info-value mono" id="infoMarketCap">—</div></div>
           </div>
         </div>
       </div>
+
     </main>
 
-    <!-- Wishlist Panel -->
+    <!-- WISHLIST SIDEBAR -->
     <aside class="wishlist-panel">
       <div class="wishlist-header">
         <div class="wishlist-title">
@@ -755,14 +627,9 @@
         </div>
         <span class="wishlist-count" id="wishlistCount">0</span>
       </div>
-      <div class="wishlist-list" id="wishlistList">
-        <div class="wishlist-empty" id="wishlistEmpty">
-          <svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
-          <p>Your watchlist is empty.<br/>Search for stocks and add them here.</p>
-        </div>
-      </div>
+      <div class="wishlist-list" id="wishlistList"></div>
       <div class="wishlist-footer">
-        <button class="btn-add-wishlist" id="btnAddFromWishlist" onclick="toggleWishlist()">
+        <button class="btn-add-wishlist" onclick="toggleWishlist()">
           <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
           Add Current Stock
         </button>
@@ -771,168 +638,161 @@
   </div>
 </div>
 
-<!-- Toast Container -->
 <div class="toast-container" id="toastContainer"></div>
 
 <script>
-// ===== STATE MANAGEMENT =====
+// ===== SECTORS =====
+const SECTORS = [
+  { id: 'tech',       name: 'Technology',              cssClass: 'tech',       etf: 'XLK',  tickers: ['AAPL','MSFT','NVDA','META','GOOGL','AVGO','AMD','INTC','ORCL','CRM'] },
+  { id: 'finance',    name: 'Financials',              cssClass: 'finance',    etf: 'XLF',  tickers: ['JPM','BAC','WFC','GS','MS','V','MA','AXP','BLK','BRK.B'] },
+  { id: 'health',     name: 'Healthcare',              cssClass: 'health',     etf: 'XLV',  tickers: ['JNJ','UNH','PFE','ABBV','MRK','LLY','TMO','MDT','DHR','AMGN'] },
+  { id: 'energy',     name: 'Energy',                  cssClass: 'energy',     etf: 'XLE',  tickers: ['XOM','CVX','COP','EOG','SLB','MPC','PSX','VLO','OXY','HES'] },
+  { id: 'consumer',   name: 'Consumer Discretionary',  cssClass: 'consumer',   etf: 'XLY',  tickers: ['AMZN','HD','NKE','MCD','SBUX','TGT','LOW','BKNG','F','GM'] },
+  { id: 'industrial', name: 'Industrials',             cssClass: 'industrial', etf: 'XLI',  tickers: ['CAT','HON','GE','UPS','RTX','BA','DE','MMM','LMT','EMR'] },
+  { id: 'materials',  name: 'Materials',               cssClass: 'materials',  etf: 'XLB',  tickers: ['LIN','APD','ECL','NEM','FCX','NUE','ALB','MOS','PPG','VMC'] },
+  { id: 'realestate', name: 'Real Estate',             cssClass: 'realestate', etf: 'XLRE', tickers: ['PLD','AMT','EQIX','PSA','O','SPG','WELL','CCI','AVB','EQR'] },
+  { id: 'utilities',  name: 'Utilities',               cssClass: 'utilities',  etf: 'XLU',  tickers: ['NEE','DUK','SO','D','SRE','AEP','EXC','PCG','ED','AWK'] },
+  { id: 'comm',       name: 'Communication Services',  cssClass: 'comm',       etf: 'XLC',  tickers: ['META','GOOGL','NFLX','DIS','CMCSA','VZ','T','EA','TTWO','WBD'] },
+];
+
+// ===== STATE =====
+const HARDCODED_API_KEY = 'd9vjs4pr01qgk75onskgd9vjs4pr01qgk75onsl0';
+// Save hardcoded key to localStorage so settings modal can display it
+localStorage.setItem('stockpulse_api_key', HARDCODED_API_KEY);
+
 const state = {
-  apiKey: localStorage.getItem('stockpulse_api_key') || '',
+  apiKey: HARDCODED_API_KEY,
   currentSymbol: '',
   currentProfile: null,
   currentQuote: null,
   wishlist: JSON.parse(localStorage.getItem('stockpulse_wishlist') || '[]'),
-  timeRange: '1D',
-  chartType: 'area',
-  chart: null,
-  mainSeries: null,
-  volumeSeries: null,
   searchTimeout: null,
-  refreshInterval: null,
-  wishlistRefreshInterval: null,
+  autoRefreshTimer: null,
+  countdownTimer: null,
+  countdown: 30,
+  currentPage: 'dashboard',
+  sectorData: {},
 };
 
-// ===== INITIALIZATION =====
+// ===== INIT =====
 document.addEventListener('DOMContentLoaded', () => {
-  if (!state.apiKey) {
-    showOnboarding();
-  } else {
-    initApp();
-  }
+  // API key is hardcoded — always start the app directly
+  initApp();
   setupEventListeners();
+  updateGreeting();
 });
 
 function initApp() {
   updateMarketStatus();
-  renderWishlist();
-  updateWishlistPrices();
-  // Auto-refresh market status every minute
   setInterval(updateMarketStatus, 60000);
-  // Auto-refresh wishlist prices every 30 seconds
-  state.wishlistRefreshInterval = setInterval(updateWishlistPrices, 30000);
-  // Load first wishlist stock or show welcome
-  if (state.wishlist.length > 0 && !state.currentSymbol) {
-    loadStock(state.wishlist[0].symbol);
+  renderWishlist();
+  renderSectors();
+  updateDashboard();
+  // Initial data loads
+  updateWishlistPrices().then(updateDashboard);
+  loadSectorData();
+  startAutoRefresh();
+  updateLastRefresh();
+}
+
+function startAutoRefresh() {
+  clearInterval(state.autoRefreshTimer);
+  clearInterval(state.countdownTimer);
+  state.countdown = 30;
+  document.getElementById('countdownNum').textContent = state.countdown;
+
+  state.countdownTimer = setInterval(() => {
+    state.countdown = Math.max(0, state.countdown - 1);
+    document.getElementById('countdownNum').textContent = state.countdown;
+  }, 1000);
+
+  state.autoRefreshTimer = setInterval(async () => {
+    state.countdown = 30;
+    try {
+      await updateWishlistPrices();
+      if (state.currentSymbol && state.currentPage === 'stock') {
+        await refreshCurrentQuote();
+      }
+      await loadSectorData();
+      updateDashboard();
+      updateLastRefresh();
+    } catch (e) { console.error('Auto-refresh error', e); }
+  }, 30000);
+}
+
+function updateGreeting() {
+  const h = new Date().getHours();
+  const greet = h < 12 ? 'Good Morning ☀️' : h < 17 ? 'Good Afternoon 🌤' : 'Good Evening 🌙';
+  document.getElementById('dashGreeting').textContent = greet;
+  document.getElementById('dashDate').textContent = new Date().toLocaleDateString('en-US', {
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+  });
+}
+
+function updateLastRefresh() {
+  const t = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  const el = document.getElementById('lastUpdateText');
+  if (el) {
+    el.textContent = t;
+    el.classList.remove('refresh-flash');
+    void el.offsetWidth;
+    el.classList.add('refresh-flash');
   }
 }
 
-function setupEventListeners() {
-  const searchInput = document.getElementById('searchInput');
-
-  searchInput.addEventListener('input', (e) => {
-    clearTimeout(state.searchTimeout);
-    const query = e.target.value.trim();
-    if (query.length < 1) {
-      closeSearchDropdown();
-      return;
-    }
-    state.searchTimeout = setTimeout(() => searchSymbols(query), 300);
-  });
-
-  searchInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-      const query = e.target.value.trim().toUpperCase();
-      if (query) {
-        loadStock(query);
-        closeSearchDropdown();
-        searchInput.value = '';
-        searchInput.blur();
-      }
-    }
-    if (e.key === 'Escape') {
-      closeSearchDropdown();
-      searchInput.blur();
-    }
-  });
-
-  // Global keyboard shortcut: Cmd/Ctrl + K to focus search
-  document.addEventListener('keydown', (e) => {
-    if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-      e.preventDefault();
-      searchInput.focus();
-    }
-  });
-
-  // Close search dropdown when clicking outside
-  document.addEventListener('click', (e) => {
-    if (!e.target.closest('.search-wrap')) {
-      closeSearchDropdown();
-    }
-  });
-
-  // Close modals on overlay click
-  document.getElementById('settingsModal').addEventListener('click', (e) => {
-    if (e.target === e.currentTarget) closeSettings();
-  });
+// ===== PAGE SWITCHING =====
+function switchPage(page) {
+  state.currentPage = page;
+  document.querySelectorAll('.page-view').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  const tab = document.getElementById('tab-' + page);
+  if (tab) tab.classList.add('active');
 }
 
-// ===== API LAYER =====
+// ===== API =====
 const API_BASE = 'https://finnhub.io/api/v1';
 
 async function apiCall(endpoint, params = {}) {
   params.token = state.apiKey;
-  const query = new URLSearchParams(params).toString();
-  const url = `${API_BASE}${endpoint}?${query}`;
-
-  const response = await fetch(url);
-  if (response.status === 401) throw new Error('Invalid API key');
-  if (response.status === 429) throw new Error('Rate limit exceeded. Please wait a moment.');
-  if (!response.ok) throw new Error(`API error: ${response.status}`);
-  return response.json();
+  const url = API_BASE + endpoint + '?' + new URLSearchParams(params);
+  const res = await fetch(url);
+  if (res.status === 401) throw new Error('Invalid API key');
+  if (res.status === 429) throw new Error('Rate limit exceeded');
+  if (!res.ok) throw new Error('API error: ' + res.status);
+  return res.json();
 }
 
-async function fetchQuote(symbol) {
-  return apiCall('/quote', { symbol });
-}
-
-async function fetchProfile(symbol) {
-  return apiCall('/stock/profile2', { symbol });
-}
-
-async function fetchCandles(symbol, resolution, from, to) {
-  return apiCall('/stock/candle', { symbol, resolution, from, to });
-}
-
-async function searchSymbolsAPI(query) {
-  return apiCall('/search', { q: query });
-}
+const fetchQuote   = sym => apiCall('/quote', { symbol: sym });
+const fetchProfile = sym => apiCall('/stock/profile2', { symbol: sym });
+const fetchSearch  = q   => apiCall('/search', { q });
 
 // ===== SEARCH =====
 async function searchSymbols(query) {
   try {
-    const data = await searchSymbolsAPI(query);
-    const dropdown = document.getElementById('searchDropdown');
-
-    if (!data.result || data.result.length === 0) {
-      dropdown.innerHTML = '<div class="search-empty">No results found</div>';
-      dropdown.classList.add('active');
+    const data = await fetchSearch(query);
+    const dd = document.getElementById('searchDropdown');
+    if (!data.result || !data.result.length) {
+      dd.innerHTML = '<div class="search-empty">No results found</div>';
+      dd.classList.add('active');
       return;
     }
-
-    // Filter to show mainly stocks (not crypto, forex, etc.)
-    const filtered = data.result
-      .filter(r => r.type === 'Common Stock' || r.type === 'ADR' || r.type === 'ETF' || !r.type)
-      .slice(0, 8);
-
-    if (filtered.length === 0) {
-      dropdown.innerHTML = '<div class="search-empty">No stock results found</div>';
-      dropdown.classList.add('active');
+    const filtered = data.result.filter(r => ['Common Stock','ADR','ETF',null,undefined,''].includes(r.type)).slice(0, 8);
+    if (!filtered.length) {
+      dd.innerHTML = '<div class="search-empty">No stock results found</div>';
+      dd.classList.add('active');
       return;
     }
-
-    dropdown.innerHTML = filtered.map(r => `
-      <div class="search-item" onclick="selectSearchResult('${r.symbol}')">
+    dd.innerHTML = filtered.map(r => `
+      <div class="search-item" onclick="selectSearchResult('${escHtml(r.symbol)}')">
         <div>
-          <div class="search-item-symbol">${r.symbol}</div>
-          <div class="search-item-name">${r.description || ''}</div>
+          <div class="search-item-symbol">${escHtml(r.symbol)}</div>
+          <div class="search-item-name">${escHtml(r.description || '')}</div>
         </div>
-        <span class="search-item-type">${r.type || 'Stock'}</span>
-      </div>
-    `).join('');
-    dropdown.classList.add('active');
-  } catch (err) {
-    console.error('Search error:', err);
-  }
+        <span class="search-item-type">${escHtml(r.type || 'Stock')}</span>
+      </div>`).join('');
+    dd.classList.add('active');
+  } catch (e) { console.error('Search:', e); }
 }
 
 function selectSearchResult(symbol) {
@@ -950,325 +810,92 @@ async function loadStock(symbol) {
   symbol = symbol.toUpperCase();
   state.currentSymbol = symbol;
 
-  // Show stock detail, hide welcome
+  // Show stock tab and switch page
+  const stockTab = document.getElementById('tab-stock');
+  stockTab.style.display = 'flex';
+  document.getElementById('stockTabLabel').textContent = symbol;
+
   document.getElementById('welcomeState').style.display = 'none';
   document.getElementById('stockDetail').style.display = 'block';
-
-  // Update wishlist button state
+  switchPage('stock');
   updateWishlistButton();
-
-  // Update active state in wishlist
   renderWishlist();
 
-  // Fetch data
   try {
-    // Fetch quote and profile in parallel
-    const [quote, profile] = await Promise.allSettled([
+    const [quoteRes, profileRes] = await Promise.allSettled([
       fetchQuote(symbol),
       fetchProfile(symbol)
     ]);
 
-    if (quote.status === 'fulfilled' && quote.value.c) {
-      state.currentQuote = quote.value;
-      renderQuote(quote.value, symbol);
+    if (quoteRes.status === 'fulfilled' && quoteRes.value.c) {
+      state.currentQuote = quoteRes.value;
+      renderQuote(quoteRes.value);
     } else {
-      showToast('Could not load quote data for ' + symbol, 'error');
+      showToast('Could not load quote for ' + symbol, 'error');
     }
 
-    if (profile.status === 'fulfilled' && profile.value.name) {
-      state.currentProfile = profile.value;
-      renderProfile(profile.value);
+    if (profileRes.status === 'fulfilled' && profileRes.value.name) {
+      state.currentProfile = profileRes.value;
+      renderProfile(profileRes.value);
     } else {
-      // Use symbol as fallback
       document.getElementById('stockSymbol').textContent = symbol;
       document.getElementById('stockCompanyName').textContent = '';
       document.getElementById('stockExchange').textContent = '';
       document.getElementById('stockLogo').innerHTML = '<svg viewBox="0 0 24 24"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg>';
+      document.getElementById('infoIndustry').textContent = '—';
+      document.getElementById('infoCountry').textContent = '—';
+      document.getElementById('infoMarketCap').textContent = '—';
     }
 
-    // Load chart data
-    await loadChartData(symbol, state.timeRange);
-
-    // Set up auto-refresh for the current stock (every 30s)
-    clearInterval(state.refreshInterval);
-    state.refreshInterval = setInterval(() => {
-      refreshCurrentQuote();
-    }, 30000);
-
+    updateLastRefresh();
   } catch (err) {
-    console.error('Load stock error:', err);
     showToast(err.message, 'error');
   }
 }
 
-function renderProfile(profile) {
-  document.getElementById('stockSymbol').textContent = profile.ticker || state.currentSymbol;
-  document.getElementById('stockCompanyName').textContent = profile.name || '';
-  document.getElementById('stockExchange').textContent = profile.exchange || '';
+function renderProfile(p) {
+  document.getElementById('stockSymbol').textContent = p.ticker || state.currentSymbol;
+  document.getElementById('stockCompanyName').textContent = p.name || '';
+  document.getElementById('stockExchange').textContent = p.exchange || '';
+  document.getElementById('infoIndustry').textContent = p.finnhubIndustry || '—';
+  document.getElementById('infoCountry').textContent = p.country || '—';
+  document.getElementById('infoMarketCap').textContent = p.marketCapitalization ? formatMarketCap(p.marketCapitalization) : '—';
 
   const logoWrap = document.getElementById('stockLogo');
-  if (profile.logo) {
-    logoWrap.innerHTML = `<img src="${profile.logo}" alt="${profile.name}" onerror="this.parentElement.innerHTML='<svg viewBox=\\'0 0 24 24\\'><path d=\\'M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z\\'/></svg>'" />`;
-  } else {
-    logoWrap.innerHTML = '<svg viewBox="0 0 24 24"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg>';
-  }
+  logoWrap.innerHTML = p.logo
+    ? `<img src="${p.logo}" alt="${escHtml(p.name)}" onerror="this.parentElement.innerHTML='<svg viewBox=\\'0 0 24 24\\'><path d=\\'M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z\\'/></svg>'" />`
+    : '<svg viewBox="0 0 24 24"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg>';
 }
 
-function renderQuote(quote, symbol) {
-  const price = quote.c;
-  const change = quote.d;
-  const changePct = quote.dp;
-  const isUp = change > 0;
-  const isDown = change < 0;
-  const direction = isUp ? 'up' : isDown ? 'down' : 'flat';
+function renderQuote(q) {
+  const price = q.c, change = q.d, pct = q.dp;
+  const up = change > 0, down = change < 0;
+  const dir = up ? 'up' : down ? 'down' : 'flat';
 
-  // Main price
-  document.getElementById('priceMain').textContent = `$${formatNumber(price)}`;
+  document.getElementById('priceMain').textContent = '$' + fmtNum(price);
+  document.getElementById('priceMain').style.color = up ? 'var(--green)' : down ? 'var(--red)' : 'var(--text-primary)';
 
-  // Price change
-  const priceChangeEl = document.getElementById('priceChange');
-  priceChangeEl.className = `price-change ${direction}`;
-  document.getElementById('priceArrow').textContent = isUp ? '▲' : isDown ? '▼' : '—';
-  document.getElementById('priceChangeVal').textContent = `$${Math.abs(change).toFixed(2)}`;
-  document.getElementById('priceChangePct').textContent = `(${changePct >= 0 ? '+' : ''}${changePct.toFixed(2)}%)`;
+  const el = document.getElementById('priceChange');
+  el.className = 'price-change ' + dir;
+  document.getElementById('priceArrow').textContent = up ? '▲' : down ? '▼' : '—';
+  document.getElementById('priceChangeVal').textContent = (up ? '+' : down ? '-' : '') + '$' + Math.abs(change).toFixed(2);
+  document.getElementById('priceChangePct').textContent = '(' + (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%)';
 
-  // Session label
-  const session = getMarketSession();
-  const sessionLabel = document.getElementById('priceSessionLabel');
-  const extendedEl = document.getElementById('extendedPrice');
+  const sessionMap = { regular: 'Market Price · Real-time', 'post-market': 'After Hours', 'pre-market': 'Pre-Market', closed: 'At Close' };
+  document.getElementById('priceSessionLabel').textContent = sessionMap[getMarketSession()] || 'At Close';
 
-  if (session === 'regular') {
-    sessionLabel.textContent = 'Market Price · Real-time';
-    extendedEl.style.display = 'none';
-  } else if (session === 'post-market') {
-    sessionLabel.textContent = 'After Hours';
-    extendedEl.style.display = 'none';
-  } else if (session === 'pre-market') {
-    sessionLabel.textContent = 'Pre-Market';
-    extendedEl.style.display = 'none';
-  } else {
-    sessionLabel.textContent = 'At Close';
-    extendedEl.style.display = 'none';
-  }
-
-  // Stats
-  document.getElementById('statOpen').textContent = quote.o ? `$${formatNumber(quote.o)}` : '—';
-  document.getElementById('statHigh').textContent = quote.h ? `$${formatNumber(quote.h)}` : '—';
-  document.getElementById('statLow').textContent = quote.l ? `$${formatNumber(quote.l)}` : '—';
-  document.getElementById('statPrevClose').textContent = quote.pc ? `$${formatNumber(quote.pc)}` : '—';
-
-  // Color the main price
-  document.getElementById('priceMain').style.color = isUp ? 'var(--green)' : isDown ? 'var(--red)' : 'var(--text-primary)';
+  document.getElementById('statOpen').textContent = q.o ? '$' + fmtNum(q.o) : '—';
+  document.getElementById('statHigh').textContent = q.h ? '$' + fmtNum(q.h) : '—';
+  document.getElementById('statLow').textContent  = q.l ? '$' + fmtNum(q.l) : '—';
+  document.getElementById('statPrevClose').textContent = q.pc ? '$' + fmtNum(q.pc) : '—';
 }
 
 async function refreshCurrentQuote() {
   if (!state.currentSymbol) return;
   try {
-    const quote = await fetchQuote(state.currentSymbol);
-    if (quote && quote.c) {
-      state.currentQuote = quote;
-      renderQuote(quote, state.currentSymbol);
-    }
-  } catch (err) {
-    // Silent fail on refresh
-  }
-}
-
-// ===== CHART =====
-function getTimeRangeParams(range) {
-  const now = Math.floor(Date.now() / 1000);
-  const dayInSec = 86400;
-
-  switch (range) {
-    case '1D':
-      return { resolution: '5', from: now - dayInSec, to: now };
-    case '1W':
-      return { resolution: '30', from: now - 7 * dayInSec, to: now };
-    case '1M':
-      return { resolution: '60', from: now - 30 * dayInSec, to: now };
-    case '6M':
-      return { resolution: 'D', from: now - 180 * dayInSec, to: now };
-    case 'YTD': {
-      const jan1 = Math.floor(new Date(new Date().getFullYear(), 0, 1).getTime() / 1000);
-      return { resolution: 'D', from: jan1, to: now };
-    }
-    case '1Y':
-      return { resolution: 'D', from: now - 365 * dayInSec, to: now };
-    default:
-      return { resolution: 'D', from: now - 30 * dayInSec, to: now };
-  }
-}
-
-async function loadChartData(symbol, range) {
-  const chartLoading = document.getElementById('chartLoading');
-  chartLoading.classList.remove('hidden');
-
-  try {
-    const params = getTimeRangeParams(range);
-    const data = await fetchCandles(symbol, params.resolution, params.from, params.to);
-
-    if (data.s !== 'ok' || !data.t || data.t.length === 0) {
-      chartLoading.innerHTML = '<div class="error-state"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg><p style="color:var(--text-muted)">No chart data available for this period</p></div>';
-      return;
-    }
-
-    renderChart(data, range);
-    chartLoading.classList.add('hidden');
-  } catch (err) {
-    chartLoading.innerHTML = `<div class="error-state"><p style="color:var(--text-muted)">${err.message}</p></div>`;
-  }
-}
-
-function renderChart(data, range) {
-  const container = document.getElementById('chartContainer');
-  const chartLoading = document.getElementById('chartLoading');
-
-  // Destroy existing chart
-  if (state.chart) {
-    state.chart.remove();
-    state.chart = null;
-  }
-
-  // Reset container for chart (keep loading overlay)
-  chartLoading.innerHTML = '<div class="loader"></div>';
-
-  const chart = LightweightCharts.createChart(container, {
-    width: container.clientWidth,
-    height: container.clientHeight,
-    layout: {
-      background: { type: LightweightCharts.ColorType.Solid, color: 'transparent' },
-      textColor: '#6a6a82',
-      fontFamily: "'Inter', sans-serif",
-      fontSize: 11,
-    },
-    grid: {
-      vertLines: { color: 'rgba(42, 42, 62, 0.3)' },
-      horzLines: { color: 'rgba(42, 42, 62, 0.3)' },
-    },
-    crosshair: {
-      mode: LightweightCharts.CrosshairMode.Normal,
-      vertLine: { color: 'rgba(124, 58, 237, 0.3)', width: 1, style: 2, labelBackgroundColor: '#7c3aed' },
-      horzLine: { color: 'rgba(124, 58, 237, 0.3)', width: 1, style: 2, labelBackgroundColor: '#7c3aed' },
-    },
-    timeScale: {
-      borderColor: 'rgba(42, 42, 62, 0.4)',
-      timeVisible: range === '1D' || range === '1W',
-      secondsVisible: false,
-      rightOffset: 5,
-      barSpacing: range === '1D' ? 6 : range === '1W' ? 5 : 4,
-    },
-    rightPriceScale: {
-      borderColor: 'rgba(42, 42, 62, 0.4)',
-      scaleMargins: { top: 0.1, bottom: 0.25 },
-    },
-    handleScroll: { vertTouchDrag: false },
-  });
-
-  state.chart = chart;
-
-  // Determine if price went up or down overall
-  const firstClose = data.c[0];
-  const lastClose = data.c[data.c.length - 1];
-  const isPositive = lastClose >= firstClose;
-  const lineColor = isPositive ? '#10b981' : '#ef4444';
-  const topGradient = isPositive ? 'rgba(16, 185, 129, 0.25)' : 'rgba(239, 68, 68, 0.25)';
-  const bottomGradient = isPositive ? 'rgba(16, 185, 129, 0.01)' : 'rgba(239, 68, 68, 0.01)';
-
-  if (state.chartType === 'area') {
-    const series = chart.addAreaSeries({
-      lineColor: lineColor,
-      topColor: topGradient,
-      bottomColor: bottomGradient,
-      lineWidth: 2,
-      priceFormat: { type: 'price', precision: 2, minMove: 0.01 },
-      crosshairMarkerBackgroundColor: lineColor,
-      crosshairMarkerBorderColor: 'white',
-      crosshairMarkerRadius: 5,
-    });
-
-    const chartData = data.t.map((t, i) => ({
-      time: t,
-      value: data.c[i],
-    }));
-
-    series.setData(chartData);
-    state.mainSeries = series;
-  } else {
-    const series = chart.addCandlestickSeries({
-      upColor: '#10b981',
-      downColor: '#ef4444',
-      borderUpColor: '#10b981',
-      borderDownColor: '#ef4444',
-      wickUpColor: '#10b981',
-      wickDownColor: '#ef4444',
-      priceFormat: { type: 'price', precision: 2, minMove: 0.01 },
-    });
-
-    const chartData = data.t.map((t, i) => ({
-      time: t,
-      open: data.o[i],
-      high: data.h[i],
-      low: data.l[i],
-      close: data.c[i],
-    }));
-
-    series.setData(chartData);
-    state.mainSeries = series;
-  }
-
-  // Add volume histogram
-  const volumeSeries = chart.addHistogramSeries({
-    color: 'rgba(124, 58, 237, 0.3)',
-    priceFormat: { type: 'volume' },
-    priceScaleId: 'volume',
-  });
-
-  chart.priceScale('volume').applyOptions({
-    scaleMargins: { top: 0.85, bottom: 0 },
-  });
-
-  if (data.v) {
-    const volumeData = data.t.map((t, i) => ({
-      time: t,
-      value: data.v[i],
-      color: data.c[i] >= (data.o[i] || data.c[i]) ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)',
-    }));
-    volumeSeries.setData(volumeData);
-  }
-  state.volumeSeries = volumeSeries;
-
-  chart.timeScale().fitContent();
-
-  // Handle resize
-  const resizeObserver = new ResizeObserver(entries => {
-    for (const entry of entries) {
-      chart.applyOptions({
-        width: entry.contentRect.width,
-        height: entry.contentRect.height,
-      });
-    }
-  });
-  resizeObserver.observe(container);
-}
-
-function setTimeRange(range) {
-  state.timeRange = range;
-  // Update active button
-  document.querySelectorAll('.time-btn').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.range === range);
-  });
-  if (state.currentSymbol) {
-    loadChartData(state.currentSymbol, range);
-  }
-}
-
-function setChartType(type) {
-  state.chartType = type;
-  document.getElementById('btnArea').classList.toggle('active', type === 'area');
-  document.getElementById('btnCandle').classList.toggle('active', type === 'candlestick');
-  if (state.currentSymbol) {
-    loadChartData(state.currentSymbol, state.timeRange);
-  }
+    const q = await fetchQuote(state.currentSymbol);
+    if (q && q.c) { state.currentQuote = q; renderQuote(q); }
+  } catch {}
 }
 
 async function refreshData() {
@@ -1277,117 +904,179 @@ async function refreshData() {
   btn.classList.add('spinning');
   try {
     await loadStock(state.currentSymbol);
-    showToast('Data refreshed', 'success');
-  } catch (err) {
-    showToast('Failed to refresh', 'error');
-  }
+    showToast('Refreshed', 'success');
+  } catch { showToast('Refresh failed', 'error'); }
   setTimeout(() => btn.classList.remove('spinning'), 800);
+}
+
+async function fullRefresh() {
+  const btn = document.getElementById('dashRefreshBtn');
+  btn.disabled = true;
+  btn.innerHTML = '&#x27F3; Refreshing...';
+  try {
+    await updateWishlistPrices();
+    if (state.currentSymbol) await refreshCurrentQuote();
+    await loadSectorData();
+    updateDashboard();
+    updateLastRefresh();
+    showToast('All data refreshed', 'success');
+  } catch { showToast('Refresh error', 'error'); }
+  btn.disabled = false;
+  btn.innerHTML = '<svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:currentColor"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg> Refresh All';
+}
+
+// ===== SECTOR DATA =====
+async function loadSectorData() {
+  for (const s of SECTORS) {
+    try {
+      const q = await fetchQuote(s.etf);
+      if (q && q.c) state.sectorData[s.etf] = q;
+      await sleep(120);
+    } catch {}
+  }
+  renderSectors();
+}
+
+function renderSectors() {
+  document.getElementById('sectorsGrid').innerHTML = SECTORS.map(s => {
+    const etf = state.sectorData[s.etf];
+    const pct = etf ? etf.dp : null;
+    const cls = pct === null ? 'loading' : pct >= 0 ? 'up' : 'down';
+    const txt = pct === null ? '—' : (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%';
+    const visibleTickers = s.tickers.slice(0, 5);
+    return `<div class="sector-card ${s.cssClass}">
+      <div class="sector-name">${escHtml(s.name)}</div>
+      <div class="sector-tickers">
+        ${visibleTickers.map(t => `<span class="sector-ticker" onclick="loadStock('${t}');event.stopPropagation();">${t}</span>`).join('')}
+        <span class="sector-ticker" style="opacity:0.5;cursor:default;">+${s.tickers.length - visibleTickers.length}</span>
+      </div>
+      <div class="sector-footer">
+        <span class="sector-etf">ETF: <strong>${s.etf}</strong></span>
+        <span class="sector-perf ${cls}">${txt}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ===== DASHBOARD =====
+function updateDashboard() {
+  const total = state.wishlist.length;
+  const withData = state.wishlist.filter(s => s._quote);
+  const gainers = withData.filter(s => s._quote.dp >= 0).length;
+  const losers  = withData.filter(s => s._quote.dp < 0).length;
+  let best = withData.length ? withData.reduce((a, b) => a._quote.dp > b._quote.dp ? a : b) : null;
+
+  document.getElementById('summaryTotal').textContent = total;
+  document.getElementById('summaryGainers').textContent = gainers;
+  document.getElementById('summaryLosers').textContent = losers;
+  document.getElementById('summaryBest').textContent = best
+    ? best.symbol + ' ' + (best._quote.dp >= 0 ? '+' : '') + best._quote.dp.toFixed(2) + '%'
+    : '—';
+
+  const container = document.getElementById('dashWatchlist');
+  if (!state.wishlist.length) {
+    container.innerHTML = `<div class="dash-empty">
+      <svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+      <span>Your watchlist is empty. Search for stocks and add them.</span>
+    </div>`;
+    return;
+  }
+
+  const rows = state.wishlist.map(stock => {
+    const q = stock._quote;
+    const price = q ? '$' + fmtNum(q.c) : '—';
+    const pct = q ? q.dp : null;
+    const dir = pct === null ? 'flat' : pct >= 0 ? 'up' : 'down';
+    const pctText = pct !== null ? (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%' : '—';
+    const changeText = q ? (q.d >= 0 ? '+' : '') + '$' + Math.abs(q.d).toFixed(2) : '—';
+    return `<tr onclick="loadStock('${escHtml(stock.symbol)}')">
+      <td><div class="wl-symbol">${escHtml(stock.symbol)}</div><div class="wl-name">${escHtml(stock.name || '')}</div></td>
+      <td><div class="wl-price">${price}</div></td>
+      <td><div class="wl-chg ${dir}">${changeText}</div></td>
+      <td><span class="pct-badge ${dir}">${pctText}</span></td>
+      <td class="r"><button class="view-btn" onclick="loadStock('${escHtml(stock.symbol)}');event.stopPropagation();">View →</button></td>
+    </tr>`;
+  }).join('');
+
+  container.innerHTML = `<div class="table-wrap">
+    <table class="wl-table">
+      <thead><tr>
+        <th>Symbol</th><th>Price</th><th>Change</th><th>% Change</th><th class="r">Action</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  </div>`;
 }
 
 // ===== MARKET STATUS =====
 function getMarketSession() {
   const now = new Date();
-  // Convert to ET (approximate: UTC-4 for EDT, UTC-5 for EST)
-  const utcHour = now.getUTCHours();
-  const utcMinute = now.getUTCMinutes();
-  const utcDay = now.getUTCDay(); // 0=Sun, 6=Sat
-  const totalMinutes = utcHour * 60 + utcMinute;
-
-  // Determine if DST (rough: March second Sunday to November first Sunday)
-  const month = now.getUTCMonth(); // 0=Jan
-  const isDST = month >= 2 && month <= 10; // Rough approximation
+  const utcH = now.getUTCHours(), utcM = now.getUTCMinutes(), day = now.getUTCDay();
+  const totalMin = utcH * 60 + utcM;
+  const isDST = now.getUTCMonth() >= 2 && now.getUTCMonth() <= 10;
   const etOffset = isDST ? -4 : -5;
-  const etMinutes = totalMinutes + etOffset * 60;
-  const etHour = Math.floor(((etMinutes % 1440) + 1440) % 1440 / 60);
-  const etMin = ((etMinutes % 1440) + 1440) % 1440 % 60;
-  const etTotalMin = etHour * 60 + etMin;
-
-  // Adjust day for timezone
-  let etDay = utcDay;
-  if (totalMinutes + etOffset * 60 < 0) etDay = (etDay - 1 + 7) % 7;
-  if (totalMinutes + etOffset * 60 >= 1440) etDay = (etDay + 1) % 7;
-
-  // Weekend
+  const etMin = ((totalMin + etOffset * 60) % 1440 + 1440) % 1440;
+  let etDay = day;
+  if (totalMin + etOffset * 60 < 0) etDay = (day - 1 + 7) % 7;
+  if (totalMin + etOffset * 60 >= 1440) etDay = (day + 1) % 7;
   if (etDay === 0 || etDay === 6) return 'closed';
-
-  // Pre-market: 4:00 AM - 9:30 AM ET
-  if (etTotalMin >= 240 && etTotalMin < 570) return 'pre-market';
-  // Regular: 9:30 AM - 4:00 PM ET
-  if (etTotalMin >= 570 && etTotalMin < 960) return 'regular';
-  // After-hours: 4:00 PM - 8:00 PM ET
-  if (etTotalMin >= 960 && etTotalMin < 1200) return 'post-market';
-
+  if (etMin >= 240 && etMin < 570) return 'pre-market';
+  if (etMin >= 570 && etMin < 960) return 'regular';
+  if (etMin >= 960 && etMin < 1200) return 'post-market';
   return 'closed';
 }
 
 function updateMarketStatus() {
   const session = getMarketSession();
   const badge = document.getElementById('marketBadge');
-  const text = document.getElementById('marketBadgeText');
-
+  const text  = document.getElementById('marketBadgeText');
   badge.className = 'market-badge';
-  switch (session) {
-    case 'regular':
-      badge.classList.add('open');
-      text.textContent = 'Market Open';
-      break;
-    case 'pre-market':
-      badge.classList.add('pre-market');
-      text.textContent = 'Pre-Market';
-      break;
-    case 'post-market':
-      badge.classList.add('after-hours');
-      text.textContent = 'After Hours';
-      break;
-    default:
-      badge.classList.add('closed');
-      text.textContent = 'Market Closed';
-  }
+  const map = { regular: ['open','Market Open'], 'pre-market': ['pre-market','Pre-Market'], 'post-market': ['after-hours','After Hours'], closed: ['closed','Market Closed'] };
+  const [cls, lbl] = map[session] || map.closed;
+  badge.classList.add(cls);
+  text.textContent = lbl;
 }
 
 // ===== WISHLIST =====
 function toggleWishlist() {
   if (!state.currentSymbol) return;
-
   const idx = state.wishlist.findIndex(w => w.symbol === state.currentSymbol);
   if (idx >= 0) {
     state.wishlist.splice(idx, 1);
-    showToast(`${state.currentSymbol} removed from watchlist`, 'success');
+    showToast(state.currentSymbol + ' removed from watchlist', 'success');
   } else {
     const name = state.currentProfile ? state.currentProfile.name : state.currentSymbol;
-    state.wishlist.push({
-      symbol: state.currentSymbol,
-      name: name,
-    });
-    showToast(`${state.currentSymbol} added to watchlist`, 'success');
+    state.wishlist.push({ symbol: state.currentSymbol, name });
+    showToast(state.currentSymbol + ' added to watchlist', 'success');
   }
-
   saveWishlist();
   renderWishlist();
   updateWishlistButton();
-  updateWishlistPrices();
+  updateWishlistPrices().then(updateDashboard);
 }
 
-function removeFromWishlist(symbol, event) {
-  if (event) event.stopPropagation();
+function removeFromWishlist(symbol, ev) {
+  if (ev) ev.stopPropagation();
   state.wishlist = state.wishlist.filter(w => w.symbol !== symbol);
   saveWishlist();
   renderWishlist();
   updateWishlistButton();
-  showToast(`${symbol} removed from watchlist`, 'success');
+  updateDashboard();
+  showToast(symbol + ' removed', 'success');
 }
 
 function saveWishlist() {
-  localStorage.setItem('stockpulse_wishlist', JSON.stringify(state.wishlist));
+  localStorage.setItem('stockpulse_wishlist', JSON.stringify(
+    state.wishlist.map(({ symbol, name }) => ({ symbol, name }))
+  ));
 }
 
 function updateWishlistButton() {
-  const btn = document.getElementById('btnWishlist');
+  const btn  = document.getElementById('btnWishlist');
   const icon = document.getElementById('wishlistIcon');
   const text = document.getElementById('wishlistBtnText');
-  const isInWishlist = state.wishlist.some(w => w.symbol === state.currentSymbol);
-
-  if (isInWishlist) {
+  const isIn = state.wishlist.some(w => w.symbol === state.currentSymbol);
+  if (isIn) {
     btn.classList.add('active');
     icon.innerHTML = '<path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>';
     text.textContent = 'In Watchlist';
@@ -1399,75 +1088,50 @@ function updateWishlistButton() {
 }
 
 function renderWishlist() {
-  const list = document.getElementById('wishlistList');
+  const list  = document.getElementById('wishlistList');
   const count = document.getElementById('wishlistCount');
-  const empty = document.getElementById('wishlistEmpty');
-
   count.textContent = state.wishlist.length;
 
-  if (state.wishlist.length === 0) {
-    list.innerHTML = '';
-    list.appendChild(empty.cloneNode ? createEmptyState() : empty);
-    document.getElementById('wishlistEmpty').style.display = 'flex';
+  if (!state.wishlist.length) {
+    list.innerHTML = `<div class="wishlist-empty">
+      <svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+      <p>Your watchlist is empty.<br/>Search for stocks and add them here.</p>
+    </div>`;
     return;
   }
 
   list.innerHTML = state.wishlist.map(stock => {
     const isActive = stock.symbol === state.currentSymbol;
-    const priceData = stock._quote;
-    const price = priceData ? `$${formatNumber(priceData.c)}` : '—';
-    const change = priceData ? priceData.dp : null;
-    const changeClass = change !== null ? (change >= 0 ? 'up' : 'down') : '';
-    const changeText = change !== null ? `${change >= 0 ? '+' : ''}${change.toFixed(2)}%` : '';
-
-    return `
-      <div class="wishlist-item ${isActive ? 'active' : ''}" onclick="loadStock('${stock.symbol}')">
-        <div class="wishlist-item-info">
-          <div class="wishlist-item-symbol">${stock.symbol}</div>
-          <div class="wishlist-item-name">${stock.name || stock.symbol}</div>
-        </div>
-        <div class="wishlist-item-price">
-          <div class="wishlist-item-price-val">${price}</div>
-          <div class="wishlist-item-change ${changeClass}">${changeText}</div>
-        </div>
-        <button class="wishlist-item-remove" onclick="removeFromWishlist('${stock.symbol}', event)" title="Remove">
-          <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
-        </button>
+    const q = stock._quote;
+    const price = q ? '$' + fmtNum(q.c) : '—';
+    const pct = q ? q.dp : null;
+    const dir = pct !== null ? (pct >= 0 ? 'up' : 'down') : '';
+    const pctText = pct !== null ? (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%' : '';
+    return `<div class="wishlist-item${isActive ? ' active' : ''}" onclick="loadStock('${escHtml(stock.symbol)}')">
+      <div class="wishlist-item-info">
+        <div class="wishlist-item-symbol">${escHtml(stock.symbol)}</div>
+        <div class="wishlist-item-name">${escHtml(stock.name || stock.symbol)}</div>
       </div>
-    `;
+      <div class="wishlist-item-price">
+        <div class="wishlist-item-price-val">${price}</div>
+        <div class="wishlist-item-change ${dir}">${pctText}</div>
+      </div>
+      <button class="wishlist-item-remove" onclick="removeFromWishlist('${escHtml(stock.symbol)}', event)" title="Remove">
+        <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+      </button>
+    </div>`;
   }).join('');
 }
 
-function createEmptyState() {
-  const div = document.createElement('div');
-  div.className = 'wishlist-empty';
-  div.id = 'wishlistEmpty';
-  div.innerHTML = `
-    <svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
-    <p>Your watchlist is empty.<br/>Search for stocks and add them here.</p>
-  `;
-  return div;
-}
-
 async function updateWishlistPrices() {
-  if (state.wishlist.length === 0) return;
-
-  // Fetch quotes for all wishlist items (with rate limiting)
+  if (!state.wishlist.length) return;
   for (let i = 0; i < state.wishlist.length; i++) {
     try {
-      const quote = await fetchQuote(state.wishlist[i].symbol);
-      if (quote && quote.c) {
-        state.wishlist[i]._quote = quote;
-      }
-    } catch (err) {
-      // Skip on error
-    }
-    // Small delay between requests to avoid rate limiting
-    if (i < state.wishlist.length - 1) {
-      await new Promise(r => setTimeout(r, 200));
-    }
+      const q = await fetchQuote(state.wishlist[i].symbol);
+      if (q && q.c) state.wishlist[i]._quote = q;
+    } catch {}
+    if (i < state.wishlist.length - 1) await sleep(150);
   }
-
   renderWishlist();
 }
 
@@ -1480,40 +1144,25 @@ async function saveApiKeyFromOnboarding() {
   const input = document.getElementById('onboardingApiKey');
   const error = document.getElementById('onboardingError');
   const key = input.value.trim();
-
-  if (!key) {
-    input.classList.add('error');
-    error.textContent = 'Please enter an API key.';
-    error.classList.add('visible');
-    return;
-  }
-
-  // Validate key by making a test request
+  if (!key) { input.classList.add('error'); error.textContent = 'Please enter an API key.'; error.classList.add('visible'); return; }
+  const btn = document.getElementById('onboardingSubmit');
   try {
-    const btn = document.getElementById('onboardingSubmit');
-    btn.disabled = true;
-    btn.textContent = 'Validating...';
-
+    btn.disabled = true; btn.textContent = 'Validating...';
     state.apiKey = key;
-    const result = await fetchQuote('AAPL');
-
-    if (result && result.c) {
+    const r = await fetchQuote('AAPL');
+    if (r && r.c) {
       localStorage.setItem('stockpulse_api_key', key);
       document.getElementById('onboardingModal').classList.remove('active');
-      showToast('API key saved successfully!', 'success');
+      showToast('API key saved! Welcome to StockPulse 🎉', 'success');
       initApp();
-    } else {
-      throw new Error('Invalid response');
-    }
+    } else { throw new Error('Invalid response'); }
   } catch (err) {
     input.classList.add('error');
-    error.textContent = err.message === 'Invalid API key' ? 'Invalid API key. Please check and try again.' : 'Could not validate key. Please try again.';
+    error.textContent = err.message === 'Invalid API key' ? 'Invalid API key. Please check and try again.' : 'Could not validate. Please try again.';
     error.classList.add('visible');
     state.apiKey = '';
   } finally {
-    const btn = document.getElementById('onboardingSubmit');
-    btn.disabled = false;
-    btn.textContent = 'Get Started';
+    btn.disabled = false; btn.textContent = 'Get Started';
   }
 }
 
@@ -1532,59 +1181,67 @@ async function saveApiKeyFromSettings() {
   const input = document.getElementById('settingsApiKey');
   const error = document.getElementById('settingsError');
   const key = input.value.trim();
-
-  if (!key) {
-    input.classList.add('error');
-    error.textContent = 'Please enter an API key.';
-    error.classList.add('visible');
-    return;
-  }
-
+  if (!key) { input.classList.add('error'); error.textContent = 'Please enter a key.'; error.classList.add('visible'); return; }
   try {
     state.apiKey = key;
-    const result = await fetchQuote('AAPL');
-    if (result && result.c) {
+    const r = await fetchQuote('AAPL');
+    if (r && r.c) {
       localStorage.setItem('stockpulse_api_key', key);
       closeSettings();
-      showToast('API key updated successfully!', 'success');
-    } else {
-      throw new Error('Invalid response');
-    }
-  } catch (err) {
-    input.classList.add('error');
-    error.textContent = 'Invalid API key.';
-    error.classList.add('visible');
+      showToast('API key updated!', 'success');
+    } else { throw new Error(); }
+  } catch {
+    input.classList.add('error'); error.textContent = 'Invalid API key.'; error.classList.add('visible');
     state.apiKey = localStorage.getItem('stockpulse_api_key') || '';
   }
 }
 
-// ===== UTILITIES =====
-function formatNumber(num) {
-  if (num === null || num === undefined) return '0.00';
-  return Number(num).toLocaleString('en-US', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
+// ===== EVENTS =====
+function setupEventListeners() {
+  const si = document.getElementById('searchInput');
+  si.addEventListener('input', e => {
+    clearTimeout(state.searchTimeout);
+    const q = e.target.value.trim();
+    if (!q) { closeSearchDropdown(); return; }
+    state.searchTimeout = setTimeout(() => searchSymbols(q), 300);
   });
+  si.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { const q = si.value.trim().toUpperCase(); if (q) { loadStock(q); closeSearchDropdown(); si.value = ''; si.blur(); } }
+    if (e.key === 'Escape') { closeSearchDropdown(); si.blur(); }
+  });
+  document.addEventListener('keydown', e => { if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); si.focus(); } });
+  document.addEventListener('click', e => { if (!e.target.closest('.search-wrap')) closeSearchDropdown(); });
+  document.getElementById('settingsModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeSettings(); });
 }
 
-function showToast(message, type = 'success') {
-  const container = document.getElementById('toastContainer');
-  const toast = document.createElement('div');
-  toast.className = `toast ${type}`;
+// ===== UTILITIES =====
+function fmtNum(n) {
+  if (n == null) return '0.00';
+  return Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
 
-  const iconSvg = type === 'success'
+function formatMarketCap(cap) {
+  if (cap >= 1000000) return '$' + (cap / 1000000).toFixed(2) + 'T';
+  if (cap >= 1000) return '$' + (cap / 1000).toFixed(2) + 'B';
+  return '$' + cap.toFixed(2) + 'M';
+}
+
+function escHtml(str) {
+  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+function showToast(msg, type = 'success') {
+  const c = document.getElementById('toastContainer');
+  const t = document.createElement('div');
+  t.className = 'toast ' + type;
+  const icon = type === 'success'
     ? '<svg class="toast-icon" viewBox="0 0 24 24"><path fill="#10b981" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>'
     : '<svg class="toast-icon" viewBox="0 0 24 24"><path fill="#ef4444" d="M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z"/></svg>';
-
-  toast.innerHTML = `${iconSvg} ${message}`;
-  container.appendChild(toast);
-
-  setTimeout(() => {
-    toast.style.opacity = '0';
-    toast.style.transform = 'translateY(8px)';
-    toast.style.transition = '0.3s ease';
-    setTimeout(() => toast.remove(), 300);
-  }, 3000);
+  t.innerHTML = icon + ' ' + msg;
+  c.appendChild(t);
+  setTimeout(() => { t.style.opacity = '0'; t.style.transform = 'translateY(8px)'; t.style.transition = '0.3s ease'; setTimeout(() => t.remove(), 300); }, 3000);
 }
 </script>
 
