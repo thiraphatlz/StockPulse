@@ -14,6 +14,7 @@
     rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
   <style>
     :root {
       --bg-primary: #08080c;
@@ -376,6 +377,11 @@
       font-size: 10px;
       font-weight: 600;
       letter-spacing: 0.3px;
+    }
+    .mkt-lbl {
+      color: var(--text-secondary);
+      margin-right: 2px;
+      font-weight: 700;
     }
 
     .market-badge .dot {
@@ -1072,6 +1078,56 @@
       font-size: 10px;
       color: var(--text-muted);
       font-family: var(--font-sans);
+    }
+
+    .chart-wrap {
+      background: var(--bg-card);
+      border: 1px solid var(--border-primary);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+    .chart-header {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 10px;
+    }
+    .chart-tabs {
+      display: flex;
+      gap: 4px;
+      background: var(--bg-input);
+      padding: 4px;
+      border-radius: var(--radius-sm);
+    }
+    .chart-tab {
+      padding: 4px 12px;
+      border-radius: var(--radius-xs);
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      background: transparent;
+      transition: var(--transition);
+    }
+    .chart-tab.active {
+      background: var(--bg-elevated);
+      color: var(--text-primary);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    .chart-container {
+      width: 100%;
+      height: 250px;
+      position: relative;
+    }
+    .chart-loading {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(19, 19, 27, 0.7);
+      color: var(--text-muted);
+      font-size: 12px;
+      z-index: 10;
     }
 
     .stats-grid {
@@ -2411,8 +2467,11 @@
                 d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" />
             </svg><span class="cd" id="countdownNum">30</span>s</div>
         </div>
-        <div class="market-badge closed" id="marketBadge">
-          <div class="dot"></div><span id="marketBadgeText">Closed</span>
+        <div class="market-badge closed" id="marketBadgeUS">
+          <span class="mkt-lbl">US</span><div class="dot"></div><span id="marketBadgeTextUS">Closed</span>
+        </div>
+        <div class="market-badge closed" id="marketBadgeSET">
+          <span class="mkt-lbl">SET</span><div class="dot"></div><span id="marketBadgeTextSET">Closed</span>
         </div>
         <button class="topbar-btn" id="langToggleBtn" onclick="toggleLanguage()" title="Switch Language"
           style="font-weight: 700; font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">EN</button>
@@ -2570,6 +2629,20 @@
                 <div class="price-session-label" id="priceSessionLabel">Market Price</div>
               </div>
             </div>
+            
+            <div class="chart-wrap">
+              <div class="chart-header">
+                <div class="chart-tabs">
+                  <button class="chart-tab active" id="chartTab1D" onclick="setChartRange('1D')">1D</button>
+                  <button class="chart-tab" id="chartTab1W" onclick="setChartRange('1W')">1W</button>
+                  <button class="chart-tab" id="chartTab1M" onclick="setChartRange('1M')">1M</button>
+                </div>
+              </div>
+              <div class="chart-container" id="stockChartContainer">
+                <div class="chart-loading" id="chartLoading" style="display:none">Loading chart...</div>
+              </div>
+            </div>
+
             <div class="stats-grid">
               <div class="stat-card">
                 <div class="stat-label">Open</div>
@@ -3094,6 +3167,7 @@
             document.getElementById('stockTabLabel').textContent = S.sym;
           }
           renderQuote(qData);
+          setChartRange('1D'); // Load chart data
           const isThai = qData.isThai || S.sym.endsWith('.BK') || qData.currency === 'THB';
           const prof = {
             ticker: S.sym,
@@ -3140,14 +3214,98 @@
       document.getElementById('priceChangePct').textContent = '(' + (dp >= 0 ? '+' : '') + dp.toFixed(2) + '%)';
       const l = I18N[S.lang] || I18N.en;
       const sm = { regular: l.marketRealtime, 'post-market': l.marketAfter, 'pre-market': l.marketPre, closed: l.marketAtClose };
-      document.getElementById('priceSessionLabel').textContent = sm[getSession()] || l.marketAtClose;
+      document.getElementById('priceSessionLabel').textContent = sm[q.isThai ? getSETSession() : getUSSession()] || l.marketAtClose;
       document.getElementById('statOpen').textContent = q.o ? cs + fmtNum(q.o) : '—';
       document.getElementById('statHigh').textContent = q.h ? cs + fmtNum(q.h) : '—';
       document.getElementById('statLow').textContent = q.l ? cs + fmtNum(q.l) : '—';
       document.getElementById('statPrevClose').textContent = q.pc ? cs + fmtNum(q.pc) : '—';
     }
 
-    async function refreshCurrentQuote() { if (!S.sym) return; try { const q = await fetchQ(S.sym); if (q && q.c) { S.quote = q; renderQuote(q); } } catch { } }
+    async function refreshCurrentQuote() { 
+      if (!S.sym) return; 
+      try { 
+        const q = await fetchQ(S.sym); 
+        if (q && q.c) { 
+          S.quote = q; 
+          renderQuote(q);
+          if (chartSeries && currentChartRange === '1D') {
+            const time = q.t || Math.floor(Date.now() / 1000);
+            chartSeries.update({ time: time, value: q.c });
+          }
+        } 
+      } catch { } 
+    }
+
+    let stockChart = null;
+    let chartSeries = null;
+    let currentChartRange = '1D';
+    const chartParams = {
+      '1D': { interval: '2m', range: '1d' },
+      '1W': { interval: '15m', range: '5d' },
+      '1M': { interval: '1d', range: '1mo' }
+    };
+
+    function initChart() {
+      if (stockChart) return;
+      const container = document.getElementById('stockChartContainer');
+      if (!window.LightweightCharts) return;
+      stockChart = LightweightCharts.createChart(container, {
+        width: container.clientWidth,
+        height: 250,
+        layout: { background: { color: 'transparent' }, textColor: '#9898b0' },
+        grid: { vertLines: { color: 'rgba(42, 42, 58, 0.5)' }, horzLines: { color: 'rgba(42, 42, 58, 0.5)' } },
+        rightPriceScale: { borderVisible: false },
+        timeScale: { borderVisible: false, timeVisible: true, secondsVisible: false },
+        crosshair: { mode: LightweightCharts.CrosshairMode.Magnet }
+      });
+      chartSeries = stockChart.addAreaSeries({
+        lineColor: '#7c3aed',
+        topColor: 'rgba(124, 58, 237, 0.4)',
+        bottomColor: 'rgba(124, 58, 237, 0.0)',
+        lineWidth: 2,
+        priceFormat: { type: 'price', precision: 2, minMove: 0.01 }
+      });
+      window.addEventListener('resize', () => {
+        if (stockChart) stockChart.applyOptions({ width: container.clientWidth });
+      });
+    }
+
+    async function setChartRange(range) {
+      if (!S.sym) return;
+      currentChartRange = range;
+      ['1D', '1W', '1M'].forEach(r => document.getElementById(`chartTab${r}`).classList.remove('active'));
+      document.getElementById(`chartTab${range}`).classList.add('active');
+      await renderChart();
+    }
+
+    async function renderChart() {
+      if (!S.sym) return;
+      initChart();
+      const loading = document.getElementById('chartLoading');
+      loading.style.display = 'flex';
+      try {
+        const { interval, range } = chartParams[currentChartRange];
+        const res = await fetch(`/api/chart?symbol=${encodeURIComponent(S.sym)}&interval=${interval}&range=${range}`);
+        const data = await res.json();
+        if (data && data.data && chartSeries) {
+          // Format data for AreaSeries (needs time and value)
+          const formatted = data.data.map(d => ({
+            time: d.time,
+            value: d.close
+          }));
+          chartSeries.setData(formatted);
+          stockChart.timeScale().fitContent();
+        } else {
+          if (chartSeries) chartSeries.setData([]);
+        }
+      } catch (e) {
+        console.error('Chart error', e);
+        if (chartSeries) chartSeries.setData([]);
+      } finally {
+        loading.style.display = 'none';
+      }
+    }
+
     async function refreshData() { if (!S.sym) return; const b = document.getElementById('btnRefresh'); b.classList.add('spinning'); try { await loadStock(S.sym); showToast('Refreshed', 'success'); } catch { showToast('Failed', 'error'); } setTimeout(() => b.classList.remove('spinning'), 800); }
     async function fullRefresh() { const b = document.getElementById('dashRefreshBtn'); b.disabled = true; b.querySelector('.i18n-lbl').textContent = '...'; try { await updateWishlistPrices(); if (S.sym) await refreshCurrentQuote(); await loadSectorData(); updateDashboard(); updateLastRefresh(); showToast('Refreshed', 'success'); } catch { showToast('Error', 'error'); } b.disabled = false; b.querySelector('.i18n-lbl').textContent = (I18N[S.lang] || I18N.en).refresh; }
 
@@ -3191,8 +3349,31 @@
     }
 
     // Market status
-    function getSession() { const n = new Date(), uH = n.getUTCHours(), uM = n.getUTCMinutes(), d = n.getUTCDay(), t = uH * 60 + uM, dst = n.getUTCMonth() >= 2 && n.getUTCMonth() <= 10, o = dst ? -4 : -5, et = ((t + o * 60) % 1440 + 1440) % 1440; let ed = d; if (t + o * 60 < 0) ed = (d - 1 + 7) % 7; if (t + o * 60 >= 1440) ed = (d + 1) % 7; if (ed === 0 || ed === 6) return 'closed'; if (et >= 240 && et < 570) return 'pre-market'; if (et >= 570 && et < 960) return 'regular'; if (et >= 960 && et < 1200) return 'post-market'; return 'closed'; }
-    function updateMarketStatus() { const s = getSession(), b = document.getElementById('marketBadge'), t = document.getElementById('marketBadgeText'); b.className = 'market-badge'; const l = I18N[S.lang] || I18N.en; const m = { regular: ['open', l.marketOpen], 'pre-market': ['pre-market', l.marketPre], 'post-market': ['after-hours', l.marketAfter], closed: ['closed', l.marketClosed] }; const [cl, lb] = m[s] || m.closed; b.classList.add(cl); t.textContent = lb; }
+    function getUSSession() { const n = new Date(), uH = n.getUTCHours(), uM = n.getUTCMinutes(), d = n.getUTCDay(), t = uH * 60 + uM, dst = n.getUTCMonth() >= 2 && n.getUTCMonth() <= 10, o = dst ? -4 : -5, et = ((t + o * 60) % 1440 + 1440) % 1440; let ed = d; if (t + o * 60 < 0) ed = (d - 1 + 7) % 7; if (t + o * 60 >= 1440) ed = (d + 1) % 7; if (ed === 0 || ed === 6) return 'closed'; if (et >= 240 && et < 570) return 'pre-market'; if (et >= 570 && et < 960) return 'regular'; if (et >= 960 && et < 1200) return 'post-market'; return 'closed'; }
+    function getSETSession() { const n = new Date(), uH = n.getUTCHours(), uM = n.getUTCMinutes(), d = n.getUTCDay(), t = uH * 60 + uM; let ed = d; if (ed === 0 || ed === 6) return 'closed'; const et = (t + 7 * 60) % 1440; if (et >= 570 && et < 600) return 'pre-market'; if (et >= 600 && et < 750) return 'regular'; if (et >= 840 && et < 870) return 'pre-market'; if (et >= 870 && et < 990) return 'regular'; return 'closed'; }
+    
+    function updateMarketStatus() { 
+      const sus = getUSSession();
+      const sset = getSETSession();
+      const bUS = document.getElementById('marketBadgeUS');
+      const tUS = document.getElementById('marketBadgeTextUS');
+      const bSET = document.getElementById('marketBadgeSET');
+      const tSET = document.getElementById('marketBadgeTextSET');
+      
+      bUS.className = 'market-badge';
+      bSET.className = 'market-badge';
+      
+      const l = I18N[S.lang] || I18N.en; 
+      const m = { regular: ['open', l.marketOpen], 'pre-market': ['pre-market', l.marketPre], 'post-market': ['after-hours', l.marketAfter], closed: ['closed', l.marketClosed] }; 
+      
+      const [clUS, lbUS] = m[sus] || m.closed; 
+      bUS.classList.add(clUS); 
+      tUS.textContent = lbUS; 
+      
+      const [clSET, lbSET] = m[sset] || m.closed;
+      bSET.classList.add(clSET);
+      tSET.textContent = lbSET;
+    }
 
     // Wishlist
     function toggleWishlist() { if (!S.sym) return; const i = S.wl.findIndex(w => w.symbol === S.sym); if (i >= 0) { S.wl.splice(i, 1); removeWatchlistFromSupabase(S.sym); showToast(S.sym + ' removed', 'success'); } else { const name = S.profile ? S.profile.name : S.sym; S.wl.push({ symbol: S.sym, name: name }); addWatchlistToSupabase(S.sym, name); showToast(S.sym + ' added', 'success'); } saveWl(); renderWishlist(); updateWishlistButton(); updateWishlistPrices().then(updateDashboard); }
