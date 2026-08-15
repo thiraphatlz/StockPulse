@@ -383,15 +383,17 @@
     .modal-error { font-size: 11px; color: var(--red); margin-top: 4px; display: none; }
     .modal-error.visible { display: block; }
     .modal-actions { display: flex; gap: 8px; }
-    .btn-primary { flex: 1; padding: 10px 16px; border-radius: var(--radius-sm); background: linear-gradient(135deg, var(--accent), #6d28d9); color: white; font-size: 13px; font-weight: 600; min-height: 40px; }
+    .btn-primary { flex: 1; padding: 10px 16px; border-radius: var(--radius-sm); background: linear-gradient(135deg, var(--accent), #6d28d9); color: white; font-size: 13px; font-weight: 600; min-height: 40px; display: flex; align-items: center; justify-content: center; }
     .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
-    .btn-secondary { padding: 10px 16px; border-radius: var(--radius-sm); background: var(--bg-elevated); border: 1px solid var(--border-primary); color: var(--text-secondary); font-size: 13px; font-weight: 500; min-height: 40px; }
+    .btn-secondary { padding: 10px 16px; border-radius: var(--radius-sm); background: var(--bg-elevated); border: 1px solid var(--border-primary); color: var(--text-secondary); font-size: 13px; font-weight: 500; min-height: 40px; display: flex; align-items: center; justify-content: center; }
 
     /* Toast */
     .toast-container { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 2000; display: flex; flex-direction: column; align-items: center; gap: 6px; }
     .toast { padding: 10px 16px; border-radius: var(--radius-sm); background: var(--bg-elevated); border: 1px solid var(--border-primary); color: var(--text-primary); font-size: 12px; font-weight: 500; box-shadow: var(--shadow-md); animation: fadeSlideUp 0.2s ease; display: flex; align-items: center; gap: 6px; max-width: 300px; white-space: nowrap; }
     .toast.success { border-color: var(--green); } .toast.error { border-color: var(--red); }
     .toast-icon { width: 15px; height: 15px; flex-shrink: 0; }
+    .i18n-lbl { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; }
+    .i18n-lbl::after { content: attr(data-en); height: 0; visibility: hidden; overflow: hidden; pointer-events: none; user-select: none; font-weight: inherit; }
 
     /* Animations */
     @keyframes fadeIn { from{opacity:0} to{opacity:1} }
@@ -488,8 +490,8 @@
       <div class="modal-error" id="settingsError">Invalid API key.</div>
     </div>
     <div class="modal-actions">
-      <button class="btn-secondary" onclick="closeSettings()">Cancel</button>
-      <button class="btn-primary" onclick="saveApiKeyFromSettings()">Save</button>
+      <button class="btn-secondary" onclick="closeSettings()"><span class="i18n-lbl" data-en="Cancel">Cancel</span></button>
+      <button class="btn-primary" onclick="saveApiKeyFromSettings()"><span class="i18n-lbl" data-en="Save">Save</span></button>
     </div>
   </div>
 </div>
@@ -504,7 +506,7 @@
     <nav class="nav-tabs">
       <button class="nav-tab active" id="tab-dashboard" onclick="switchPage('dashboard')">
         <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
-        Dashboard
+        <span class="i18n-lbl" data-en="Dashboard">Dashboard</span>
       </button>
       <button class="nav-tab" id="tab-stock" style="display:none" onclick="switchPage('stock')">
         <svg viewBox="0 0 24 24"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg>
@@ -539,7 +541,7 @@
           </div>
           <button class="refresh-btn" id="dashRefreshBtn" onclick="fullRefresh()">
             <svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
-            Refresh
+            <span class="i18n-lbl" data-en="Refresh">Refresh</span>
           </button>
         </div>
 
@@ -578,7 +580,7 @@
               </div>
             </div>
             <div class="stock-actions">
-              <button class="btn-wishlist" id="btnWishlist" onclick="toggleWishlist()"><svg viewBox="0 0 24 24" id="wishlistIcon"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg><span id="wishlistBtnText">Add</span></button>
+              <button class="btn-wishlist" id="btnWishlist" onclick="toggleWishlist()"><svg viewBox="0 0 24 24" id="wishlistIcon"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg><span class="i18n-lbl" id="wishlistBtnText" data-en="Add">Add</span></button>
               <button class="btn-refresh" id="btnRefresh" onclick="refreshData()" title="Refresh"><svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg></button>
             </div>
           </div>
@@ -612,7 +614,7 @@
       </div>
       <div class="wishlist-list" id="wishlistList"></div>
       <div class="wishlist-footer">
-        <button class="btn-add-wishlist" onclick="toggleWishlist()"><svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>Add Current</button>
+        <button class="btn-add-wishlist" onclick="toggleWishlist()"><svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg><span class="i18n-lbl" data-en="Add Current">Add Current</span></button>
       </div>
     </aside>
   </div>
@@ -623,19 +625,19 @@
   <div class="mobile-nav-inner">
     <button class="mnav-btn active" id="mnav-dashboard" onclick="switchPage('dashboard')">
       <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
-      Dashboard
+      <span class="i18n-lbl" data-en="Dashboard">Dashboard</span>
     </button>
     <button class="mnav-btn" id="mnav-stock" onclick="switchPage('stock')">
       <svg viewBox="0 0 24 24"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg>
-      Stock
+      <span class="i18n-lbl" data-en="Stock">Stock</span>
     </button>
     <button class="mnav-btn" id="mnav-watchlist" onclick="openMobileWatchlist()">
       <svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
-      Watchlist
+      <span class="i18n-lbl" data-en="Watchlist">Watchlist</span>
     </button>
     <button class="mnav-btn" id="mnav-settings" onclick="openSettings()">
       <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
-      Settings
+      <span class="i18n-lbl" data-en="Settings">Settings</span>
     </button>
   </div>
 </nav>
@@ -721,11 +723,12 @@ function toggleLanguage() {
 function applyLanguage() {
   const t = I18N[S.lang];
   document.getElementById('langToggleBtn').textContent = S.lang === 'en' ? 'EN' : 'TH';
-  document.querySelector('#tab-dashboard').lastChild.nodeValue = ' ' + t.dashboard;
-  document.querySelector('#mnav-dashboard').lastChild.nodeValue = ' ' + t.dashboard;
-  document.querySelector('#mnav-stock').lastChild.nodeValue = ' ' + t.stock;
-  document.querySelector('#mnav-watchlist').lastChild.nodeValue = ' ' + t.watchlist;
-  document.querySelector('#mnav-settings').lastChild.nodeValue = ' ' + t.settings;
+  const setLbl = (sel, txt) => { const el = document.querySelector(sel); if(el) el.textContent = txt; };
+  setLbl('#tab-dashboard .i18n-lbl', t.dashboard);
+  setLbl('#mnav-dashboard .i18n-lbl', t.dashboard);
+  setLbl('#mnav-stock .i18n-lbl', t.stock);
+  setLbl('#mnav-watchlist .i18n-lbl', t.watchlist);
+  setLbl('#mnav-settings .i18n-lbl', t.settings);
   document.getElementById('searchInput').placeholder = t.searchPlaceholder;
   if(document.querySelector('.summary-card:nth-child(1) .summary-lbl')) document.querySelector('.summary-card:nth-child(1) .summary-lbl').textContent = t.watchlist;
   if(document.querySelector('.summary-card:nth-child(2) .summary-lbl')) document.querySelector('.summary-card:nth-child(2) .summary-lbl').textContent = t.gainers;
@@ -741,13 +744,13 @@ function applyLanguage() {
   const infoLabels = document.querySelectorAll('.info-label');
   if(infoLabels.length >= 3) { infoLabels[0].textContent = t.infoIndustry; infoLabels[1].textContent = t.infoCountry; infoLabels[2].textContent = t.infoMarketCap; }
   document.querySelector('.wishlist-title').lastChild.nodeValue = t.watchlist;
-  document.querySelector('.btn-add-wishlist').lastChild.nodeValue = t.addCurrent;
+  setLbl('.btn-add-wishlist .i18n-lbl', t.addCurrent);
   document.querySelector('.modal h2').textContent = t.settingsTitle;
   document.querySelector('.modal p').textContent = t.settingsDesc;
   document.querySelector('.modal-label').textContent = t.settingsKeyLabel;
-  document.querySelector('.btn-secondary').textContent = t.cancel;
-  document.querySelector('.btn-primary').textContent = t.save;
-  document.getElementById('dashRefreshBtn').lastChild.nodeValue = ' ' + t.refresh;
+  setLbl('.btn-secondary .i18n-lbl', t.cancel);
+  setLbl('.btn-primary .i18n-lbl', t.save);
+  setLbl('#dashRefreshBtn .i18n-lbl', t.refresh);
   if (document.querySelector('.mobile-wl-header .wishlist-title')) document.querySelector('.mobile-wl-header .wishlist-title').lastChild.nodeValue = t.watchlist;
 
   updateGreeting();
@@ -886,7 +889,7 @@ function renderQuote(q) {
 
 async function refreshCurrentQuote(){if(!S.sym)return;try{const q=await fetchQ(S.sym);if(q&&q.c){S.quote=q;renderQuote(q);}}catch{}}
 async function refreshData(){if(!S.sym)return;const b=document.getElementById('btnRefresh');b.classList.add('spinning');try{await loadStock(S.sym);showToast('Refreshed','success');}catch{showToast('Failed','error');}setTimeout(()=>b.classList.remove('spinning'),800);}
-async function fullRefresh(){const b=document.getElementById('dashRefreshBtn');b.disabled=true;b.textContent='⟳ ...';try{await updateWishlistPrices();if(S.sym)await refreshCurrentQuote();await loadSectorData();updateDashboard();updateLastRefresh();showToast('Refreshed','success');}catch{showToast('Error','error');}b.disabled=false;b.innerHTML='<svg viewBox="0 0 24 24" style="width:13px;height:13px;fill:currentColor"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>' + (I18N[S.lang]||I18N.en).refresh;}
+async function fullRefresh(){const b=document.getElementById('dashRefreshBtn');b.disabled=true;b.querySelector('.i18n-lbl').textContent='...';try{await updateWishlistPrices();if(S.sym)await refreshCurrentQuote();await loadSectorData();updateDashboard();updateLastRefresh();showToast('Refreshed','success');}catch{showToast('Error','error');}b.disabled=false;b.querySelector('.i18n-lbl').textContent=(I18N[S.lang]||I18N.en).refresh;}
 
 // Sectors
 async function loadSectorData(){for(const s of SECTORS){try{const q=await fetchQ(s.etf);if(q&&q.c)S.sectors[s.etf]=q;await slp(120);}catch{}}renderSectors();}
