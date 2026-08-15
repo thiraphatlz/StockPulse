@@ -13,6 +13,7 @@
     href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
     rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     :root {
       --bg-primary: #08080c;
@@ -1870,6 +1871,109 @@
       padding: 2px 8px;
     }
 
+    /* ===== PORTFOLIO ===== */
+    .pin-overlay { position: fixed; inset: 0; background: rgba(8,8,12,0.97); z-index: 500; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 20px; animation: fadeIn 0.2s ease; }
+    .pin-overlay.active { display: flex; }
+    .pin-box { background: var(--bg-card); border: 1px solid var(--border-primary); border-radius: var(--radius-lg); padding: 36px 40px; width: min(380px, 90vw); text-align: center; }
+    .pin-logo { width: 52px; height: 52px; border-radius: 14px; background: linear-gradient(135deg,#7c3aed,#a78bfa); display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; }
+    .pin-logo svg { width: 26px; height: 26px; fill: white; }
+    .pin-title { font-size: 18px; font-weight: 800; margin-bottom: 4px; }
+    .pin-subtitle { font-size: 12px; color: var(--text-muted); margin-bottom: 24px; }
+    .pin-input-wrap { position: relative; margin-bottom: 12px; }
+    .pin-input { width: 100%; height: 48px; background: var(--bg-input); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); color: var(--text-primary); font-size: 22px; font-family: var(--font-mono); letter-spacing: 8px; text-align: center; transition: var(--transition); }
+    .pin-input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-glow); }
+    .pin-input.error { border-color: var(--red); animation: shake 0.4s ease; }
+    .pin-error { font-size: 12px; color: var(--red); min-height: 18px; margin-bottom: 12px; }
+    .pin-submit { width: 100%; height: 44px; background: linear-gradient(135deg,#7c3aed,#6d28d9); color: white; border-radius: var(--radius-sm); font-size: 14px; font-weight: 600; transition: var(--transition); }
+    .pin-submit:hover { opacity: 0.9; transform: translateY(-1px); }
+    @keyframes shake { 0%,100%{transform:translateX(0)} 20%,60%{transform:translateX(-6px)} 40%,80%{transform:translateX(6px)} }
+
+    .pf-tabs-bar { display: flex; align-items: center; gap: 6px; margin-bottom: 20px; flex-wrap: wrap; }
+    .pf-tab { padding: 6px 14px; border-radius: var(--radius-xs); background: var(--bg-elevated); border: 1px solid var(--border-subtle); color: var(--text-muted); font-size: 12px; font-weight: 600; transition: var(--transition); cursor: pointer; min-height: 32px; display: flex; align-items: center; gap: 6px; }
+    .pf-tab:hover { border-color: var(--accent); color: var(--accent-light); }
+    .pf-tab.active { background: var(--accent-glow); border-color: var(--accent); color: var(--accent-light); }
+    .pf-tab-add { border-style: dashed; }
+    .pf-tab-del { width: 16px; height: 16px; border-radius: 50%; background: rgba(239,68,68,0.1); display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.15s; }
+    .pf-tab-del svg { width: 9px; height: 9px; fill: var(--red); }
+    .pf-tab.active:hover .pf-tab-del { opacity: 1; }
+
+    .pf-summary { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 20px; }
+    .pf-sum-card { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius); padding: 14px 16px; }
+    .pf-sum-lbl { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 5px; }
+    .pf-sum-val { font-family: var(--font-mono); font-size: 17px; font-weight: 700; line-height: 1.2; }
+    .pf-sum-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; font-family: var(--font-mono); }
+    .pf-sum-val.up { color: var(--green); } .pf-sum-val.down { color: var(--red); }
+
+    .pf-rate-bar { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-muted); margin-bottom: 14px; }
+    .pf-rate-bar .rate-val { font-family: var(--font-mono); color: var(--accent-light); font-weight: 600; }
+
+    .pf-table-wrap { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius); overflow: hidden; margin-bottom: 16px; }
+    .pf-table { width: 100%; border-collapse: collapse; }
+    .pf-table th { text-align: left; font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600; padding: 10px 14px; border-bottom: 1px solid var(--border-subtle); white-space: nowrap; }
+    .pf-table th.r { text-align: right; }
+    .pf-table td { padding: 12px 14px; border-bottom: 1px solid var(--border-subtle); vertical-align: middle; }
+    .pf-table tr:last-child td { border-bottom: none; }
+    .pf-table tbody tr { transition: background 0.1s; }
+    .pf-table tbody tr:hover td { background: var(--bg-card-hover); }
+    .pf-td-r { text-align: right; }
+    .pf-sym { font-weight: 700; font-size: 13px; }
+    .pf-note { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+    .pf-mono { font-family: var(--font-mono); font-size: 12px; }
+    .pf-green { color: var(--green); } .pf-red { color: var(--red); }
+    .pf-del-btn { width: 28px; height: 28px; border-radius: 50%; background: transparent; border: 1px solid transparent; color: var(--text-muted); display: flex; align-items: center; justify-content: center; transition: var(--transition); cursor: pointer; margin-left: auto; }
+    .pf-del-btn:hover { background: var(--red-bg); border-color: var(--red); color: var(--red); }
+    .pf-del-btn svg { width: 13px; height: 13px; fill: currentColor; }
+
+    .pf-add-btn { display: flex; align-items: center; gap: 6px; height: 36px; padding: 0 14px; border-radius: var(--radius-sm); background: linear-gradient(135deg,#7c3aed,#6d28d9); color: white; font-size: 12px; font-weight: 600; transition: var(--transition); }
+    .pf-add-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+    .pf-add-btn svg { width: 14px; height: 14px; fill: white; }
+
+    .pf-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px 20px; gap: 10px; }
+    .pf-empty svg { width: 40px; height: 40px; fill: var(--text-muted); opacity: 0.2; }
+    .pf-empty p { font-size: 13px; color: var(--text-muted); text-align: center; }
+
+    /* Add Position Modal */
+    .pos-modal-overlay { position: fixed; inset: 0; background: rgba(8,8,12,0.8); z-index: 600; display: none; align-items: center; justify-content: center; padding: 16px; }
+    .pos-modal-overlay.active { display: flex; }
+    .pos-modal { background: var(--bg-card); border: 1px solid var(--border-primary); border-radius: var(--radius-lg); width: min(480px,100%); max-height: 90vh; overflow-y: auto; padding: 28px; }
+    .pos-modal-title { font-size: 16px; font-weight: 800; margin-bottom: 20px; display: flex; align-items: center; gap: 8px; }
+    .pos-modal-title svg { width: 18px; height: 18px; fill: var(--accent-light); }
+    .pos-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .pos-form-full { grid-column: 1 / -1; }
+    .pos-field { display: flex; flex-direction: column; gap: 5px; }
+    .pos-label { font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+    .pos-input { height: 40px; padding: 0 12px; background: var(--bg-input); border: 1px solid var(--border-subtle); border-radius: var(--radius-xs); color: var(--text-primary); font-size: 13px; font-family: inherit; transition: var(--transition); }
+    .pos-input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-glow); }
+    .pos-input.error { border-color: var(--red); }
+    .pos-input-opt { opacity: 0.7; }
+    .pos-modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+    .pos-modal-actions .btn-secondary { flex: 1; }
+    .pos-modal-actions .pf-add-btn { flex: 2; justify-content: center; }
+
+    .pf-loading { display: flex; align-items: center; justify-content: center; padding: 40px; gap: 10px; color: var(--text-muted); font-size: 13px; }
+    .pf-spinner { width: 18px; height: 18px; border: 2px solid var(--border-primary); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; }
+
+    @media (max-width: 768px) {
+      .pf-summary { grid-template-columns: 1fr 1fr; gap: 8px; }
+      .pf-sum-val { font-size: 14px; }
+      .pf-table-wrap { overflow-x: auto; }
+      .pf-table { min-width: 600px; }
+      .pos-form-grid { grid-template-columns: 1fr; }
+      .pos-form-full { grid-column: 1; }
+    }
+
+    .alerts-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
+    .alert-grid-item { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius); padding: 12px 14px; display: flex; align-items: center; gap: 10px; cursor: pointer; transition: var(--transition); }
+    .alert-grid-item:hover { border-color: var(--border-primary); background: var(--bg-card-hover); }
+    .alert-item-left { flex: 1; min-width: 0; }
+    .alert-item-sym { font-weight: 700; font-size: 13px; }
+    .alert-item-name { font-size: 11px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .alert-item-mid { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; flex-shrink: 0; }
+    .alert-item-cur { font-size: 10px; font-family: var(--font-mono); color: var(--text-muted); }
+    .alert-item-del { width: 26px; height: 26px; border-radius: 50%; background: var(--bg-elevated); border: 1px solid var(--border-subtle); color: var(--text-muted); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: var(--transition); flex-shrink: 0; }
+    .alert-item-del:hover { border-color: var(--red); color: var(--red); background: var(--red-bg); }
+    .alert-item-del svg { width: 12px; height: 12px; fill: currentColor; }
+
     .alert-email-note {
       margin-top: 10px;
       padding: 8px 12px;
@@ -2169,6 +2273,63 @@
     </div>
   </div>
 
+  <!-- PIN Overlay -->
+  <div class="pin-overlay" id="pinOverlay">
+    <div class="pin-box">
+      <div class="pin-logo"><svg viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg></div>
+      <div class="pin-title">Portfolio Access</div>
+      <div class="pin-subtitle">Enter PIN to view your portfolio</div>
+      <div class="pin-input-wrap">
+        <input type="password" class="pin-input" id="pinInput" maxlength="6" placeholder="••••••" autocomplete="off" inputmode="numeric" />
+      </div>
+      <div class="pin-error" id="pinError"></div>
+      <button class="pin-submit" onclick="verifyPin()">Unlock Portfolio</button>
+    </div>
+  </div>
+
+  <!-- Add Position Modal -->
+  <div class="pos-modal-overlay" id="posModalOverlay">
+    <div class="pos-modal">
+      <div class="pos-modal-title">
+        <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+        Add Position
+      </div>
+      <div class="pos-form-grid">
+        <div class="pos-field pos-form-full">
+          <label class="pos-label">Stock Symbol *</label>
+          <input type="text" class="pos-input" id="posSymbol" placeholder="e.g. AAPL, NVDA" style="text-transform:uppercase" />
+        </div>
+        <div class="pos-field">
+          <label class="pos-label">Avg Cost (USD) *</label>
+          <input type="number" class="pos-input" id="posAvgCost" placeholder="0.00" step="0.01" min="0" />
+        </div>
+        <div class="pos-field">
+          <label class="pos-label">Shares *</label>
+          <input type="number" class="pos-input" id="posShares" placeholder="0" step="0.0001" min="0" />
+        </div>
+        <div class="pos-field">
+          <label class="pos-label">Commission (USD)</label>
+          <input type="number" class="pos-input pos-input-opt" id="posCommission" placeholder="0.00" step="0.01" min="0" />
+        </div>
+        <div class="pos-field">
+          <label class="pos-label">Purchase Date</label>
+          <input type="date" class="pos-input pos-input-opt" id="posPurchaseDate" />
+        </div>
+        <div class="pos-field pos-form-full">
+          <label class="pos-label">Note</label>
+          <input type="text" class="pos-input pos-input-opt" id="posNote" placeholder="e.g. Long-term hold" />
+        </div>
+      </div>
+      <div class="pos-modal-actions">
+        <button class="btn-secondary" onclick="closePosModal()">Cancel</button>
+        <button class="pf-add-btn" onclick="submitPosition()">
+          <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+          Add Position
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- App -->
   <div class="app">
     <header class="topbar">
@@ -2190,6 +2351,12 @@
             <path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z" />
           </svg>
           <span id="stockTabLabel">Stock</span>
+        </button>
+        <button class="nav-tab" id="tab-portfolio" onclick="openPortfolioPage()">
+          <svg viewBox="0 0 24 24">
+            <path d="M20 7H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V9c0-1.1-.9-2-2-2zm0 12H4V9h16v10zM12 3.5l-4 4h2.5V11h3V7.5H16l-4-4z" />
+          </svg>
+          <span class="i18n-lbl" data-en="Portfolio">Portfolio</span>
         </button>
       </nav>
       <div class="search-wrap">
@@ -2289,12 +2456,42 @@
             <div id="dashWatchlist"></div>
           </div>
 
+          <div class="dash-section" id="dashAlertsSection">
+            <div class="section-title"><svg viewBox="0 0 24 24">
+                <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z" />
+              </svg><span id="titleActiveAlerts">Active Alerts</span></div>
+            <div id="dashAlertsList"></div>
+          </div>
+
           <div class="dash-section">
             <div class="section-title"><svg viewBox="0 0 24 24">
                 <path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z" />
               </svg>Sectors</div>
             <div class="sectors-grid" id="sectorsGrid"></div>
           </div>
+        </div>
+
+        <!-- PORTFOLIO -->
+        <div class="page-view" id="page-portfolio">
+          <div class="dash-header" style="margin-bottom:18px;">
+            <div class="dash-greeting">
+              <h1 id="pfPageTitle" style="font-size:18px;">My Portfolio</h1>
+              <div class="pf-rate-bar">
+                <svg viewBox="0 0 24 24" style="width:11px;height:11px;fill:var(--text-muted);"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg>
+                <span>USD/THB:</span>
+                <span class="rate-val" id="pfUsdThbRate">Loading...</span>
+                <span style="opacity:0.4;">•</span>
+                <span id="pfRateTime" style="font-size:10px;"></span>
+              </div>
+            </div>
+            <button class="pf-add-btn" id="pfAddPositionBtn" onclick="openPosModal()" style="display:none;">
+              <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+              <span>Add Position</span>
+            </button>
+          </div>
+          <div class="pf-tabs-bar" id="pfTabsBar"></div>
+          <div class="pf-summary" id="pfSummary" style="display:none;"></div>
+          <div id="pfContent"></div>
         </div>
 
         <!-- STOCK DETAIL -->
@@ -2456,6 +2653,12 @@
         </svg>
         <span class="i18n-lbl" data-en="Watchlist">Watchlist</span>
       </button>
+      <button class="mnav-btn" id="mnav-portfolio" onclick="openPortfolioPage()">
+        <svg viewBox="0 0 24 24">
+          <path d="M20 7H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V9c0-1.1-.9-2-2-2zm0 12H4V9h16v10zM12 3.5l-4 4h2.5V11h3V7.5H16l-4-4z" />
+        </svg>
+        <span class="i18n-lbl" data-en="Portfolio">Portfolio</span>
+      </button>
       <button class="mnav-btn" id="mnav-settings" onclick="openSettings()">
         <svg viewBox="0 0 24 24">
           <path
@@ -2528,7 +2731,8 @@
         tblSymbol: 'Symbol', tblPrice: 'Price', tblChange: 'Change',
         gMorning: 'Good Morning ☀️', gAfternoon: 'Good Afternoon 🌤', gEvening: 'Good Evening 🌙',
         alertTitle: 'Price Alerts', alertSet: 'Set', alertSetEmail: 'Alerts will be sent to',
-        alertNoEmail: 'Set email in Settings'
+        alertNoEmail: 'Set email in Settings',
+        activeAlerts: 'Active Alerts', noActiveAlerts: 'No active price alerts — search a stock to set alerts'
       },
       th: {
         dashboard: 'แดชบอร์ด', stock: 'หุ้น', watchlist: 'รายการเฝ้าดู', settings: 'ตั้งค่า', searchPlaceholder: 'ค้นหาหุ้น...',
@@ -2545,7 +2749,8 @@
         tblSymbol: 'สัญลักษณ์', tblPrice: 'ราคา', tblChange: 'เปลี่ยนแปลง',
         gMorning: 'สวัสดีตอนเช้า ☀️', gAfternoon: 'สวัสดีตอนบ่าย 🌤', gEvening: 'สวัสดีตอนเย็น 🌙',
         alertTitle: 'แจ้งเตือนราคา', alertSet: 'ตั้งค่า', alertSetEmail: 'แจ้งเตือนจะส่งไปที่',
-        alertNoEmail: 'ตั้งค่าอีเมลในการตั้งค่า'
+        alertNoEmail: 'ตั้งค่าอีเมลในการตั้งค่า',
+        activeAlerts: 'การแจ้งเตือนที่ตั้งไว้', noActiveAlerts: 'ไม่มีรายการแจ้งเตือน — ค้นหาหุ้นเพื่อตั้งค่าแจ้งเตือน'
       }
     };
 
@@ -2571,7 +2776,8 @@
       if (document.querySelector('.summary-card:nth-child(4) .summary-lbl')) document.querySelector('.summary-card:nth-child(4) .summary-lbl').textContent = t.best;
       const titles = document.querySelectorAll('.section-title');
       if (titles.length > 0) titles[0].lastChild.nodeValue = t.watchlist;
-      if (titles.length > 1) titles[1].lastChild.nodeValue = t.sectors;
+      if (document.getElementById('titleActiveAlerts')) document.getElementById('titleActiveAlerts').textContent = t.activeAlerts;
+      if (titles.length > 2) titles[2].lastChild.nodeValue = t.sectors;
       document.querySelector('#welcomeState h2').textContent = t.trackStocks;
       document.querySelector('#welcomeState p').textContent = t.trackStocksDesc;
       const statLabels = document.querySelectorAll('.stat-label');
@@ -2592,6 +2798,7 @@
       setLbl('#alertAboveBtnTxt', t.alertSet);
       setLbl('#alertBelowBtnTxt', t.alertSet);
       renderAlertEmailNote();
+      renderDashboardAlerts();
 
       updateGreeting();
       updateMarketStatus();
@@ -2601,7 +2808,7 @@
       if (S.quote) renderQuote(S.quote);
     }
 
-    document.addEventListener('DOMContentLoaded', () => { initEmailJS(); initApp(); setupEvents(); applyLanguage(); });
+    document.addEventListener('DOMContentLoaded', () => { initEmailJS(); initSupabase(); initApp(); setupEvents(); applyLanguage(); });
 
     function initApp() {
       updateMarketStatus(); setInterval(updateMarketStatus, 60000);
@@ -2769,6 +2976,7 @@
       }).join('');
 
       c.innerHTML = `<div class="table-wrap"><table class="wl-table"><thead><tr><th>${t.tblSymbol}</th><th>${t.tblPrice}</th><th>${t.tblChange}</th><th>%</th></tr></thead><tbody>${rows}</tbody></table></div><div class="wl-cards">${cards}</div>`;
+      renderDashboardAlerts();
     }
 
     // Market status
@@ -2939,6 +3147,63 @@
       belowClear.style.display = hasBelow ? 'flex' : 'none';
       tag.style.display = (hasAbove || hasBelow) ? 'inline-flex' : 'none';
       renderAlertEmailNote();
+      renderDashboardAlerts();
+    }
+
+    function renderDashboardAlerts() {
+      const container = document.getElementById('dashAlertsList');
+      if (!container) return;
+      const alerts = loadAlerts();
+      const t = I18N[S.lang] || I18N.en;
+
+      const entries = [];
+      for (const sym of Object.keys(alerts)) {
+        const a = alerts[sym];
+        if (a.above) entries.push({ sym, name: a.above.name || sym, dir: 'above', price: a.above.price });
+        if (a.below) entries.push({ sym, name: a.below.name || sym, dir: 'below', price: a.below.price });
+      }
+
+      if (!entries.length) {
+        container.innerHTML = `<div class="dash-empty" style="padding:16px 20px;"><svg viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg><span>${t.noActiveAlerts}</span></div>`;
+        return;
+      }
+
+      container.innerHTML = `<div class="alerts-grid">` + entries.map(item => {
+        const isAbove = item.dir === 'above';
+        const badgeClass = isAbove ? 'above' : 'below';
+        const dirText = isAbove ? '▲ ABOVE' : '▼ BELOW';
+        const wlEntry = S.wl.find(w => w.symbol === item.sym);
+        const currPrice = (S.sym === item.sym && S.quote?.c) ? S.quote.c : (wlEntry?._quote?.c || null);
+        const currPriceText = currPrice ? `$${fmtNum(currPrice)}` : '—';
+
+        return `
+          <div class="alert-grid-item" onclick="loadStock('${esc(item.sym)}')">
+            <div class="alert-item-left">
+              <div class="alert-item-sym">${esc(item.sym)}</div>
+              <div class="alert-item-name">${esc(item.name)}</div>
+            </div>
+            <div class="alert-item-mid">
+              <span class="alert-dir-badge ${badgeClass}">${dirText} $${fmtNum(item.price)}</span>
+              <div class="alert-item-cur">Cur: ${currPriceText}</div>
+            </div>
+            <button class="alert-item-del" onclick="event.stopPropagation(); removeAlertItem('${esc(item.sym)}', '${item.dir}')" title="Delete Alert">
+              <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+            </button>
+          </div>
+        `;
+      }).join('') + `</div>`;
+    }
+
+    function removeAlertItem(sym, dir) {
+      const alerts = loadAlerts();
+      if (alerts[sym]) {
+        delete alerts[sym][dir];
+        if (!Object.keys(alerts[sym]).length) delete alerts[sym];
+        saveAlerts(alerts);
+        renderDashboardAlerts();
+        if (S.sym === sym) renderAlertCard();
+        showToast(`Removed alert for ${sym}`, 'success');
+      }
     }
 
     function renderAlertEmailNote() {
@@ -3010,6 +3275,337 @@
     function esc(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
     function slp(ms) { return new Promise(r => setTimeout(r, ms)); }
     function showToast(m, t = 'success') { const c = document.getElementById('toastContainer'), el = document.createElement('div'); el.className = 'toast ' + t; const ic = t === 'success' ? '<svg class="toast-icon" viewBox="0 0 24 24"><path fill="#10b981" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>' : '<svg class="toast-icon" viewBox="0 0 24 24"><path fill="#ef4444" d="M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z"/></svg>'; el.innerHTML = ic + ' ' + m; c.appendChild(el); setTimeout(() => { el.style.opacity = '0'; el.style.transition = '.2s'; setTimeout(() => el.remove(), 200); }, 2500); }
+
+    // ===== PORTFOLIO & SUPABASE =====
+    const SUPABASE_URL  = 'https://pxxtyzphnbbxrogikotc.supabase.co';
+    const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4eHR5enBobmJieHJvZ2lrb3RjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY3Njg0NTQsImV4cCI6MjEwMjM0NDQ1NH0.w0tui-y9KFY-6qqZfM8ol2b3EuR3LP0sXZRjIYM6xVc';
+    const PORTFOLIO_PIN = '111248';  // ← เปลี่ยน PIN ได้ที่นี่
+    const MAX_PORTFOLIOS = 5;
+
+    let SB = null; // Supabase client
+    const PF = {
+      unlocked: false,
+      portfolios: [],
+      activeId: null,
+      positions: [],
+      usdThb: null,
+      usdThbTs: 0
+    };
+
+    function initSupabase() {
+      try {
+        SB = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+      } catch(e) { console.error('Supabase init error:', e); }
+    }
+
+    // --- PIN ---
+    function openPortfolioPage() {
+      if (PF.unlocked) {
+        switchPage('portfolio');
+        pfEnterPage();
+        return;
+      }
+      const overlay = document.getElementById('pinOverlay');
+      overlay.classList.add('active');
+      const inp = document.getElementById('pinInput');
+      inp.value = '';
+      document.getElementById('pinError').textContent = '';
+      setTimeout(() => inp.focus(), 100);
+    }
+
+    function verifyPin() {
+      const inp = document.getElementById('pinInput');
+      const val = inp.value.trim();
+      if (val === PORTFOLIO_PIN) {
+        document.getElementById('pinOverlay').classList.remove('active');
+        PF.unlocked = true;
+        switchPage('portfolio');
+        pfEnterPage();
+      } else {
+        inp.classList.add('error');
+        document.getElementById('pinError').textContent = 'Incorrect PIN. Please try again.';
+        setTimeout(() => { inp.classList.remove('error'); inp.value = ''; inp.focus(); }, 1200);
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('pinInput').addEventListener('keydown', e => { if (e.key === 'Enter') verifyPin(); });
+    });
+
+    // --- Exchange Rate ---
+    async function fetchUsdThb() {
+      const now = Date.now();
+      if (PF.usdThb && now - PF.usdThbTs < 10 * 60 * 1000) return PF.usdThb; // cache 10 min
+      try {
+        const r = await fetch('https://open.er-api.com/v6/latest/USD');
+        const d = await r.json();
+        if (d.rates && d.rates.THB) {
+          PF.usdThb = d.rates.THB;
+          PF.usdThbTs = now;
+          const el = document.getElementById('pfUsdThbRate');
+          if (el) el.textContent = PF.usdThb.toFixed(2);
+          const te = document.getElementById('pfRateTime');
+          if (te) te.textContent = 'Updated ' + new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+          return PF.usdThb;
+        }
+      } catch(e) { console.error('Exchange rate fetch error:', e); }
+      PF.usdThb = 33.5; // fallback
+      const el = document.getElementById('pfUsdThbRate');
+      if (el) el.textContent = PF.usdThb.toFixed(2) + ' (fallback)';
+      return PF.usdThb;
+    }
+
+    // --- Portfolio CRUD ---
+    async function pfEnterPage() {
+      document.getElementById('pfContent').innerHTML = '<div class="pf-loading"><div class="pf-spinner"></div>Loading...</div>';
+      document.getElementById('pfSummary').style.display = 'none';
+      document.getElementById('pfAddPositionBtn').style.display = 'none';
+      await fetchUsdThb();
+      await loadPortfolios();
+    }
+
+    async function loadPortfolios() {
+      if (!SB) { showToast('Supabase not initialized', 'error'); return; }
+      const { data, error } = await SB.from('portfolios').select('*').order('created_at');
+      if (error) { showToast('Error loading portfolios: ' + error.message, 'error'); return; }
+      PF.portfolios = data || [];
+      if (!PF.activeId && PF.portfolios.length > 0) PF.activeId = PF.portfolios[0].id;
+      renderPfTabs();
+      if (PF.portfolios.length === 0) {
+        document.getElementById('pfContent').innerHTML = '<div class="pf-empty"><svg viewBox="0 0 24 24"><path d="M20 7H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V9c0-1.1-.9-2-2-2zm0 12H4V9h16v10zM12 3.5l-4 4h2.5V11h3V7.5H16l-4-4z"/></svg><p>No portfolio yet.<br>Create your first portfolio to get started.</p></div>';
+        document.getElementById('pfSummary').style.display = 'none';
+        document.getElementById('pfAddPositionBtn').style.display = 'none';
+      } else {
+        await loadPositions();
+      }
+    }
+
+    async function createPortfolio() {
+      if (PF.portfolios.length >= MAX_PORTFOLIOS) { showToast(`Max ${MAX_PORTFOLIOS} portfolios allowed`, 'error'); return; }
+      const name = prompt(`Portfolio name (${PF.portfolios.length + 1}/${MAX_PORTFOLIOS}):`);
+      if (!name || !name.trim()) return;
+      const { data, error } = await SB.from('portfolios').insert({ name: name.trim() }).select().single();
+      if (error) { showToast('Error: ' + error.message, 'error'); return; }
+      PF.portfolios.push(data);
+      PF.activeId = data.id;
+      showToast('Portfolio created!', 'success');
+      renderPfTabs();
+      await loadPositions();
+    }
+
+    async function deletePortfolio(id) {
+      const pf = PF.portfolios.find(p => p.id === id);
+      if (!pf) return;
+      if (!confirm(`Delete portfolio "${pf.name}"? All positions will be lost.`)) return;
+      const { error } = await SB.from('portfolios').delete().eq('id', id);
+      if (error) { showToast('Error: ' + error.message, 'error'); return; }
+      PF.portfolios = PF.portfolios.filter(p => p.id !== id);
+      PF.activeId = PF.portfolios.length > 0 ? PF.portfolios[0].id : null;
+      showToast('Portfolio deleted', 'success');
+      await loadPortfolios();
+    }
+
+    // --- Position CRUD ---
+    async function loadPositions() {
+      if (!PF.activeId) return;
+      document.getElementById('pfContent').innerHTML = '<div class="pf-loading"><div class="pf-spinner"></div>Loading positions...</div>';
+      const { data, error } = await SB.from('positions').select('*').eq('portfolio_id', PF.activeId).order('created_at');
+      if (error) { showToast('Error loading positions: ' + error.message, 'error'); return; }
+      PF.positions = data || [];
+      await renderPortfolio();
+    }
+
+    function openPosModal() {
+      if (!PF.activeId) { showToast('Please create a portfolio first', 'error'); return; }
+      document.getElementById('posModalOverlay').classList.add('active');
+      document.getElementById('posSymbol').value = '';
+      document.getElementById('posAvgCost').value = '';
+      document.getElementById('posShares').value = '';
+      document.getElementById('posCommission').value = '';
+      document.getElementById('posPurchaseDate').value = '';
+      document.getElementById('posNote').value = '';
+      // Pre-fill symbol if stock is open
+      if (S.sym) document.getElementById('posSymbol').value = S.sym;
+      setTimeout(() => document.getElementById('posSymbol').focus(), 100);
+    }
+    function closePosModal() {
+      document.getElementById('posModalOverlay').classList.remove('active');
+    }
+
+    async function submitPosition() {
+      const symbol = document.getElementById('posSymbol').value.trim().toUpperCase();
+      const avgCost = parseFloat(document.getElementById('posAvgCost').value);
+      const shares  = parseFloat(document.getElementById('posShares').value);
+      const commission = parseFloat(document.getElementById('posCommission').value) || 0;
+      const purchaseDate = document.getElementById('posPurchaseDate').value || null;
+      const note = document.getElementById('posNote').value.trim() || null;
+
+      // Validation
+      let valid = true;
+      ['posSymbol','posAvgCost','posShares'].forEach(id => {
+        const el = document.getElementById(id);
+        const empty = !el.value.trim() || (id !== 'posSymbol' && isNaN(parseFloat(el.value)));
+        el.classList.toggle('error', empty);
+        if (empty) valid = false;
+      });
+      if (!valid) { showToast('Please fill required fields', 'error'); return; }
+
+      const { data, error } = await SB.from('positions').insert({
+        portfolio_id: PF.activeId,
+        symbol, shares, avg_cost_usd: avgCost, commission_usd: commission,
+        purchase_date: purchaseDate, note
+      }).select().single();
+      if (error) { showToast('Error: ' + error.message, 'error'); return; }
+      PF.positions.push(data);
+      closePosModal();
+      showToast(`${symbol} added!`, 'success');
+      await renderPortfolio();
+    }
+
+    async function deletePosition(id) {
+      const pos = PF.positions.find(p => p.id === id);
+      if (!confirm(`Remove ${pos?.symbol || 'this position'}?`)) return;
+      const { error } = await SB.from('positions').delete().eq('id', id);
+      if (error) { showToast('Error: ' + error.message, 'error'); return; }
+      PF.positions = PF.positions.filter(p => p.id !== id);
+      showToast('Position removed', 'success');
+      await renderPortfolio();
+    }
+
+    // --- Render ---
+    function renderPfTabs() {
+      const bar = document.getElementById('pfTabsBar');
+      let html = PF.portfolios.map(p => `
+        <button class="pf-tab ${p.id === PF.activeId ? 'active' : ''}" onclick="pfSelectTab('${p.id}')">
+          ${esc(p.name)}
+          <span class="pf-tab-del" onclick="event.stopPropagation();deletePortfolio('${p.id}')">
+            <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+          </span>
+        </button>`).join('');
+      if (PF.portfolios.length < MAX_PORTFOLIOS) {
+        html += `<button class="pf-tab pf-tab-add" onclick="createPortfolio()">
+          <svg viewBox="0 0 24 24" style="width:12px;height:12px;fill:currentColor;"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+          New Portfolio
+        </button>`;
+      }
+      bar.innerHTML = html;
+    }
+
+    async function pfSelectTab(id) {
+      PF.activeId = id;
+      renderPfTabs();
+      await loadPositions();
+    }
+
+    async function renderPortfolio() {
+      const rate = PF.usdThb || await fetchUsdThb();
+      if (PF.positions.length === 0) {
+        document.getElementById('pfSummary').style.display = 'none';
+        document.getElementById('pfAddPositionBtn').style.display = 'flex';
+        document.getElementById('pfContent').innerHTML = `<div class="pf-empty">
+          <svg viewBox="0 0 24 24"><path d="M20 7H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V9c0-1.1-.9-2-2-2zm0 12H4V9h16v10zM12 3.5l-4 4h2.5V11h3V7.5H16l-4-4z"/></svg>
+          <p>No positions yet.<br>Click "Add Position" to get started.</p>
+        </div>`;
+        return;
+      }
+
+      // Fetch current prices for all unique symbols
+      const symbols = [...new Set(PF.positions.map(p => p.symbol))];
+      const priceMap = {};
+      for (const sym of symbols) {
+        try {
+          // Check state cache first
+          if (S.sym === sym && S.quote?.c) { priceMap[sym] = S.quote.c; continue; }
+          const wl = S.wl.find(w => w.symbol === sym);
+          if (wl?._quote?.c) { priceMap[sym] = wl._quote.c; continue; }
+          const q = await fetchQ(sym);
+          if (q?.c) priceMap[sym] = q.c;
+          await slp(80);
+        } catch(e) {}
+      }
+
+      // Compute P&L per position
+      let totalCost = 0, totalValue = 0;
+      const rows = PF.positions.map(pos => {
+        const curPrice = priceMap[pos.symbol] || null;
+        const totalCostPos = pos.avg_cost_usd * pos.shares + (pos.commission_usd || 0);
+        const curValuePos  = curPrice ? curPrice * pos.shares : null;
+        const plUsd   = curValuePos != null ? curValuePos - totalCostPos : null;
+        const plPct   = plUsd != null ? (plUsd / totalCostPos) * 100 : null;
+        const plThb   = plUsd != null ? plUsd * rate : null;
+        const valThb  = curValuePos != null ? curValuePos * rate : null;
+        if (!isNaN(totalCostPos)) totalCost += totalCostPos;
+        if (curValuePos != null) totalValue += curValuePos;
+
+        const dir = plPct == null ? '' : plPct >= 0 ? 'pf-green' : 'pf-red';
+        const dirSign = plPct == null ? '' : plPct >= 0 ? '+' : '';
+        const dateStr = pos.purchase_date ? new Date(pos.purchase_date + 'T00:00:00').toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'}) : '—';
+
+        return `<tr>
+          <td><div class="pf-sym" style="cursor:pointer" onclick="loadStock('${esc(pos.symbol)}')">${esc(pos.symbol)}</div>${pos.note ? `<div class="pf-note">${esc(pos.note)}</div>` : ''}</td>
+          <td class="pf-td-r pf-mono">${pos.shares % 1 === 0 ? pos.shares : pos.shares.toFixed(4)}</td>
+          <td class="pf-td-r pf-mono">$${fmtNum(pos.avg_cost_usd)}</td>
+          <td class="pf-td-r pf-mono">${curPrice ? '$' + fmtNum(curPrice) : '<span style="color:var(--text-muted)">—</span>'}</td>
+          <td class="pf-td-r pf-mono">$${fmtNum(totalCostPos)}</td>
+          <td class="pf-td-r pf-mono">${curValuePos != null ? '$' + fmtNum(curValuePos) : '—'}</td>
+          <td class="pf-td-r pf-mono ${dir}">${plUsd != null ? dirSign + '$' + fmtNum(plUsd) : '—'}</td>
+          <td class="pf-td-r pf-mono ${dir}">${plPct != null ? dirSign + plPct.toFixed(2) + '%' : '—'}</td>
+          <td class="pf-td-r pf-mono" style="color:var(--text-muted);font-size:11px;">${plThb != null ? (plThb >= 0 ? '+' : '') + '฿' + Math.round(plThb).toLocaleString() : '—'}</td>
+          <td><button class="pf-del-btn" onclick="deletePosition('${pos.id}')" title="Remove"><svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button></td>
+        </tr>`;
+      }).join('');
+
+      // Summary
+      const totalPl = totalValue - totalCost;
+      const totalPlPct = totalCost > 0 ? (totalPl / totalCost) * 100 : 0;
+      const totalPlThb = totalPl * rate;
+      const totalValThb = totalValue * rate;
+      const sumDir = totalPl >= 0 ? 'up' : 'down';
+      const sumSign = totalPl >= 0 ? '+' : '';
+
+      document.getElementById('pfSummary').style.display = 'grid';
+      document.getElementById('pfSummary').innerHTML = `
+        <div class="pf-sum-card">
+          <div class="pf-sum-lbl">Total Cost</div>
+          <div class="pf-sum-val">$${fmtNum(totalCost)}</div>
+          <div class="pf-sum-sub">฿${Math.round(totalCost * rate).toLocaleString()}</div>
+        </div>
+        <div class="pf-sum-card">
+          <div class="pf-sum-lbl">Market Value</div>
+          <div class="pf-sum-val">$${fmtNum(totalValue)}</div>
+          <div class="pf-sum-sub">฿${Math.round(totalValThb).toLocaleString()}</div>
+        </div>
+        <div class="pf-sum-card">
+          <div class="pf-sum-lbl">Unrealized P&L</div>
+          <div class="pf-sum-val ${sumDir}">${sumSign}$${fmtNum(Math.abs(totalPl))}</div>
+          <div class="pf-sum-sub ${sumDir}">${sumSign}฿${Math.round(Math.abs(totalPlThb)).toLocaleString()}</div>
+        </div>
+        <div class="pf-sum-card">
+          <div class="pf-sum-lbl">Return</div>
+          <div class="pf-sum-val ${sumDir}">${sumSign}${totalPlPct.toFixed(2)}%</div>
+          <div class="pf-sum-sub">${PF.positions.length} position${PF.positions.length !== 1 ? 's' : ''}</div>
+        </div>`;
+
+      document.getElementById('pfAddPositionBtn').style.display = 'flex';
+      document.getElementById('pfContent').innerHTML = `
+        <div class="pf-table-wrap">
+          <table class="pf-table">
+            <thead><tr>
+              <th>Symbol</th>
+              <th class="r">Shares</th>
+              <th class="r">Avg Cost</th>
+              <th class="r">Price</th>
+              <th class="r">Cost Basis</th>
+              <th class="r">Mkt Value</th>
+              <th class="r">P&L ($)</th>
+              <th class="r">P&L (%)</th>
+              <th class="r">P&L (฿)</th>
+              <th></th>
+            </tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>`;
+    }
   </script>
 </body>
 
