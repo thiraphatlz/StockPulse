@@ -523,6 +523,7 @@
         <div class="mini-badge" title="Auto-refresh"><svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg><span class="cd" id="countdownNum">30</span>s</div>
       </div>
       <div class="market-badge closed" id="marketBadge"><div class="dot"></div><span id="marketBadgeText">Closed</span></div>
+      <button class="topbar-btn" id="langToggleBtn" onclick="toggleLanguage()" title="Switch Language" style="font-weight: 700; font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">EN</button>
       <button class="topbar-btn" onclick="openSettings()" title="Settings"><svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg></button>
     </div>
   </header>
@@ -675,9 +676,89 @@ const S = {
   wl: JSON.parse(localStorage.getItem('stockpulse_wishlist')||'[]'),
   searchTO: null, refreshTimer: null, cdTimer: null, cd: 30,
   page: 'dashboard', sectors: {},
+  lang: localStorage.getItem('stockpulse_lang') || 'en'
 };
 
-document.addEventListener('DOMContentLoaded', () => { initApp(); setupEvents(); updateGreeting(); });
+const I18N = {
+  en: {
+    dashboard: 'Dashboard', stock: 'Stock', watchlist: 'Watchlist', settings: 'Settings', searchPlaceholder: 'Search stocks...',
+    marketClosed: 'Closed', marketOpen: 'Open', marketPre: 'Pre', marketAfter: 'After',
+    marketRealtime: 'Real-time', marketAtClose: 'At Close',
+    refresh: 'Refresh', gainers: 'Gainers', losers: 'Losers', best: 'Best', sectors: 'Sectors',
+    trackStocks: 'Track Your Stocks', trackStocksDesc: 'Search for a stock symbol to view real-time prices.',
+    add: 'Add', addCurrent: 'Add Current',
+    statOpen: 'Open', statHigh: 'High', statLow: 'Low', statPrev: 'Prev Close',
+    infoIndustry: 'Industry', infoCountry: 'Country', infoMarketCap: 'Market Cap',
+    emptyWatchlist: 'Empty watchlist — search to add stocks', emptyWatchlistSidebar: 'Empty watchlist',
+    settingsTitle: 'Settings', settingsDesc: 'Update your Finnhub API key.', settingsKeyLabel: 'Finnhub API Key',
+    cancel: 'Cancel', save: 'Save',
+    tblSymbol: 'Symbol', tblPrice: 'Price', tblChange: 'Change',
+    gMorning: 'Good Morning ☀️', gAfternoon: 'Good Afternoon 🌤', gEvening: 'Good Evening 🌙'
+  },
+  th: {
+    dashboard: 'แดชบอร์ด', stock: 'หุ้น', watchlist: 'รายการเฝ้าดู', settings: 'ตั้งค่า', searchPlaceholder: 'ค้นหาหุ้น...',
+    marketClosed: 'ปิดทำการ', marketOpen: 'เปิดทำการ', marketPre: 'ก่อนเปิด', marketAfter: 'หลังปิด',
+    marketRealtime: 'เรียลไทม์', marketAtClose: 'ราคาปิด',
+    refresh: 'รีเฟรช', gainers: 'บวก', losers: 'ลบ', best: 'ดีที่สุด', sectors: 'อุตสาหกรรม',
+    trackStocks: 'ติดตามหุ้นของคุณ', trackStocksDesc: 'ค้นหาสัญลักษณ์หุ้นเพื่อดูราคาแบบเรียลไทม์',
+    add: 'เพิ่ม', addCurrent: 'เพิ่มปัจจุบัน',
+    statOpen: 'เปิด', statHigh: 'สูงสุด', statLow: 'ต่ำสุด', statPrev: 'ปิดก่อนหน้า',
+    infoIndustry: 'กลุ่มอุตสาหกรรม', infoCountry: 'ประเทศ', infoMarketCap: 'มูลค่าตลาด',
+    emptyWatchlist: 'ไม่มีรายการ — ค้นหาเพื่อเพิ่มหุ้น', emptyWatchlistSidebar: 'ไม่มีรายการเฝ้าดู',
+    settingsTitle: 'การตั้งค่า', settingsDesc: 'อัปเดต Finnhub API key ของคุณ', settingsKeyLabel: 'Finnhub API Key',
+    cancel: 'ยกเลิก', save: 'บันทึก',
+    tblSymbol: 'สัญลักษณ์', tblPrice: 'ราคา', tblChange: 'เปลี่ยนแปลง',
+    gMorning: 'สวัสดีตอนเช้า ☀️', gAfternoon: 'สวัสดีตอนบ่าย 🌤', gEvening: 'สวัสดีตอนเย็น 🌙'
+  }
+};
+
+function toggleLanguage() {
+  S.lang = S.lang === 'en' ? 'th' : 'en';
+  localStorage.setItem('stockpulse_lang', S.lang);
+  applyLanguage();
+}
+
+function applyLanguage() {
+  const t = I18N[S.lang];
+  document.getElementById('langToggleBtn').textContent = S.lang === 'en' ? 'EN' : 'TH';
+  document.querySelector('#tab-dashboard').lastChild.nodeValue = ' ' + t.dashboard;
+  document.querySelector('#mnav-dashboard').lastChild.nodeValue = ' ' + t.dashboard;
+  document.querySelector('#mnav-stock').lastChild.nodeValue = ' ' + t.stock;
+  document.querySelector('#mnav-watchlist').lastChild.nodeValue = ' ' + t.watchlist;
+  document.querySelector('#mnav-settings').lastChild.nodeValue = ' ' + t.settings;
+  document.getElementById('searchInput').placeholder = t.searchPlaceholder;
+  if(document.querySelector('.summary-card:nth-child(1) .summary-lbl')) document.querySelector('.summary-card:nth-child(1) .summary-lbl').textContent = t.watchlist;
+  if(document.querySelector('.summary-card:nth-child(2) .summary-lbl')) document.querySelector('.summary-card:nth-child(2) .summary-lbl').textContent = t.gainers;
+  if(document.querySelector('.summary-card:nth-child(3) .summary-lbl')) document.querySelector('.summary-card:nth-child(3) .summary-lbl').textContent = t.losers;
+  if(document.querySelector('.summary-card:nth-child(4) .summary-lbl')) document.querySelector('.summary-card:nth-child(4) .summary-lbl').textContent = t.best;
+  const titles = document.querySelectorAll('.section-title');
+  if(titles.length > 0) titles[0].lastChild.nodeValue = t.watchlist;
+  if(titles.length > 1) titles[1].lastChild.nodeValue = t.sectors;
+  document.querySelector('#welcomeState h2').textContent = t.trackStocks;
+  document.querySelector('#welcomeState p').textContent = t.trackStocksDesc;
+  const statLabels = document.querySelectorAll('.stat-label');
+  if(statLabels.length >= 4) { statLabels[0].textContent = t.statOpen; statLabels[1].textContent = t.statHigh; statLabels[2].textContent = t.statLow; statLabels[3].textContent = t.statPrev; }
+  const infoLabels = document.querySelectorAll('.info-label');
+  if(infoLabels.length >= 3) { infoLabels[0].textContent = t.infoIndustry; infoLabels[1].textContent = t.infoCountry; infoLabels[2].textContent = t.infoMarketCap; }
+  document.querySelector('.wishlist-title').lastChild.nodeValue = t.watchlist;
+  document.querySelector('.btn-add-wishlist').lastChild.nodeValue = t.addCurrent;
+  document.querySelector('.modal h2').textContent = t.settingsTitle;
+  document.querySelector('.modal p').textContent = t.settingsDesc;
+  document.querySelector('.modal-label').textContent = t.settingsKeyLabel;
+  document.querySelector('.btn-secondary').textContent = t.cancel;
+  document.querySelector('.btn-primary').textContent = t.save;
+  document.getElementById('dashRefreshBtn').lastChild.nodeValue = ' ' + t.refresh;
+  if (document.querySelector('.mobile-wl-header .wishlist-title')) document.querySelector('.mobile-wl-header .wishlist-title').lastChild.nodeValue = t.watchlist;
+
+  updateGreeting();
+  updateMarketStatus();
+  updateWishlistButton();
+  updateDashboard();
+  renderWishlist();
+  if (S.quote) renderQuote(S.quote);
+}
+
+document.addEventListener('DOMContentLoaded', () => { initApp(); setupEvents(); applyLanguage(); });
 
 function initApp() {
   updateMarketStatus(); setInterval(updateMarketStatus, 60000);
@@ -702,8 +783,10 @@ function startAutoRefresh() {
 
 function updateGreeting() {
   const h = new Date().getHours();
-  document.getElementById('dashGreeting').textContent = h<12?'Good Morning ☀️':h<17?'Good Afternoon 🌤':'Good Evening 🌙';
-  document.getElementById('dashDate').textContent = new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'short',day:'numeric'});
+  const t = I18N[S.lang] || I18N.en;
+  document.getElementById('dashGreeting').textContent = h<12?t.gMorning:h<17?t.gAfternoon:t.gEvening;
+  const loc = S.lang === 'th' ? 'th-TH' : 'en-US';
+  document.getElementById('dashDate').textContent = new Date().toLocaleDateString(loc,{weekday:'long',year:'numeric',month:'short',day:'numeric'});
 }
 function updateLastRefresh() {
   const el = document.getElementById('lastUpdateText');
@@ -726,7 +809,8 @@ function closeMobileWatchlist() { document.getElementById('mobileWlOverlay').cla
 function renderMobileWishlist() {
   document.getElementById('mobileWlCount').textContent = S.wl.length;
   const list = document.getElementById('mobileWlList');
-  if(!S.wl.length) { list.innerHTML = '<div class="wishlist-empty"><svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg><p>Empty watchlist</p></div>'; return; }
+  const t = I18N[S.lang] || I18N.en;
+  if(!S.wl.length) { list.innerHTML = `<div class="wishlist-empty"><svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg><p>${t.emptyWatchlistSidebar}</p></div>`; return; }
   list.innerHTML = S.wl.map(s => {
     const q=s._quote, p=q?'$'+fmtNum(q.c):'—', pct=q?q.dp:null, d=pct!==null?(pct>=0?'up':'down'):'';
     return `<div class="wl-card-item" onclick="loadStock('${esc(s.symbol)}');closeMobileWatchlist()">
@@ -791,8 +875,9 @@ function renderQuote(q) {
   document.getElementById('priceArrow').textContent=up?'▲':dn?'▼':'—';
   document.getElementById('priceChangeVal').textContent=(up?'+':dn?'-':'')+'$'+Math.abs(d).toFixed(2);
   document.getElementById('priceChangePct').textContent='('+(dp>=0?'+':'')+dp.toFixed(2)+'%)';
-  const sm={regular:'Real-time','post-market':'After Hours','pre-market':'Pre-Market',closed:'At Close'};
-  document.getElementById('priceSessionLabel').textContent=sm[getSession()]||'At Close';
+  const l = I18N[S.lang] || I18N.en;
+  const sm={regular:l.marketRealtime,'post-market':l.marketAfter,'pre-market':l.marketPre,closed:l.marketAtClose};
+  document.getElementById('priceSessionLabel').textContent=sm[getSession()]||l.marketAtClose;
   document.getElementById('statOpen').textContent=q.o?'$'+fmtNum(q.o):'—';
   document.getElementById('statHigh').textContent=q.h?'$'+fmtNum(q.h):'—';
   document.getElementById('statLow').textContent=q.l?'$'+fmtNum(q.l):'—';
@@ -801,7 +886,7 @@ function renderQuote(q) {
 
 async function refreshCurrentQuote(){if(!S.sym)return;try{const q=await fetchQ(S.sym);if(q&&q.c){S.quote=q;renderQuote(q);}}catch{}}
 async function refreshData(){if(!S.sym)return;const b=document.getElementById('btnRefresh');b.classList.add('spinning');try{await loadStock(S.sym);showToast('Refreshed','success');}catch{showToast('Failed','error');}setTimeout(()=>b.classList.remove('spinning'),800);}
-async function fullRefresh(){const b=document.getElementById('dashRefreshBtn');b.disabled=true;b.textContent='⟳ ...';try{await updateWishlistPrices();if(S.sym)await refreshCurrentQuote();await loadSectorData();updateDashboard();updateLastRefresh();showToast('Refreshed','success');}catch{showToast('Error','error');}b.disabled=false;b.innerHTML='<svg viewBox="0 0 24 24" style="width:13px;height:13px;fill:currentColor"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>Refresh';}
+async function fullRefresh(){const b=document.getElementById('dashRefreshBtn');b.disabled=true;b.textContent='⟳ ...';try{await updateWishlistPrices();if(S.sym)await refreshCurrentQuote();await loadSectorData();updateDashboard();updateLastRefresh();showToast('Refreshed','success');}catch{showToast('Error','error');}b.disabled=false;b.innerHTML='<svg viewBox="0 0 24 24" style="width:13px;height:13px;fill:currentColor"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>' + (I18N[S.lang]||I18N.en).refresh;}
 
 // Sectors
 async function loadSectorData(){for(const s of SECTORS){try{const q=await fetchQ(s.etf);if(q&&q.c)S.sectors[s.etf]=q;await slp(120);}catch{}}renderSectors();}
@@ -822,8 +907,9 @@ function updateDashboard() {
   document.getElementById('summaryLosers').textContent=lo;
   document.getElementById('summaryBest').textContent=best?best.symbol+' '+(best._quote.dp>=0?'+':'')+best._quote.dp.toFixed(2)+'%':'—';
 
+  const t = I18N[S.lang] || I18N.en;
   const c=document.getElementById('dashWatchlist');
-  if(!S.wl.length){c.innerHTML='<div class="dash-empty"><svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg><span>Empty watchlist — search to add stocks</span></div>';return;}
+  if(!S.wl.length){c.innerHTML=`<div class="dash-empty"><svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg><span>${t.emptyWatchlist}</span></div>`;return;}
 
   // Desktop table
   const rows=S.wl.map(s=>{const q=s._quote,p=q?'$'+fmtNum(q.c):'—',pct=q?q.dp:null,d=pct===null?'flat':pct>=0?'up':'down',pt=pct!==null?(pct>=0?'+':'')+pct.toFixed(2)+'%':'—',ct=q?(q.d>=0?'+':'')+q.d.toFixed(2):'—';
@@ -833,23 +919,24 @@ function updateDashboard() {
   const cards=S.wl.map(s=>{const q=s._quote,p=q?'$'+fmtNum(q.c):'—',pct=q?q.dp:null,d=pct!==null?(pct>=0?'up':'down'):'',pt=pct!==null?(pct>=0?'+':'')+pct.toFixed(2)+'%':'';
     return `<div class="wl-card-item" onclick="loadStock('${esc(s.symbol)}')"><div class="wl-card-left"><div class="wl-sym">${esc(s.symbol)}</div><div class="wl-name">${esc(s.name||'')}</div></div><div class="wl-card-right"><div class="wl-price">${p}</div><div class="wl-chg ${d}">${pt}</div></div></div>`;}).join('');
 
-  c.innerHTML=`<div class="table-wrap"><table class="wl-table"><thead><tr><th>Symbol</th><th>Price</th><th>Change</th><th>%</th></tr></thead><tbody>${rows}</tbody></table></div><div class="wl-cards">${cards}</div>`;
+  c.innerHTML=`<div class="table-wrap"><table class="wl-table"><thead><tr><th>${t.tblSymbol}</th><th>${t.tblPrice}</th><th>${t.tblChange}</th><th>%</th></tr></thead><tbody>${rows}</tbody></table></div><div class="wl-cards">${cards}</div>`;
 }
 
 // Market status
 function getSession(){const n=new Date(),uH=n.getUTCHours(),uM=n.getUTCMinutes(),d=n.getUTCDay(),t=uH*60+uM,dst=n.getUTCMonth()>=2&&n.getUTCMonth()<=10,o=dst?-4:-5,et=((t+o*60)%1440+1440)%1440;let ed=d;if(t+o*60<0)ed=(d-1+7)%7;if(t+o*60>=1440)ed=(d+1)%7;if(ed===0||ed===6)return'closed';if(et>=240&&et<570)return'pre-market';if(et>=570&&et<960)return'regular';if(et>=960&&et<1200)return'post-market';return'closed';}
-function updateMarketStatus(){const s=getSession(),b=document.getElementById('marketBadge'),t=document.getElementById('marketBadgeText');b.className='market-badge';const m={regular:['open','Open'],'pre-market':['pre-market','Pre'],'post-market':['after-hours','After'],closed:['closed','Closed']};const[cl,lb]=m[s]||m.closed;b.classList.add(cl);t.textContent=lb;}
+function updateMarketStatus(){const s=getSession(),b=document.getElementById('marketBadge'),t=document.getElementById('marketBadgeText');b.className='market-badge';const l=I18N[S.lang]||I18N.en;const m={regular:['open',l.marketOpen],'pre-market':['pre-market',l.marketPre],'post-market':['after-hours',l.marketAfter],closed:['closed',l.marketClosed]};const[cl,lb]=m[s]||m.closed;b.classList.add(cl);t.textContent=lb;}
 
 // Wishlist
 function toggleWishlist(){if(!S.sym)return;const i=S.wl.findIndex(w=>w.symbol===S.sym);if(i>=0){S.wl.splice(i,1);showToast(S.sym+' removed','success');}else{S.wl.push({symbol:S.sym,name:S.profile?S.profile.name:S.sym});showToast(S.sym+' added','success');}saveWl();renderWishlist();updateWishlistButton();updateWishlistPrices().then(updateDashboard);}
 function removeWl(sym,ev){if(ev)ev.stopPropagation();S.wl=S.wl.filter(w=>w.symbol!==sym);saveWl();renderWishlist();updateWishlistButton();updateDashboard();showToast(sym+' removed','success');}
 function saveWl(){localStorage.setItem('stockpulse_wishlist',JSON.stringify(S.wl.map(({symbol,name})=>({symbol,name}))));}
-function updateWishlistButton(){const b=document.getElementById('btnWishlist'),ic=document.getElementById('wishlistIcon'),tx=document.getElementById('wishlistBtnText'),isIn=S.wl.some(w=>w.symbol===S.sym);if(isIn){b.classList.add('active');ic.innerHTML='<path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>';tx.textContent='★';}else{b.classList.remove('active');ic.innerHTML='<path d="M22 9.24l-7.19-.62L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27 18.18 21l-1.63-7.03L22 9.24zM12 15.4l-3.76 2.27 1-4.28-3.32-2.88 4.38-.38L12 6.1l1.71 4.04 4.38.38-3.32 2.88 1 4.28L12 15.4z"/>';tx.textContent='Add';}}
+function updateWishlistButton(){const b=document.getElementById('btnWishlist'),ic=document.getElementById('wishlistIcon'),tx=document.getElementById('wishlistBtnText'),isIn=S.wl.some(w=>w.symbol===S.sym);if(isIn){b.classList.add('active');ic.innerHTML='<path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>';tx.textContent='★';}else{b.classList.remove('active');ic.innerHTML='<path d="M22 9.24l-7.19-.62L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27 18.18 21l-1.63-7.03L22 9.24zM12 15.4l-3.76 2.27 1-4.28-3.32-2.88 4.38-.38L12 6.1l1.71 4.04 4.38.38-3.32 2.88 1 4.28L12 15.4z"/>';tx.textContent=(I18N[S.lang]||I18N.en).add;}}
 
 function renderWishlist(){
   const list=document.getElementById('wishlistList'),cnt=document.getElementById('wishlistCount');
   cnt.textContent=S.wl.length;
-  if(!S.wl.length){list.innerHTML='<div class="wishlist-empty"><svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg><p>Empty watchlist</p></div>';return;}
+  const t = I18N[S.lang] || I18N.en;
+  if(!S.wl.length){list.innerHTML=`<div class="wishlist-empty"><svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg><p>${t.emptyWatchlistSidebar}</p></div>`;return;}
   list.innerHTML=S.wl.map(s=>{const a=s.symbol===S.sym,q=s._quote,p=q?'$'+fmtNum(q.c):'—',pct=q?q.dp:null,d=pct!==null?(pct>=0?'up':'down'):'',pt=pct!==null?(pct>=0?'+':'')+pct.toFixed(2)+'%':'';
     return `<div class="wishlist-item${a?' active':''}" onclick="loadStock('${esc(s.symbol)}')"><div class="wishlist-item-info"><div class="wishlist-item-symbol">${esc(s.symbol)}</div><div class="wishlist-item-name">${esc(s.name||s.symbol)}</div></div><div class="wishlist-item-price"><div class="wishlist-item-price-val">${p}</div><div class="wishlist-item-change ${d}">${pt}</div></div><button class="wishlist-item-remove" onclick="removeWl('${esc(s.symbol)}',event)"><svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button></div>`;
   }).join('');
