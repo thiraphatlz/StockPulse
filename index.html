@@ -3230,7 +3230,9 @@
           renderQuote(q);
           if (chartSeries && currentChartRange === '1D') {
             const time = q.t || Math.floor(Date.now() / 1000);
-            chartSeries.update({ time: time, value: q.c });
+            if (time >= lastChartTime) {
+              try { chartSeries.update({ time: time, value: q.c }); lastChartTime = time; } catch(e) {}
+            }
           }
         } 
       } catch { } 
@@ -3250,7 +3252,7 @@
       const container = document.getElementById('stockChartContainer');
       if (!window.LightweightCharts) return;
       stockChart = LightweightCharts.createChart(container, {
-        width: container.clientWidth,
+        autoSize: true,
         height: 250,
         layout: { background: { color: 'transparent' }, textColor: '#9898b0' },
         grid: { vertLines: { color: 'rgba(42, 42, 58, 0.5)' }, horzLines: { color: 'rgba(42, 42, 58, 0.5)' } },
@@ -3265,9 +3267,6 @@
         lineWidth: 2,
         priceFormat: { type: 'price', precision: 2, minMove: 0.01 }
       });
-      window.addEventListener('resize', () => {
-        if (stockChart) stockChart.applyOptions({ width: container.clientWidth });
-      });
     }
 
     async function setChartRange(range) {
@@ -3278,6 +3277,7 @@
       await renderChart();
     }
 
+    let lastChartTime = 0;
     async function renderChart() {
       if (!S.sym) return;
       initChart();
@@ -3289,12 +3289,27 @@
         const data = await res.json();
         if (data && data.data && chartSeries) {
           // Format data for AreaSeries (needs time and value)
-          const formatted = data.data.map(d => ({
+          let formatted = data.data.map(d => ({
             time: d.time,
             value: d.close
           }));
-          chartSeries.setData(formatted);
-          stockChart.timeScale().fitContent();
+          
+          // Sort strictly by time and remove duplicates (Lightweight Charts requirement)
+          formatted.sort((a, b) => a.time - b.time);
+          const uniqueFormatted = [];
+          for (let i = 0; i < formatted.length; i++) {
+            if (i === 0 || formatted[i].time > uniqueFormatted[uniqueFormatted.length - 1].time) {
+              uniqueFormatted.push(formatted[i]);
+            }
+          }
+          
+          if (uniqueFormatted.length > 0) {
+            lastChartTime = uniqueFormatted[uniqueFormatted.length - 1].time;
+            chartSeries.setData(uniqueFormatted);
+            stockChart.timeScale().fitContent();
+          } else {
+            chartSeries.setData([]);
+          }
         } else {
           if (chartSeries) chartSeries.setData([]);
         }
