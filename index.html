@@ -1953,6 +1953,27 @@
     .pf-loading { display: flex; align-items: center; justify-content: center; padding: 40px; gap: 10px; color: var(--text-muted); font-size: 13px; }
     .pf-spinner { width: 18px; height: 18px; border: 2px solid var(--border-primary); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; }
 
+    /* Currency Toggle */
+    .cur-toggle-wrap { display: flex; align-items: center; gap: 0; border: 1px solid var(--border-subtle); border-radius: var(--radius-xs); overflow: hidden; height: 40px; }
+    .cur-toggle-inp { flex: 1; height: 100%; padding: 0 12px; background: var(--bg-input); border: none; border-right: 1px solid var(--border-subtle); color: var(--text-primary); font-size: 13px; font-family: inherit; outline: none; min-width: 0; }
+    .cur-toggle-btn { height: 100%; padding: 0 12px; background: var(--bg-elevated); color: var(--text-secondary); font-size: 11px; font-weight: 700; white-space: nowrap; cursor: pointer; transition: var(--transition); border: none; min-width: 52px; }
+    .cur-toggle-btn:hover { background: var(--accent-glow); color: var(--accent-light); }
+    .cur-toggle-btn.usd { color: #34d399; }
+    .cur-toggle-btn.thb { color: #fbbf24; }
+
+    /* Symbol autocomplete */
+    .pos-sym-wrap { position: relative; }
+    .pos-sym-dd { position: absolute; top: calc(100% + 3px); left: 0; right: 0; background: var(--bg-card); border: 1px solid var(--border-primary); border-radius: var(--radius-sm); box-shadow: var(--shadow-lg); max-height: 180px; overflow-y: auto; z-index: 700; display: none; }
+    .pos-sym-dd.active { display: block; }
+    .pos-sym-item { display: flex; align-items: center; justify-content: space-between; padding: 9px 14px; cursor: pointer; border-bottom: 1px solid var(--border-subtle); font-size: 12px; transition: background 0.1s; }
+    .pos-sym-item:last-child { border-bottom: none; }
+    .pos-sym-item:hover { background: var(--bg-elevated); }
+    .pos-sym-name { color: var(--text-muted); font-size: 11px; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    /* Price preview pill */
+    .pos-price-preview { font-size: 11px; color: var(--accent-light); background: var(--accent-glow); border-radius: var(--radius-pill); padding: 2px 10px; display: inline-flex; align-items: center; margin-top: 4px; gap: 4px; }
+    .pos-calc-shares { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+
     @media (max-width: 768px) {
       .pf-summary { grid-template-columns: 1fr 1fr; gap: 8px; }
       .pf-sum-val { font-size: 14px; }
@@ -2292,39 +2313,49 @@
     <div class="pos-modal">
       <div class="pos-modal-title">
         <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
-        Add Position
+        <span id="posModalTitleText">Add Position</span>
       </div>
-      <div class="pos-form-grid">
-        <div class="pos-field pos-form-full">
-          <label class="pos-label">Stock Symbol *</label>
-          <input type="text" class="pos-input" id="posSymbol" placeholder="e.g. AAPL, NVDA" style="text-transform:uppercase" />
-        </div>
-        <div class="pos-field">
-          <label class="pos-label">Avg Cost (USD) *</label>
-          <input type="number" class="pos-input" id="posAvgCost" placeholder="0.00" step="0.01" min="0" />
-        </div>
-        <div class="pos-field">
-          <label class="pos-label">Shares *</label>
-          <input type="number" class="pos-input" id="posShares" placeholder="0" step="0.0001" min="0" />
-        </div>
-        <div class="pos-field">
-          <label class="pos-label">Commission (USD)</label>
-          <input type="number" class="pos-input pos-input-opt" id="posCommission" placeholder="0.00" step="0.01" min="0" />
-        </div>
-        <div class="pos-field">
-          <label class="pos-label">Purchase Date</label>
-          <input type="date" class="pos-input pos-input-opt" id="posPurchaseDate" />
-        </div>
-        <div class="pos-field pos-form-full">
-          <label class="pos-label">Note</label>
-          <input type="text" class="pos-input pos-input-opt" id="posNote" placeholder="e.g. Long-term hold" />
+
+      <!-- 1. Stock Symbol -->
+      <div class="pos-field" style="margin-bottom:12px;">
+        <label class="pos-label" id="posLabelSymbol">Stock Symbol</label>
+        <div class="pos-sym-wrap">
+          <input type="text" class="pos-input" id="posSymbol" placeholder="e.g. AAPL, NVDA" autocomplete="off"
+            oninput="posSymbolInput(this.value)" style="text-transform:uppercase" />
+          <div class="pos-sym-dd" id="posSymbolDD"></div>
         </div>
       </div>
+
+      <!-- 2. Price at purchase -->
+      <div class="pos-field" style="margin-bottom:4px;">
+        <label class="pos-label" id="posLabelPrice">Price When Purchased (USD / Share)</label>
+        <input type="number" class="pos-input" id="posPricePerShare" placeholder="0.00" step="0.01" min="0"
+          oninput="posCalcShares()" />
+        <div id="posPricePreview" style="display:none;"></div>
+      </div>
+
+      <!-- 3. Amount invested -->
+      <div class="pos-field" style="margin-bottom:4px;">
+        <label class="pos-label" id="posLabelAmount">Amount Invested</label>
+        <div class="cur-toggle-wrap">
+          <input type="number" class="cur-toggle-inp" id="posAmount" placeholder="0.00" step="0.01" min="0"
+            oninput="posCalcShares()" />
+          <button class="cur-toggle-btn usd" id="posCurBtn" onclick="posToggleCurrency()" title="Toggle currency">USD</button>
+        </div>
+        <div id="posCalcResult" class="pos-calc-shares"></div>
+      </div>
+
+      <!-- 4. Date -->
+      <div class="pos-field" style="margin-bottom:20px;">
+        <label class="pos-label" id="posLabelDate">Purchase Date</label>
+        <input type="date" class="pos-input" id="posPurchaseDate" />
+      </div>
+
       <div class="pos-modal-actions">
-        <button class="btn-secondary" onclick="closePosModal()">Cancel</button>
-        <button class="pf-add-btn" onclick="submitPosition()">
+        <button class="btn-secondary" id="posCancelBtn" onclick="closePosModal()">Cancel</button>
+        <button class="pf-add-btn" id="posSubmitBtn" onclick="submitPosition()">
           <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
-          Add Position
+          <span id="posSubmitText">Add Position</span>
         </button>
       </div>
     </div>
@@ -2732,7 +2763,20 @@
         gMorning: 'Good Morning ☀️', gAfternoon: 'Good Afternoon 🌤', gEvening: 'Good Evening 🌙',
         alertTitle: 'Price Alerts', alertSet: 'Set', alertSetEmail: 'Alerts will be sent to',
         alertNoEmail: 'Set email in Settings',
-        activeAlerts: 'Active Alerts', noActiveAlerts: 'No active price alerts — search a stock to set alerts'
+        activeAlerts: 'Active Alerts', noActiveAlerts: 'No active price alerts — search a stock to set alerts',
+        // Portfolio
+        portfolio: 'Portfolio', pfTitle: 'My Portfolio', pfAddPos: 'Add Position',
+        pfNew: 'New Portfolio', pfNoPortfolio: 'No portfolio yet.<br>Create your first portfolio to get started.',
+        pfNoPositions: 'No positions yet.<br>Click "Add Position" to get started.',
+        pfTotalCost: 'Total Cost', pfMktVal: 'Market Value', pfPL: 'Unrealized P&L', pfReturn: 'Return',
+        pfSymbol: 'Symbol', pfShares: 'Shares', pfAvgCost: 'Avg Cost', pfPrice: 'Price',
+        pfCostBasis: 'Cost Basis', pfMktValue: 'Mkt Value',
+        pfModalTitle: 'Add Position', pfLblSymbol: 'Stock Symbol', pfLblPrice: 'Price When Purchased (USD / Share)',
+        pfLblAmount: 'Amount Invested', pfLblDate: 'Purchase Date',
+        pfCancel: 'Cancel', pfSubmit: 'Add Position',
+        pfCalcShares: (shares) => `≈ ${shares} shares will be purchased`,
+        pfCurFetch: 'Fetching current price...',
+        pfCurLoaded: (p) => `Current price: $${p}`,
       },
       th: {
         dashboard: 'แดชบอร์ด', stock: 'หุ้น', watchlist: 'รายการเฝ้าดู', settings: 'ตั้งค่า', searchPlaceholder: 'ค้นหาหุ้น...',
@@ -2750,7 +2794,20 @@
         gMorning: 'สวัสดีตอนเช้า ☀️', gAfternoon: 'สวัสดีตอนบ่าย 🌤', gEvening: 'สวัสดีตอนเย็น 🌙',
         alertTitle: 'แจ้งเตือนราคา', alertSet: 'ตั้งค่า', alertSetEmail: 'แจ้งเตือนจะส่งไปที่',
         alertNoEmail: 'ตั้งค่าอีเมลในการตั้งค่า',
-        activeAlerts: 'การแจ้งเตือนที่ตั้งไว้', noActiveAlerts: 'ไม่มีรายการแจ้งเตือน — ค้นหาหุ้นเพื่อตั้งค่าแจ้งเตือน'
+        activeAlerts: 'การแจ้งเตือนที่ตั้งไว้', noActiveAlerts: 'ไม่มีรายการแจ้งเตือน — ค้นหาหุ้นเพื่อตั้งค่าแจ้งเตือน',
+        // Portfolio
+        portfolio: 'พอร์ต', pfTitle: 'พอร์ตสลิปของฉัน', pfAddPos: 'เพิ่ม Position',
+        pfNew: 'พอร์ตใหม่', pfNoPortfolio: 'ยังไม่มีพอร์ต<br>สร้างพอร์ตแรกเพื่อเริ่มต้น',
+        pfNoPositions: 'ยังไม่มี Position<br>กด "เพิ่ม Position" เพื่อเริ่มต้น',
+        pfTotalCost: 'ต้นทุนรวม', pfMktVal: 'มูลค่าตลาด', pfPL: 'กำไร/ขาดทุน (Unrealized)', pfReturn: 'ผลตอบแทน',
+        pfSymbol: 'หุ้น', pfShares: 'จำนวนหุ้น', pfAvgCost: 'ต้นทุนเฉลี่ย', pfPrice: 'ราคาปัจจุบัน',
+        pfCostBasis: 'ต้นทุนทั้งหมด', pfMktValue: 'มูลค่า',
+        pfModalTitle: 'เพิ่ม Position', pfLblSymbol: 'สัญลักษณ์หุ้น',
+        pfLblPrice: 'ราคาหุ้นตอนซื้อ (USD / หุ้น)', pfLblAmount: 'จำนวนเงินที่ลงทุน',
+        pfLblDate: 'วันที่ซื้อ', pfCancel: 'ยกเลิก', pfSubmit: 'เพิ่ม Position',
+        pfCalcShares: (shares) => `≈ ${shares} หุ้น`,
+        pfCurFetch: 'กำลังดึงราคา...',
+        pfCurLoaded: (p) => `ราคาปัจจุบัน: $${p}`,
       }
     };
 
@@ -2799,6 +2856,17 @@
       setLbl('#alertBelowBtnTxt', t.alertSet);
       renderAlertEmailNote();
       renderDashboardAlerts();
+      // Portfolio modal labels
+      const posModalTitleEl = document.getElementById('posModalTitleText'); if (posModalTitleEl) posModalTitleEl.textContent = t.pfModalTitle;
+      const posLblSym = document.getElementById('posLabelSymbol'); if (posLblSym) posLblSym.textContent = t.pfLblSymbol;
+      const posLblPrc = document.getElementById('posLabelPrice'); if (posLblPrc) posLblPrc.textContent = t.pfLblPrice;
+      const posLblAmt = document.getElementById('posLabelAmount'); if (posLblAmt) posLblAmt.textContent = t.pfLblAmount;
+      const posLblDt = document.getElementById('posLabelDate'); if (posLblDt) posLblDt.textContent = t.pfLblDate;
+      const posCancelEl = document.getElementById('posCancelBtn'); if (posCancelEl) posCancelEl.textContent = t.pfCancel;
+      const posSubmitEl = document.getElementById('posSubmitText'); if (posSubmitEl) posSubmitEl.textContent = t.pfSubmit;
+      // Portfolio page title
+      const pfTitle = document.getElementById('pfPageTitle'); if (pfTitle) pfTitle.textContent = t.pfTitle;
+      const pfAddBtn = document.querySelector('#pfAddPositionBtn span'); if (pfAddBtn) pfAddBtn.textContent = t.pfAddPos;
 
       updateGreeting();
       updateMarketStatus();
@@ -2984,8 +3052,8 @@
     function updateMarketStatus() { const s = getSession(), b = document.getElementById('marketBadge'), t = document.getElementById('marketBadgeText'); b.className = 'market-badge'; const l = I18N[S.lang] || I18N.en; const m = { regular: ['open', l.marketOpen], 'pre-market': ['pre-market', l.marketPre], 'post-market': ['after-hours', l.marketAfter], closed: ['closed', l.marketClosed] }; const [cl, lb] = m[s] || m.closed; b.classList.add(cl); t.textContent = lb; }
 
     // Wishlist
-    function toggleWishlist() { if (!S.sym) return; const i = S.wl.findIndex(w => w.symbol === S.sym); if (i >= 0) { S.wl.splice(i, 1); showToast(S.sym + ' removed', 'success'); } else { S.wl.push({ symbol: S.sym, name: S.profile ? S.profile.name : S.sym }); showToast(S.sym + ' added', 'success'); } saveWl(); renderWishlist(); updateWishlistButton(); updateWishlistPrices().then(updateDashboard); }
-    function removeWl(sym, ev) { if (ev) ev.stopPropagation(); S.wl = S.wl.filter(w => w.symbol !== sym); saveWl(); renderWishlist(); updateWishlistButton(); updateDashboard(); showToast(sym + ' removed', 'success'); }
+    function toggleWishlist() { if (!S.sym) return; const i = S.wl.findIndex(w => w.symbol === S.sym); if (i >= 0) { S.wl.splice(i, 1); removeWatchlistFromSupabase(S.sym); showToast(S.sym + ' removed', 'success'); } else { const name = S.profile ? S.profile.name : S.sym; S.wl.push({ symbol: S.sym, name: name }); addWatchlistToSupabase(S.sym, name); showToast(S.sym + ' added', 'success'); } saveWl(); renderWishlist(); updateWishlistButton(); updateWishlistPrices().then(updateDashboard); }
+    function removeWl(sym, ev) { if (ev) ev.stopPropagation(); S.wl = S.wl.filter(w => w.symbol !== sym); removeWatchlistFromSupabase(sym); saveWl(); renderWishlist(); updateWishlistButton(); updateDashboard(); showToast(sym + ' removed', 'success'); }
     function saveWl() { localStorage.setItem('stockpulse_wishlist', JSON.stringify(S.wl.map(({ symbol, name }) => ({ symbol, name })))); }
     function updateWishlistButton() { const b = document.getElementById('btnWishlist'), ic = document.getElementById('wishlistIcon'), tx = document.getElementById('wishlistBtnText'), isIn = S.wl.some(w => w.symbol === S.sym); if (isIn) { b.classList.add('active'); ic.innerHTML = '<path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>'; tx.textContent = '★'; } else { b.classList.remove('active'); ic.innerHTML = '<path d="M22 9.24l-7.19-.62L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27 18.18 21l-1.63-7.03L22 9.24zM12 15.4l-3.76 2.27 1-4.28-3.32-2.88 4.38-.38L12 6.1l1.71 4.04 4.38.38-3.32 2.88 1 4.28L12 15.4z"/>'; tx.textContent = (I18N[S.lang] || I18N.en).add; } }
 
@@ -3295,6 +3363,7 @@
     function initSupabase() {
       try {
         SB = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+        loadWatchlistFromSupabase();
       } catch(e) { console.error('Supabase init error:', e); }
     }
 
@@ -3417,43 +3486,123 @@
 
     function openPosModal() {
       if (!PF.activeId) { showToast('Please create a portfolio first', 'error'); return; }
+      const t = I18N[S.lang] || I18N.en;
       document.getElementById('posModalOverlay').classList.add('active');
-      document.getElementById('posSymbol').value = '';
-      document.getElementById('posAvgCost').value = '';
-      document.getElementById('posShares').value = '';
-      document.getElementById('posCommission').value = '';
-      document.getElementById('posPurchaseDate').value = '';
-      document.getElementById('posNote').value = '';
-      // Pre-fill symbol if stock is open
-      if (S.sym) document.getElementById('posSymbol').value = S.sym;
-      setTimeout(() => document.getElementById('posSymbol').focus(), 100);
+      document.getElementById('posSymbol').value = S.sym || '';
+      document.getElementById('posPricePerShare').value = '';
+      document.getElementById('posAmount').value = '';
+      document.getElementById('posPurchaseDate').value = new Date().toISOString().split('T')[0];
+      document.getElementById('posCalcResult').textContent = '';
+      document.getElementById('posPricePreview').style.display = 'none';
+      document.getElementById('posSymbolDD').classList.remove('active');
+      PF.posAmountCur = 'USD'; // default currency
+      const btn = document.getElementById('posCurBtn');
+      btn.textContent = 'USD'; btn.className = 'cur-toggle-btn usd';
+      // If stock open, prefill price
+      if (S.sym && S.quote?.c) {
+        document.getElementById('posPricePerShare').value = S.quote.c.toFixed(2);
+        const prev = document.getElementById('posPricePreview');
+        prev.style.display = 'inline-flex';
+        prev.innerHTML = `<svg viewBox="0 0 24 24" style="width:11px;height:11px;fill:currentColor;"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg> ${t.pfCurLoaded(S.quote.c.toFixed(2))}`;
+      } else if (S.sym) {
+        // Try fetch
+        const prev = document.getElementById('posPricePreview');
+        prev.style.display = 'inline-flex'; prev.textContent = t.pfCurFetch;
+        fetchQ(S.sym).then(q => {
+          if (q?.c) {
+            document.getElementById('posPricePerShare').value = q.c.toFixed(2);
+            prev.innerHTML = `<svg viewBox="0 0 24 24" style="width:11px;height:11px;fill:currentColor;"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg> ${t.pfCurLoaded(q.c.toFixed(2))}`;
+            posCalcShares();
+          } else { prev.style.display = 'none'; }
+        }).catch(() => { prev.style.display = 'none'; });
+      }
+      setTimeout(() => document.getElementById('posAmount').focus(), 100);
     }
     function closePosModal() {
       document.getElementById('posModalOverlay').classList.remove('active');
+      document.getElementById('posSymbolDD').classList.remove('active');
+    }
+
+    // Symbol autocomplete
+    let posSymTO = null;
+    function posSymbolInput(val) {
+      document.getElementById('posSymbol').value = val.toUpperCase();
+      clearTimeout(posSymTO);
+      const dd = document.getElementById('posSymbolDD');
+      if (!val.trim()) { dd.classList.remove('active'); return; }
+      posSymTO = setTimeout(async () => {
+        const results = await searchSymbols(val);
+        if (!results || !results.length) { dd.classList.remove('active'); return; }
+        dd.classList.add('active');
+        dd.innerHTML = results.slice(0,6).map(r => `
+          <div class="pos-sym-item" onclick="posSelectSymbol('${esc(r.symbol)}','${esc(r.description || '')}')">
+            <span style="font-weight:700;">${esc(r.symbol)}</span>
+            <span class="pos-sym-name">${esc(r.description || '')}</span>
+          </div>`).join('');
+      }, 250);
+    }
+    function posSelectSymbol(sym, name) {
+      const t = I18N[S.lang] || I18N.en;
+      document.getElementById('posSymbol').value = sym;
+      document.getElementById('posSymbolDD').classList.remove('active');
+      // Fetch price for this symbol
+      const prev = document.getElementById('posPricePreview');
+      prev.style.display = 'inline-flex'; prev.textContent = t.pfCurFetch;
+      fetchQ(sym).then(q => {
+        if (q?.c) {
+          document.getElementById('posPricePerShare').value = q.c.toFixed(2);
+          prev.innerHTML = `<svg viewBox="0 0 24 24" style="width:11px;height:11px;fill:currentColor;"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg> ${t.pfCurLoaded(q.c.toFixed(2))}`;
+          posCalcShares();
+        } else { prev.style.display = 'none'; }
+      }).catch(() => { prev.style.display = 'none'; });
+      document.getElementById('posAmount').focus();
+    }
+
+    function posToggleCurrency() {
+      const btn = document.getElementById('posCurBtn');
+      PF.posAmountCur = PF.posAmountCur === 'USD' ? 'THB' : 'USD';
+      btn.textContent = PF.posAmountCur;
+      btn.className = 'cur-toggle-btn ' + PF.posAmountCur.toLowerCase();
+      document.getElementById('posAmount').placeholder = PF.posAmountCur === 'USD' ? '0.00 USD' : '0.00 ฿';
+      posCalcShares();
+    }
+
+    function posCalcShares() {
+      const t = I18N[S.lang] || I18N.en;
+      const price = parseFloat(document.getElementById('posPricePerShare').value);
+      const amount = parseFloat(document.getElementById('posAmount').value);
+      const res = document.getElementById('posCalcResult');
+      if (!price || !amount || price <= 0 || amount <= 0) { res.textContent = ''; return; }
+      const rate = PF.usdThb || 33.5;
+      const amountUsd = PF.posAmountCur === 'THB' ? amount / rate : amount;
+      const shares = amountUsd / price;
+      res.textContent = t.pfCalcShares(shares.toFixed(4));
     }
 
     async function submitPosition() {
       const symbol = document.getElementById('posSymbol').value.trim().toUpperCase();
-      const avgCost = parseFloat(document.getElementById('posAvgCost').value);
-      const shares  = parseFloat(document.getElementById('posShares').value);
-      const commission = parseFloat(document.getElementById('posCommission').value) || 0;
+      const pricePerShare = parseFloat(document.getElementById('posPricePerShare').value);
+      const amount = parseFloat(document.getElementById('posAmount').value);
       const purchaseDate = document.getElementById('posPurchaseDate').value || null;
-      const note = document.getElementById('posNote').value.trim() || null;
 
       // Validation
       let valid = true;
-      ['posSymbol','posAvgCost','posShares'].forEach(id => {
-        const el = document.getElementById(id);
-        const empty = !el.value.trim() || (id !== 'posSymbol' && isNaN(parseFloat(el.value)));
-        el.classList.toggle('error', empty);
-        if (empty) valid = false;
-      });
-      if (!valid) { showToast('Please fill required fields', 'error'); return; }
+      if (!symbol) { document.getElementById('posSymbol').classList.add('error'); valid = false; } else { document.getElementById('posSymbol').classList.remove('error'); }
+      if (!pricePerShare || pricePerShare <= 0) { document.getElementById('posPricePerShare').classList.add('error'); valid = false; } else { document.getElementById('posPricePerShare').classList.remove('error'); }
+      if (!amount || amount <= 0) { document.getElementById('posAmount').classList.add('error'); valid = false; } else { document.getElementById('posAmount').classList.remove('error'); }
+      if (!valid) { showToast('Please fill all required fields', 'error'); return; }
+
+      // Calculate shares from amount
+      const rate = PF.usdThb || await fetchUsdThb();
+      const amountUsd = PF.posAmountCur === 'THB' ? amount / rate : amount;
+      const shares = amountUsd / pricePerShare;
 
       const { data, error } = await SB.from('positions').insert({
         portfolio_id: PF.activeId,
-        symbol, shares, avg_cost_usd: avgCost, commission_usd: commission,
-        purchase_date: purchaseDate, note
+        symbol, shares: parseFloat(shares.toFixed(6)),
+        avg_cost_usd: pricePerShare,
+        commission_usd: 0,
+        purchase_date: purchaseDate, note: null
       }).select().single();
       if (error) { showToast('Error: ' + error.message, 'error'); return; }
       PF.positions.push(data);
@@ -3498,23 +3647,22 @@
     }
 
     async function renderPortfolio() {
+      const t = I18N[S.lang] || I18N.en;
       const rate = PF.usdThb || await fetchUsdThb();
       if (PF.positions.length === 0) {
         document.getElementById('pfSummary').style.display = 'none';
         document.getElementById('pfAddPositionBtn').style.display = 'flex';
         document.getElementById('pfContent').innerHTML = `<div class="pf-empty">
           <svg viewBox="0 0 24 24"><path d="M20 7H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V9c0-1.1-.9-2-2-2zm0 12H4V9h16v10zM12 3.5l-4 4h2.5V11h3V7.5H16l-4-4z"/></svg>
-          <p>No positions yet.<br>Click "Add Position" to get started.</p>
+          <p>${t.pfNoPositions}</p>
         </div>`;
         return;
       }
 
-      // Fetch current prices for all unique symbols
       const symbols = [...new Set(PF.positions.map(p => p.symbol))];
       const priceMap = {};
       for (const sym of symbols) {
         try {
-          // Check state cache first
           if (S.sym === sym && S.quote?.c) { priceMap[sym] = S.quote.c; continue; }
           const wl = S.wl.find(w => w.symbol === sym);
           if (wl?._quote?.c) { priceMap[sym] = wl._quote.c; continue; }
@@ -3524,7 +3672,6 @@
         } catch(e) {}
       }
 
-      // Compute P&L per position
       let totalCost = 0, totalValue = 0;
       const rows = PF.positions.map(pos => {
         const curPrice = priceMap[pos.symbol] || null;
@@ -3533,17 +3680,16 @@
         const plUsd   = curValuePos != null ? curValuePos - totalCostPos : null;
         const plPct   = plUsd != null ? (plUsd / totalCostPos) * 100 : null;
         const plThb   = plUsd != null ? plUsd * rate : null;
-        const valThb  = curValuePos != null ? curValuePos * rate : null;
         if (!isNaN(totalCostPos)) totalCost += totalCostPos;
         if (curValuePos != null) totalValue += curValuePos;
 
         const dir = plPct == null ? '' : plPct >= 0 ? 'pf-green' : 'pf-red';
         const dirSign = plPct == null ? '' : plPct >= 0 ? '+' : '';
-        const dateStr = pos.purchase_date ? new Date(pos.purchase_date + 'T00:00:00').toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'}) : '—';
 
         return `<tr>
-          <td><div class="pf-sym" style="cursor:pointer" onclick="loadStock('${esc(pos.symbol)}')">${esc(pos.symbol)}</div>${pos.note ? `<div class="pf-note">${esc(pos.note)}</div>` : ''}</td>
-          <td class="pf-td-r pf-mono">${pos.shares % 1 === 0 ? pos.shares : pos.shares.toFixed(4)}</td>
+          <td><div class="pf-sym" style="cursor:pointer" onclick="loadStock('${esc(pos.symbol)}')">${esc(pos.symbol)}</div>
+              ${pos.purchase_date ? `<div class="pf-note">${new Date(pos.purchase_date+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</div>` : ''}</td>
+          <td class="pf-td-r pf-mono">${Number(pos.shares) % 1 === 0 ? pos.shares : Number(pos.shares).toFixed(4)}</td>
           <td class="pf-td-r pf-mono">$${fmtNum(pos.avg_cost_usd)}</td>
           <td class="pf-td-r pf-mono">${curPrice ? '$' + fmtNum(curPrice) : '<span style="color:var(--text-muted)">—</span>'}</td>
           <td class="pf-td-r pf-mono">$${fmtNum(totalCostPos)}</td>
@@ -3555,7 +3701,6 @@
         </tr>`;
       }).join('');
 
-      // Summary
       const totalPl = totalValue - totalCost;
       const totalPlPct = totalCost > 0 ? (totalPl / totalCost) * 100 : 0;
       const totalPlThb = totalPl * rate;
@@ -3566,22 +3711,22 @@
       document.getElementById('pfSummary').style.display = 'grid';
       document.getElementById('pfSummary').innerHTML = `
         <div class="pf-sum-card">
-          <div class="pf-sum-lbl">Total Cost</div>
+          <div class="pf-sum-lbl">${t.pfTotalCost}</div>
           <div class="pf-sum-val">$${fmtNum(totalCost)}</div>
           <div class="pf-sum-sub">฿${Math.round(totalCost * rate).toLocaleString()}</div>
         </div>
         <div class="pf-sum-card">
-          <div class="pf-sum-lbl">Market Value</div>
+          <div class="pf-sum-lbl">${t.pfMktVal}</div>
           <div class="pf-sum-val">$${fmtNum(totalValue)}</div>
           <div class="pf-sum-sub">฿${Math.round(totalValThb).toLocaleString()}</div>
         </div>
         <div class="pf-sum-card">
-          <div class="pf-sum-lbl">Unrealized P&L</div>
+          <div class="pf-sum-lbl">${t.pfPL}</div>
           <div class="pf-sum-val ${sumDir}">${sumSign}$${fmtNum(Math.abs(totalPl))}</div>
           <div class="pf-sum-sub ${sumDir}">${sumSign}฿${Math.round(Math.abs(totalPlThb)).toLocaleString()}</div>
         </div>
         <div class="pf-sum-card">
-          <div class="pf-sum-lbl">Return</div>
+          <div class="pf-sum-lbl">${t.pfReturn}</div>
           <div class="pf-sum-val ${sumDir}">${sumSign}${totalPlPct.toFixed(2)}%</div>
           <div class="pf-sum-sub">${PF.positions.length} position${PF.positions.length !== 1 ? 's' : ''}</div>
         </div>`;
@@ -3591,12 +3736,12 @@
         <div class="pf-table-wrap">
           <table class="pf-table">
             <thead><tr>
-              <th>Symbol</th>
-              <th class="r">Shares</th>
-              <th class="r">Avg Cost</th>
-              <th class="r">Price</th>
-              <th class="r">Cost Basis</th>
-              <th class="r">Mkt Value</th>
+              <th>${t.pfSymbol}</th>
+              <th class="r">${t.pfShares}</th>
+              <th class="r">${t.pfAvgCost}</th>
+              <th class="r">${t.pfPrice}</th>
+              <th class="r">${t.pfCostBasis}</th>
+              <th class="r">${t.pfMktValue}</th>
               <th class="r">P&L ($)</th>
               <th class="r">P&L (%)</th>
               <th class="r">P&L (฿)</th>
@@ -3605,6 +3750,35 @@
             <tbody>${rows}</tbody>
           </table>
         </div>`;
+    }
+
+    // ===== WATCHLIST + SUPABASE SYNC =====
+    async function loadWatchlistFromSupabase() {
+      if (!SB) return;
+      try {
+        const { data, error } = await SB.from('watchlist').select('symbol, name').order('created_at');
+        if (error) { console.warn('WL Supabase load error:', error.message); return; }
+        if (!data || !data.length) return;
+        // Merge: add Supabase items not in current wl
+        let changed = false;
+        data.forEach(row => {
+          if (!S.wl.find(w => w.symbol === row.symbol)) {
+            S.wl.push({ symbol: row.symbol, name: row.name || row.symbol });
+            changed = true;
+          }
+        });
+        if (changed) { saveWl(); renderWishlist(); updateDashboard(); }
+      } catch(e) { console.warn('WL Supabase error:', e); }
+    }
+
+    async function addWatchlistToSupabase(symbol, name) {
+      if (!SB) return;
+      try { await SB.from('watchlist').upsert({ symbol, name }, { onConflict: 'symbol' }); } catch(e) {}
+    }
+
+    async function removeWatchlistFromSupabase(symbol) {
+      if (!SB) return;
+      try { await SB.from('watchlist').delete().eq('symbol', symbol); } catch(e) {}
     }
   </script>
 </body>
