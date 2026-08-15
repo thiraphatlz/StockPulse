@@ -1973,6 +1973,7 @@
     /* Price preview pill */
     .pos-price-preview { font-size: 11px; color: var(--accent-light); background: var(--accent-glow); border-radius: var(--radius-pill); padding: 2px 10px; display: inline-flex; align-items: center; margin-top: 4px; gap: 4px; }
     .pos-calc-shares { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+    .search-tag-th { display: inline-block; background: rgba(52, 211, 153, 0.15); color: #34d399; font-size: 10px; font-weight: 700; padding: 1px 5px; border-radius: 4px; margin-left: 4px; vertical-align: middle; }
 
     @media (max-width: 768px) {
       .pf-summary { grid-template-columns: 1fr 1fr; gap: 8px; }
@@ -2923,6 +2924,18 @@
     }
 
     // Mobile watchlist
+    // Helpers for Currency
+    function getCurSym(sym, q) {
+      if (sym && (sym.endsWith('.BK') || sym.endsWith('.TH'))) return '฿';
+      if (q && (q.currency === 'THB' || q.isThai)) return '฿';
+      return '$';
+    }
+    function fmtStockPrice(c, sym, q) {
+      if (c == null) return '—';
+      return getCurSym(sym, q) + fmtNum(c);
+    }
+
+    // Mobile watchlist
     function openMobileWatchlist() { document.getElementById('mobileWlOverlay').classList.add('active'); renderMobileWishlist(); }
     function closeMobileWatchlist() { document.getElementById('mobileWlOverlay').classList.remove('active'); }
     function renderMobileWishlist() {
@@ -2931,9 +2944,9 @@
       const t = I18N[S.lang] || I18N.en;
       if (!S.wl.length) { list.innerHTML = `<div class="wishlist-empty"><svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg><p>${t.emptyWatchlistSidebar}</p></div>`; return; }
       list.innerHTML = S.wl.map(s => {
-        const q = s._quote, p = q ? '$' + fmtNum(q.c) : '—', pct = q ? q.dp : null, d = pct !== null ? (pct >= 0 ? 'up' : 'down') : '';
+        const q = s._quote, cs = getCurSym(s.symbol, q), p = q ? cs + fmtNum(q.c) : '—', pct = q ? q.dp : null, d = pct !== null ? (pct >= 0 ? 'up' : 'down') : '';
         return `<div class="wl-card-item" onclick="loadStock('${esc(s.symbol)}');closeMobileWatchlist()">
-      <div class="wl-card-left"><div class="wl-sym">${esc(s.symbol)}</div><div class="wl-name">${esc(s.name || '')}</div></div>
+      <div class="wl-card-left"><div class="wl-sym">${esc(s.symbol)} ${s.symbol.endsWith('.BK') ? '<span class="search-tag-th">SET</span>' : ''}</div><div class="wl-name">${esc(s.name || '')}</div></div>
       <div class="wl-card-right"><div class="wl-price">${p}</div><div class="wl-chg ${d}">${pct !== null ? (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%' : ''}</div></div>
     </div>`;
       }).join('');
@@ -2942,25 +2955,129 @@
     // API
     const API = 'https://finnhub.io/api/v1';
     async function api(ep, p = {}) { p.token = S.apiKey; const r = await fetch(API + ep + '?' + new URLSearchParams(p)); if (r.status === 401) throw new Error('Invalid API key'); if (r.status === 429) throw new Error('Rate limited'); if (!r.ok) throw new Error('API error'); return r.json(); }
-    const fetchQ = s => api('/quote', { symbol: s }), fetchP = s => api('/stock/profile2', { symbol: s }), fetchS = q => api('/search', { q });
+    const fetchP = s => api('/stock/profile2', { symbol: s }), fetchS = q => api('/search', { q });
+
+    async function fetchQ(s) {
+      if (!s) return null;
+      s = s.trim().toUpperCase();
+
+      // 1. Try our Vercel Serverless Function first (handles both Thai & US)
+      try {
+        const res = await fetch(`/api/quote?symbol=${encodeURIComponent(s)}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.c) return data;
+        }
+      } catch(e) {}
+
+      // 2. Client fallback for Thai stocks (.BK) if serverless not running
+      if (s.endsWith('.BK') || s.endsWith('.TH')) {
+        try {
+          const yUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(s)}?interval=1d&range=1d`;
+          const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(yUrl)}`;
+          const res = await fetch(proxyUrl);
+          if (res.ok) {
+            const data = await res.json();
+            const meta = data?.chart?.result?.[0]?.meta;
+            if (meta) {
+              const curPrice = meta.regularMarketPrice ?? meta.chartPreviousClose ?? 0;
+              const prevClose = meta.chartPreviousClose ?? meta.previousClose ?? curPrice;
+              const change = curPrice - prevClose;
+              return {
+                symbol: meta.symbol || s,
+                name: meta.longName || meta.shortName || s,
+                currency: meta.currency || 'THB',
+                exchange: meta.exchangeName || 'SET',
+                c: curPrice,
+                d: change,
+                dp: prevClose ? (change / prevClose) * 100 : 0,
+                h: meta.regularMarketDayHigh ?? curPrice,
+                l: meta.regularMarketDayLow ?? curPrice,
+                o: meta.regularMarketPrice ?? curPrice,
+                pc: prevClose,
+                isThai: true
+              };
+            }
+          }
+        } catch(e) {}
+      }
+
+      // 3. Fallback to Finnhub for US stocks
+      try {
+        const q = await api('/quote', { symbol: s });
+        if (q && q.c) {
+          q.currency = 'USD';
+          return q;
+        }
+      } catch(e) {}
+
+      // 4. Try with .BK if no dot
+      if (!s.includes('.')) {
+        return fetchQ(`${s}.BK`);
+      }
+
+      return null;
+    }
 
     // Search
     async function searchSymbols(q) {
+      q = q.trim();
+      if (!q) return [];
+      let results = [];
+
+      // 1. Try Vercel Serverless Function
       try {
-        const data = await fetchS(q); const dd = document.getElementById('searchDropdown');
-        if (!data.result?.length) { dd.innerHTML = '<div class="search-empty">No results</div>'; dd.classList.add('active'); return; }
-        const f = data.result.filter(r => ['Common Stock', 'ADR', 'ETF', null, undefined, ''].includes(r.type)).slice(0, 6);
-        if (!f.length) { dd.innerHTML = '<div class="search-empty">No stocks found</div>'; dd.classList.add('active'); return; }
-        dd.innerHTML = f.map(r => `<div class="search-item" onclick="selectSearch('${esc(r.symbol)}')"><div><div class="search-item-symbol">${esc(r.symbol)}</div><div class="search-item-name">${esc(r.description || '')}</div></div><span class="search-item-type">${esc(r.type || 'Stock')}</span></div>`).join('');
-        dd.classList.add('active');
-      } catch (e) { console.error(e); }
+        const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data?.result?.length) {
+            results = data.result;
+          }
+        }
+      } catch(e) {}
+
+      // 2. Fallback to Finnhub
+      if (!results.length) {
+        try {
+          const fh = await fetchS(q).catch(() => null);
+          if (fh?.result?.length) {
+            results = fh.result.slice(0, 8).map(r => ({
+              symbol: r.symbol,
+              description: r.description || r.symbol,
+              type: r.type || 'Stock',
+              isThai: false
+            }));
+          }
+        } catch(e) {}
+      }
+
+      // Render search dropdown if active
+      const searchDD = document.getElementById('searchDropdown');
+      if (searchDD && document.activeElement === document.getElementById('searchInput')) {
+        if (!results.length) {
+          searchDD.innerHTML = '<div class="search-empty">No stocks found</div>';
+          searchDD.classList.add('active');
+        } else {
+          searchDD.innerHTML = results.slice(0, 8).map(r => `
+            <div class="search-item" onclick="selectSearch('${esc(r.symbol)}')">
+              <div>
+                <div class="search-item-symbol">${esc(r.symbol)} ${r.isThai ? '<span class="search-tag-th">SET</span>' : ''}</div>
+                <div class="search-item-name">${esc(r.description || '')}</div>
+              </div>
+              <span class="search-item-type">${esc(r.type || 'Stock')}</span>
+            </div>`).join('');
+          searchDD.classList.add('active');
+        }
+      }
+
+      return results;
     }
     function selectSearch(sym) { document.getElementById('searchInput').value = ''; closeDD(); loadStock(sym); }
     function closeDD() { document.getElementById('searchDropdown').classList.remove('active'); }
 
     // Load stock
     async function loadStock(sym) {
-      sym = sym.toUpperCase(); S.sym = sym;
+      sym = sym.toUpperCase().trim(); S.sym = sym;
       document.getElementById('tab-stock').style.display = 'flex';
       document.getElementById('stockTabLabel').textContent = sym;
       document.getElementById('welcomeState').style.display = 'none';
@@ -2969,9 +3086,34 @@
       renderAlertCard();
       try {
         const [qr, pr] = await Promise.allSettled([fetchQ(sym), fetchP(sym)]);
-        if (qr.status === 'fulfilled' && qr.value.c) { S.quote = qr.value; renderQuote(qr.value); } else showToast('No quote for ' + sym, 'error');
-        if (pr.status === 'fulfilled' && pr.value.name) { S.profile = pr.value; renderProfile(pr.value); }
-        else { document.getElementById('stockSymbol').textContent = sym; document.getElementById('stockCompanyName').textContent = ''; document.getElementById('stockExchange').textContent = ''; document.getElementById('stockLogo').innerHTML = '<svg viewBox="0 0 24 24"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg>'; document.getElementById('infoIndustry').textContent = '—'; document.getElementById('infoCountry').textContent = '—'; document.getElementById('infoMarketCap').textContent = '—'; }
+        if (qr.status === 'fulfilled' && qr.value?.c) {
+          const qData = qr.value;
+          S.quote = qData;
+          if (qData.symbol && qData.symbol !== sym) {
+            S.sym = qData.symbol;
+            document.getElementById('stockTabLabel').textContent = S.sym;
+          }
+          renderQuote(qData);
+          const isThai = qData.isThai || S.sym.endsWith('.BK') || qData.currency === 'THB';
+          const prof = {
+            ticker: S.sym,
+            name: qData.name || (pr.status === 'fulfilled' && pr.value?.name ? pr.value.name : S.sym),
+            exchange: qData.exchange || (isThai ? 'SET' : (pr.status === 'fulfilled' ? pr.value?.exchange : 'US')),
+            finnhubIndustry: isThai ? 'Thai Market' : (pr.status === 'fulfilled' ? pr.value?.finnhubIndustry : '—'),
+            country: isThai ? 'Thailand' : (pr.status === 'fulfilled' ? pr.value?.country : 'USA'),
+            marketCapitalization: qData.marketCap ? qData.marketCap / 1e6 : (pr.status === 'fulfilled' ? pr.value?.marketCapitalization : null),
+            logo: pr.status === 'fulfilled' ? pr.value?.logo : null,
+            isThai
+          };
+          S.profile = prof;
+          renderProfile(prof);
+        } else {
+          showToast('No quote for ' + sym, 'error');
+          if (pr.status === 'fulfilled' && pr.value?.name) { S.profile = pr.value; renderProfile(pr.value); }
+          else {
+            document.getElementById('stockSymbol').textContent = sym; document.getElementById('stockCompanyName').textContent = ''; document.getElementById('stockExchange').textContent = ''; document.getElementById('stockLogo').innerHTML = '<svg viewBox="0 0 24 24"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg>'; document.getElementById('infoIndustry').textContent = '—'; document.getElementById('infoCountry').textContent = '—'; document.getElementById('infoMarketCap').textContent = '—';
+          }
+        }
         updateLastRefresh();
       } catch (e) { showToast(e.message, 'error'); }
     }
@@ -2988,20 +3130,21 @@
     }
 
     function renderQuote(q) {
+      const cs = getCurSym(S.sym, q);
       const c = q.c, d = q.d, dp = q.dp, up = d > 0, dn = d < 0, dir = up ? 'up' : dn ? 'down' : 'flat';
-      document.getElementById('priceMain').textContent = '$' + fmtNum(c);
+      document.getElementById('priceMain').textContent = cs + fmtNum(c);
       document.getElementById('priceMain').style.color = up ? 'var(--green)' : dn ? 'var(--red)' : 'var(--text-primary)';
       document.getElementById('priceChange').className = 'price-change ' + dir;
       document.getElementById('priceArrow').textContent = up ? '▲' : dn ? '▼' : '—';
-      document.getElementById('priceChangeVal').textContent = (up ? '+' : dn ? '-' : '') + '$' + Math.abs(d).toFixed(2);
+      document.getElementById('priceChangeVal').textContent = (up ? '+' : dn ? '-' : '') + cs + Math.abs(d).toFixed(2);
       document.getElementById('priceChangePct').textContent = '(' + (dp >= 0 ? '+' : '') + dp.toFixed(2) + '%)';
       const l = I18N[S.lang] || I18N.en;
       const sm = { regular: l.marketRealtime, 'post-market': l.marketAfter, 'pre-market': l.marketPre, closed: l.marketAtClose };
       document.getElementById('priceSessionLabel').textContent = sm[getSession()] || l.marketAtClose;
-      document.getElementById('statOpen').textContent = q.o ? '$' + fmtNum(q.o) : '—';
-      document.getElementById('statHigh').textContent = q.h ? '$' + fmtNum(q.h) : '—';
-      document.getElementById('statLow').textContent = q.l ? '$' + fmtNum(q.l) : '—';
-      document.getElementById('statPrevClose').textContent = q.pc ? '$' + fmtNum(q.pc) : '—';
+      document.getElementById('statOpen').textContent = q.o ? cs + fmtNum(q.o) : '—';
+      document.getElementById('statHigh').textContent = q.h ? cs + fmtNum(q.h) : '—';
+      document.getElementById('statLow').textContent = q.l ? cs + fmtNum(q.l) : '—';
+      document.getElementById('statPrevClose').textContent = q.pc ? cs + fmtNum(q.pc) : '—';
     }
 
     async function refreshCurrentQuote() { if (!S.sym) return; try { const q = await fetchQ(S.sym); if (q && q.c) { S.quote = q; renderQuote(q); } } catch { } }
@@ -3033,14 +3176,14 @@
 
       // Desktop table
       const rows = S.wl.map(s => {
-        const q = s._quote, p = q ? '$' + fmtNum(q.c) : '—', pct = q ? q.dp : null, d = pct === null ? 'flat' : pct >= 0 ? 'up' : 'down', pt = pct !== null ? (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%' : '—', ct = q ? (q.d >= 0 ? '+' : '') + q.d.toFixed(2) : '—';
-        return `<tr onclick="loadStock('${esc(s.symbol)}')"><td><div class="wl-sym">${esc(s.symbol)}</div><div class="wl-name">${esc(s.name || '')}</div></td><td><div class="wl-price">${p}</div></td><td><div class="wl-chg ${d}">${ct}</div></td><td><span class="pct-badge ${d}">${pt}</span></td></tr>`;
+        const q = s._quote, cs = getCurSym(s.symbol, q), p = q ? cs + fmtNum(q.c) : '—', pct = q ? q.dp : null, d = pct === null ? 'flat' : pct >= 0 ? 'up' : 'down', pt = pct !== null ? (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%' : '—', ct = q ? (q.d >= 0 ? '+' : '-') + cs + Math.abs(q.d).toFixed(2) : '—';
+        return `<tr onclick="loadStock('${esc(s.symbol)}')"><td><div class="wl-sym">${esc(s.symbol)} ${s.symbol.endsWith('.BK') ? '<span class="search-tag-th">SET</span>' : ''}</div><div class="wl-name">${esc(s.name || '')}</div></td><td><div class="wl-price">${p}</div></td><td><div class="wl-chg ${d}">${ct}</div></td><td><span class="pct-badge ${d}">${pt}</span></td></tr>`;
       }).join('');
 
       // Mobile cards
       const cards = S.wl.map(s => {
-        const q = s._quote, p = q ? '$' + fmtNum(q.c) : '—', pct = q ? q.dp : null, d = pct !== null ? (pct >= 0 ? 'up' : 'down') : '', pt = pct !== null ? (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%' : '';
-        return `<div class="wl-card-item" onclick="loadStock('${esc(s.symbol)}')"><div class="wl-card-left"><div class="wl-sym">${esc(s.symbol)}</div><div class="wl-name">${esc(s.name || '')}</div></div><div class="wl-card-right"><div class="wl-price">${p}</div><div class="wl-chg ${d}">${pt}</div></div></div>`;
+        const q = s._quote, cs = getCurSym(s.symbol, q), p = q ? cs + fmtNum(q.c) : '—', pct = q ? q.dp : null, d = pct !== null ? (pct >= 0 ? 'up' : 'down') : '', pt = pct !== null ? (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%' : '';
+        return `<div class="wl-card-item" onclick="loadStock('${esc(s.symbol)}')"><div class="wl-card-left"><div class="wl-sym">${esc(s.symbol)} ${s.symbol.endsWith('.BK') ? '<span class="search-tag-th">SET</span>' : ''}</div><div class="wl-name">${esc(s.name || '')}</div></div><div class="wl-card-right"><div class="wl-price">${p}</div><div class="wl-chg ${d}">${pt}</div></div></div>`;
       }).join('');
 
       c.innerHTML = `<div class="table-wrap"><table class="wl-table"><thead><tr><th>${t.tblSymbol}</th><th>${t.tblPrice}</th><th>${t.tblChange}</th><th>%</th></tr></thead><tbody>${rows}</tbody></table></div><div class="wl-cards">${cards}</div>`;
@@ -3063,8 +3206,8 @@
       const t = I18N[S.lang] || I18N.en;
       if (!S.wl.length) { list.innerHTML = `<div class="wishlist-empty"><svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg><p>${t.emptyWatchlistSidebar}</p></div>`; return; }
       list.innerHTML = S.wl.map(s => {
-        const a = s.symbol === S.sym, q = s._quote, p = q ? '$' + fmtNum(q.c) : '—', pct = q ? q.dp : null, d = pct !== null ? (pct >= 0 ? 'up' : 'down') : '', pt = pct !== null ? (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%' : '';
-        return `<div class="wishlist-item${a ? ' active' : ''}" onclick="loadStock('${esc(s.symbol)}')"><div class="wishlist-item-info"><div class="wishlist-item-symbol">${esc(s.symbol)}</div><div class="wishlist-item-name">${esc(s.name || s.symbol)}</div></div><div class="wishlist-item-price"><div class="wishlist-item-price-val">${p}</div><div class="wishlist-item-change ${d}">${pt}</div></div><button class="wishlist-item-remove" onclick="removeWl('${esc(s.symbol)}',event)"><svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button></div>`;
+        const a = s.symbol === S.sym, q = s._quote, cs = getCurSym(s.symbol, q), p = q ? cs + fmtNum(q.c) : '—', pct = q ? q.dp : null, d = pct !== null ? (pct >= 0 ? 'up' : 'down') : '', pt = pct !== null ? (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%' : '';
+        return `<div class="wishlist-item${a ? ' active' : ''}" onclick="loadStock('${esc(s.symbol)}')"><div class="wishlist-item-info"><div class="wishlist-item-symbol">${esc(s.symbol)} ${s.symbol.endsWith('.BK') ? '<span class="search-tag-th">SET</span>' : ''}</div><div class="wishlist-item-name">${esc(s.name || s.symbol)}</div></div><div class="wishlist-item-price"><div class="wishlist-item-price-val">${p}</div><div class="wishlist-item-change ${d}">${pt}</div></div><button class="wishlist-item-remove" onclick="removeWl('${esc(s.symbol)}',event)"><svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button></div>`;
       }).join('');
     }
 
@@ -3127,13 +3270,14 @@
       const email = S.alertEmail;
       if (!email) { showToast('⚠ No alert email set (Go to Settings)', 'error'); return; }
       const dirLabel = direction === 'above' ? 'risen above' : 'fallen below';
+      const cs = getCurSym(symbol, null);
       const params = {
         to_email: email,
         stock_symbol: symbol,
         stock_name: name || symbol,
         direction: dirLabel,
-        target_price: '$' + Number(targetPrice).toFixed(2),
-        current_price: '$' + Number(currentPrice).toFixed(2),
+        target_price: cs + Number(targetPrice).toFixed(2),
+        current_price: cs + Number(currentPrice).toFixed(2),
         timestamp: new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })
       };
       if (typeof emailjs !== 'undefined' && EMAILJS_PUBLIC_KEY && EMAILJS_PUBLIC_KEY !== 'YOUR_PUBLIC_KEY') {
@@ -3147,7 +3291,7 @@
         }
       } else {
         console.log('[Alert] Would send email:', params);
-        showToast(`🔔 ${symbol} hit $${Number(currentPrice).toFixed(2)} (EmailJS not configured)`, 'success');
+        showToast(`🔔 ${symbol} hit ${cs}${Number(currentPrice).toFixed(2)} (EmailJS not configured)`, 'success');
       }
     }
 
@@ -3242,16 +3386,17 @@
         const dirText = isAbove ? '▲ ABOVE' : '▼ BELOW';
         const wlEntry = S.wl.find(w => w.symbol === item.sym);
         const currPrice = (S.sym === item.sym && S.quote?.c) ? S.quote.c : (wlEntry?._quote?.c || null);
-        const currPriceText = currPrice ? `$${fmtNum(currPrice)}` : '—';
+        const cs = getCurSym(item.sym, wlEntry?._quote);
+        const currPriceText = currPrice ? `${cs}${fmtNum(currPrice)}` : '—';
 
         return `
           <div class="alert-grid-item" onclick="loadStock('${esc(item.sym)}')">
             <div class="alert-item-left">
-              <div class="alert-item-sym">${esc(item.sym)}</div>
+              <div class="alert-item-sym">${esc(item.sym)} ${item.sym.endsWith('.BK') ? '<span class="search-tag-th">SET</span>' : ''}</div>
               <div class="alert-item-name">${esc(item.name)}</div>
             </div>
             <div class="alert-item-mid">
-              <span class="alert-dir-badge ${badgeClass}">${dirText} $${fmtNum(item.price)}</span>
+              <span class="alert-dir-badge ${badgeClass}">${dirText} ${cs}${fmtNum(item.price)}</span>
               <div class="alert-item-cur">Cur: ${currPriceText}</div>
             </div>
             <button class="alert-item-del" onclick="event.stopPropagation(); removeAlertItem('${esc(item.sym)}', '${item.dir}')" title="Delete Alert">
@@ -3488,33 +3633,34 @@
       if (!PF.activeId) { showToast('Please create a portfolio first', 'error'); return; }
       const t = I18N[S.lang] || I18N.en;
       document.getElementById('posModalOverlay').classList.add('active');
-      document.getElementById('posSymbol').value = S.sym || '';
+      const initialSym = S.sym || '';
+      document.getElementById('posSymbol').value = initialSym;
       document.getElementById('posPricePerShare').value = '';
       document.getElementById('posAmount').value = '';
       document.getElementById('posPurchaseDate').value = new Date().toISOString().split('T')[0];
       document.getElementById('posCalcResult').textContent = '';
       document.getElementById('posPricePreview').style.display = 'none';
       document.getElementById('posSymbolDD').classList.remove('active');
-      PF.posAmountCur = 'USD'; // default currency
+
+      const isThai = initialSym.endsWith('.BK');
+      PF.posAmountCur = isThai ? 'THB' : 'USD';
       const btn = document.getElementById('posCurBtn');
-      btn.textContent = 'USD'; btn.className = 'cur-toggle-btn usd';
+      btn.textContent = PF.posAmountCur;
+      btn.className = 'cur-toggle-btn ' + PF.posAmountCur.toLowerCase();
+
+      const curText = isThai ? 'THB' : 'USD';
+      const lblPrice = document.getElementById('posLabelPrice');
+      if (lblPrice) lblPrice.textContent = S.lang === 'th' ? `ราคาหุ้นตอนซื้อ (${curText} / หุ้น)` : `Price When Purchased (${curText} / Share)`;
+
       // If stock open, prefill price
-      if (S.sym && S.quote?.c) {
+      if (initialSym && S.quote?.c) {
         document.getElementById('posPricePerShare').value = S.quote.c.toFixed(2);
+        const cs = getCurSym(initialSym, S.quote);
         const prev = document.getElementById('posPricePreview');
         prev.style.display = 'inline-flex';
-        prev.innerHTML = `<svg viewBox="0 0 24 24" style="width:11px;height:11px;fill:currentColor;"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg> ${t.pfCurLoaded(S.quote.c.toFixed(2))}`;
-      } else if (S.sym) {
-        // Try fetch
-        const prev = document.getElementById('posPricePreview');
-        prev.style.display = 'inline-flex'; prev.textContent = t.pfCurFetch;
-        fetchQ(S.sym).then(q => {
-          if (q?.c) {
-            document.getElementById('posPricePerShare').value = q.c.toFixed(2);
-            prev.innerHTML = `<svg viewBox="0 0 24 24" style="width:11px;height:11px;fill:currentColor;"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg> ${t.pfCurLoaded(q.c.toFixed(2))}`;
-            posCalcShares();
-          } else { prev.style.display = 'none'; }
-        }).catch(() => { prev.style.display = 'none'; });
+        prev.innerHTML = `<svg viewBox="0 0 24 24" style="width:11px;height:11px;fill:currentColor;"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg> ${t.pfCurLoaded(cs + S.quote.c.toFixed(2))}`;
+      } else if (initialSym) {
+        posSelectSymbol(initialSym);
       }
       setTimeout(() => document.getElementById('posAmount').focus(), 100);
     }
@@ -3536,22 +3682,35 @@
         dd.classList.add('active');
         dd.innerHTML = results.slice(0,6).map(r => `
           <div class="pos-sym-item" onclick="posSelectSymbol('${esc(r.symbol)}','${esc(r.description || '')}')">
-            <span style="font-weight:700;">${esc(r.symbol)}</span>
+            <span style="font-weight:700;">${esc(r.symbol)} ${r.isThai ? '<span class="search-tag-th">SET</span>' : ''}</span>
             <span class="pos-sym-name">${esc(r.description || '')}</span>
           </div>`).join('');
       }, 250);
     }
     function posSelectSymbol(sym, name) {
       const t = I18N[S.lang] || I18N.en;
+      sym = sym.toUpperCase().trim();
       document.getElementById('posSymbol').value = sym;
       document.getElementById('posSymbolDD').classList.remove('active');
+
+      const isThai = sym.endsWith('.BK');
+      PF.posAmountCur = isThai ? 'THB' : 'USD';
+      const btn = document.getElementById('posCurBtn');
+      btn.textContent = PF.posAmountCur;
+      btn.className = 'cur-toggle-btn ' + PF.posAmountCur.toLowerCase();
+
+      const curText = isThai ? 'THB' : 'USD';
+      const lblPrice = document.getElementById('posLabelPrice');
+      if (lblPrice) lblPrice.textContent = S.lang === 'th' ? `ราคาหุ้นตอนซื้อ (${curText} / หุ้น)` : `Price When Purchased (${curText} / Share)`;
+
       // Fetch price for this symbol
       const prev = document.getElementById('posPricePreview');
       prev.style.display = 'inline-flex'; prev.textContent = t.pfCurFetch;
       fetchQ(sym).then(q => {
         if (q?.c) {
           document.getElementById('posPricePerShare').value = q.c.toFixed(2);
-          prev.innerHTML = `<svg viewBox="0 0 24 24" style="width:11px;height:11px;fill:currentColor;"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg> ${t.pfCurLoaded(q.c.toFixed(2))}`;
+          const cs = getCurSym(sym, q);
+          prev.innerHTML = `<svg viewBox="0 0 24 24" style="width:11px;height:11px;fill:currentColor;"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg> ${t.pfCurLoaded(cs + q.c.toFixed(2))}`;
           posCalcShares();
         } else { prev.style.display = 'none'; }
       }).catch(() => { prev.style.display = 'none'; });
@@ -3569,13 +3728,22 @@
 
     function posCalcShares() {
       const t = I18N[S.lang] || I18N.en;
+      const sym = document.getElementById('posSymbol').value.trim().toUpperCase();
+      const isThai = sym.endsWith('.BK');
       const price = parseFloat(document.getElementById('posPricePerShare').value);
       const amount = parseFloat(document.getElementById('posAmount').value);
       const res = document.getElementById('posCalcResult');
       if (!price || !amount || price <= 0 || amount <= 0) { res.textContent = ''; return; }
       const rate = PF.usdThb || 33.5;
-      const amountUsd = PF.posAmountCur === 'THB' ? amount / rate : amount;
-      const shares = amountUsd / price;
+
+      let shares = 0;
+      if (isThai) {
+        const amountThb = PF.posAmountCur === 'USD' ? amount * rate : amount;
+        shares = amountThb / price;
+      } else {
+        const amountUsd = PF.posAmountCur === 'THB' ? amount / rate : amount;
+        shares = amountUsd / price;
+      }
       res.textContent = t.pfCalcShares(shares.toFixed(4));
     }
 
@@ -3594,8 +3762,15 @@
 
       // Calculate shares from amount
       const rate = PF.usdThb || await fetchUsdThb();
-      const amountUsd = PF.posAmountCur === 'THB' ? amount / rate : amount;
-      const shares = amountUsd / pricePerShare;
+      const isThai = symbol.endsWith('.BK');
+      let shares = 0;
+      if (isThai) {
+        const amountThb = PF.posAmountCur === 'USD' ? amount * rate : amount;
+        shares = amountThb / pricePerShare;
+      } else {
+        const amountUsd = PF.posAmountCur === 'THB' ? amount / rate : amount;
+        shares = amountUsd / pricePerShare;
+      }
 
       const { data, error } = await SB.from('positions').insert({
         portfolio_id: PF.activeId,
@@ -3672,28 +3847,39 @@
         } catch(e) {}
       }
 
-      let totalCost = 0, totalValue = 0;
+      let totalCostUsd = 0, totalValueUsd = 0;
       const rows = PF.positions.map(pos => {
+        const isThai = pos.symbol.endsWith('.BK');
+        const cs = isThai ? '฿' : '$';
         const curPrice = priceMap[pos.symbol] || null;
-        const totalCostPos = pos.avg_cost_usd * pos.shares + (pos.commission_usd || 0);
-        const curValuePos  = curPrice ? curPrice * pos.shares : null;
-        const plUsd   = curValuePos != null ? curValuePos - totalCostPos : null;
-        const plPct   = plUsd != null ? (plUsd / totalCostPos) * 100 : null;
-        const plThb   = plUsd != null ? plUsd * rate : null;
-        if (!isNaN(totalCostPos)) totalCost += totalCostPos;
-        if (curValuePos != null) totalValue += curValuePos;
+
+        const costPosNative = pos.avg_cost_usd * pos.shares + (pos.commission_usd || 0);
+        const valPosNative  = curPrice ? curPrice * pos.shares : null;
+
+        const costPosUsd = isThai ? costPosNative / rate : costPosNative;
+        const valPosUsd  = valPosNative != null ? (isThai ? valPosNative / rate : valPosNative) : null;
+
+        const costPosThb = isThai ? costPosNative : costPosNative * rate;
+        const valPosThb  = valPosNative != null ? (isThai ? valPosNative : valPosNative * rate) : null;
+
+        const plUsd = valPosUsd != null ? valPosUsd - costPosUsd : null;
+        const plThb = valPosThb != null ? valPosThb - costPosThb : null;
+        const plPct = (plUsd != null && costPosUsd > 0) ? (plUsd / costPosUsd) * 100 : null;
+
+        if (!isNaN(costPosUsd)) totalCostUsd += costPosUsd;
+        if (valPosUsd != null) totalValueUsd += valPosUsd;
 
         const dir = plPct == null ? '' : plPct >= 0 ? 'pf-green' : 'pf-red';
         const dirSign = plPct == null ? '' : plPct >= 0 ? '+' : '';
 
         return `<tr>
-          <td><div class="pf-sym" style="cursor:pointer" onclick="loadStock('${esc(pos.symbol)}')">${esc(pos.symbol)}</div>
+          <td><div class="pf-sym" style="cursor:pointer" onclick="loadStock('${esc(pos.symbol)}')">${esc(pos.symbol)} ${isThai ? '<span class="search-tag-th">SET</span>' : ''}</div>
               ${pos.purchase_date ? `<div class="pf-note">${new Date(pos.purchase_date+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</div>` : ''}</td>
           <td class="pf-td-r pf-mono">${Number(pos.shares) % 1 === 0 ? pos.shares : Number(pos.shares).toFixed(4)}</td>
-          <td class="pf-td-r pf-mono">$${fmtNum(pos.avg_cost_usd)}</td>
-          <td class="pf-td-r pf-mono">${curPrice ? '$' + fmtNum(curPrice) : '<span style="color:var(--text-muted)">—</span>'}</td>
-          <td class="pf-td-r pf-mono">$${fmtNum(totalCostPos)}</td>
-          <td class="pf-td-r pf-mono">${curValuePos != null ? '$' + fmtNum(curValuePos) : '—'}</td>
+          <td class="pf-td-r pf-mono">${cs}${fmtNum(pos.avg_cost_usd)}</td>
+          <td class="pf-td-r pf-mono">${curPrice ? cs + fmtNum(curPrice) : '<span style="color:var(--text-muted)">—</span>'}</td>
+          <td class="pf-td-r pf-mono">${cs}${fmtNum(costPosNative)}</td>
+          <td class="pf-td-r pf-mono">${valPosNative != null ? cs + fmtNum(valPosNative) : '—'}</td>
           <td class="pf-td-r pf-mono ${dir}">${plUsd != null ? dirSign + '$' + fmtNum(plUsd) : '—'}</td>
           <td class="pf-td-r pf-mono ${dir}">${plPct != null ? dirSign + plPct.toFixed(2) + '%' : '—'}</td>
           <td class="pf-td-r pf-mono" style="color:var(--text-muted);font-size:11px;">${plThb != null ? (plThb >= 0 ? '+' : '') + '฿' + Math.round(plThb).toLocaleString() : '—'}</td>
@@ -3701,28 +3887,29 @@
         </tr>`;
       }).join('');
 
-      const totalPl = totalValue - totalCost;
-      const totalPlPct = totalCost > 0 ? (totalPl / totalCost) * 100 : 0;
-      const totalPlThb = totalPl * rate;
-      const totalValThb = totalValue * rate;
-      const sumDir = totalPl >= 0 ? 'up' : 'down';
-      const sumSign = totalPl >= 0 ? '+' : '';
+      const totalCostThb = totalCostUsd * rate;
+      const totalValueThb = totalValueUsd * rate;
+      const totalPlUsd = totalValueUsd - totalCostUsd;
+      const totalPlThb = totalValueThb - totalCostThb;
+      const totalPlPct = totalCostUsd > 0 ? (totalPlUsd / totalCostUsd) * 100 : 0;
+      const sumDir = totalPlUsd >= 0 ? 'up' : 'down';
+      const sumSign = totalPlUsd >= 0 ? '+' : '';
 
       document.getElementById('pfSummary').style.display = 'grid';
       document.getElementById('pfSummary').innerHTML = `
         <div class="pf-sum-card">
           <div class="pf-sum-lbl">${t.pfTotalCost}</div>
-          <div class="pf-sum-val">$${fmtNum(totalCost)}</div>
-          <div class="pf-sum-sub">฿${Math.round(totalCost * rate).toLocaleString()}</div>
+          <div class="pf-sum-val">$${fmtNum(totalCostUsd)}</div>
+          <div class="pf-sum-sub">฿${Math.round(totalCostThb).toLocaleString()}</div>
         </div>
         <div class="pf-sum-card">
           <div class="pf-sum-lbl">${t.pfMktVal}</div>
-          <div class="pf-sum-val">$${fmtNum(totalValue)}</div>
-          <div class="pf-sum-sub">฿${Math.round(totalValThb).toLocaleString()}</div>
+          <div class="pf-sum-val">$${fmtNum(totalValueUsd)}</div>
+          <div class="pf-sum-sub">฿${Math.round(totalValueThb).toLocaleString()}</div>
         </div>
         <div class="pf-sum-card">
           <div class="pf-sum-lbl">${t.pfPL}</div>
-          <div class="pf-sum-val ${sumDir}">${sumSign}$${fmtNum(Math.abs(totalPl))}</div>
+          <div class="pf-sum-val ${sumDir}">${sumSign}$${fmtNum(Math.abs(totalPlUsd))}</div>
           <div class="pf-sum-sub ${sumDir}">${sumSign}฿${Math.round(Math.abs(totalPlThb)).toLocaleString()}</div>
         </div>
         <div class="pf-sum-card">
