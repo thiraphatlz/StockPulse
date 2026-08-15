@@ -2156,10 +2156,15 @@
         <input type="email" class="modal-input" id="settingsEmail" placeholder="your@email.com" />
         <div class="modal-error" id="settingsError">Please enter a valid email address.</div>
       </div>
-      <div class="modal-actions">
-        <button class="btn-secondary" onclick="closeSettings()"><span class="i18n-lbl"
-            data-en="Cancel">Cancel</span></button>
-        <button class="btn-primary" onclick="saveSettings()"><span class="i18n-lbl" data-en="Save">Save</span></button>
+      <div class="modal-actions" style="display:flex; flex-direction:column; gap:8px;">
+        <div style="display:flex; gap:8px; width:100%;">
+          <button class="btn-secondary" onclick="closeSettings()"><span class="i18n-lbl" data-en="Cancel">Cancel</span></button>
+          <button class="btn-primary" onclick="saveSettings()"><span class="i18n-lbl" data-en="Save">Save</span></button>
+        </div>
+        <button type="button" class="btn-secondary" onclick="testAlertEmail()" style="width:100%; border-color:var(--accent); color:var(--accent-light); gap:6px;">
+          <svg viewBox="0 0 24 24" style="width:14px; height:14px; fill:currentColor;"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+          <span class="i18n-lbl" data-en="Test Email">Test Email (ส่งอีเมลทดสอบ)</span>
+        </button>
       </div>
     </div>
   </div>
@@ -2832,19 +2837,19 @@
     }
 
     // ===== EMAILJS =====
-    const EMAILJS_PUBLIC_KEY = 'YOUR_PUBLIC_KEY';   // ← แทนด้วย Public Key จาก EmailJS
-    const EMAILJS_SERVICE_ID = 'YOUR_SERVICE_ID';   // ← แทนด้วย Service ID
-    const EMAILJS_TEMPLATE_ID = 'YOUR_TEMPLATE_ID';  // ← แทนด้วย Template ID
+    const EMAILJS_PUBLIC_KEY = '8EBack4zwyOa1x49O';   // ← Public Key จาก EmailJS
+    const EMAILJS_SERVICE_ID = 'service_u55ha9b';   // ← Service ID
+    const EMAILJS_TEMPLATE_ID = 'template_k98tnwo';  // ← Template ID
 
     function initEmailJS() {
-      if (typeof emailjs !== 'undefined' && EMAILJS_PUBLIC_KEY !== 'YOUR_PUBLIC_KEY') {
+      if (typeof emailjs !== 'undefined' && EMAILJS_PUBLIC_KEY && EMAILJS_PUBLIC_KEY !== 'YOUR_PUBLIC_KEY') {
         emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
       }
     }
 
     async function sendAlertEmail(symbol, name, direction, targetPrice, currentPrice) {
       const email = S.alertEmail;
-      if (!email) { showToast('⚠ No alert email set', 'error'); return; }
+      if (!email) { showToast('⚠ No alert email set (Go to Settings)', 'error'); return; }
       const dirLabel = direction === 'above' ? 'risen above' : 'fallen below';
       const params = {
         to_email: email,
@@ -2855,19 +2860,34 @@
         current_price: '$' + Number(currentPrice).toFixed(2),
         timestamp: new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })
       };
-      if (typeof emailjs !== 'undefined' && EMAILJS_PUBLIC_KEY !== 'YOUR_PUBLIC_KEY') {
+      if (typeof emailjs !== 'undefined' && EMAILJS_PUBLIC_KEY && EMAILJS_PUBLIC_KEY !== 'YOUR_PUBLIC_KEY') {
         try {
+          showToast(`Sending email to ${email}...`, 'success');
           await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, params);
-          showToast(`📧 Alert email sent for ${symbol}`, 'success');
+          showToast(`📧 Alert email sent for ${symbol}!`, 'success');
         } catch (e) {
           console.error('EmailJS error:', e);
-          showToast(`Alert fired for ${symbol} (email failed)`, 'error');
+          showToast(`EmailJS error: ${e.text || e.message || 'Failed to send'}`, 'error');
         }
       } else {
-        // EmailJS not configured — show toast only
         console.log('[Alert] Would send email:', params);
-        showToast(`🔔 ${symbol} hit $${Number(currentPrice).toFixed(2)} (configure EmailJS to send email)`, 'success');
+        showToast(`🔔 ${symbol} hit $${Number(currentPrice).toFixed(2)} (EmailJS not configured)`, 'success');
       }
+    }
+
+    async function testAlertEmail() {
+      const emailInp = document.getElementById('settingsEmail');
+      const email = emailInp.value.trim() || S.alertEmail;
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        emailInp.classList.add('error');
+        document.getElementById('settingsError').classList.add('visible');
+        showToast('Please enter a valid email first', 'error');
+        return;
+      }
+      S.alertEmail = email;
+      localStorage.setItem('stockpulse_alert_email', email);
+      renderAlertEmailNote();
+      await sendAlertEmail('TEST', 'Test Stock (Apple Inc.)', 'risen above', 100.00, 105.50);
     }
 
     // ===== PRICE ALERTS =====
@@ -2876,7 +2896,7 @@
     function loadAlerts() { try { return JSON.parse(localStorage.getItem(ALERTS_KEY) || '{}'); } catch { return {}; } }
     function saveAlerts(a) { localStorage.setItem(ALERTS_KEY, JSON.stringify(a)); }
 
-    function setAlert(dir) {
+    async function setAlert(dir) {
       if (!S.sym) return;
       const inp = document.getElementById(dir === 'above' ? 'alertAboveInput' : 'alertBelowInput');
       const val = parseFloat(inp.value);
@@ -2887,6 +2907,9 @@
       saveAlerts(alerts);
       renderAlertCard();
       showToast(`Alert set: ${S.sym} ${dir === 'above' ? '▲' : '▼'} $${val.toFixed(2)}`, 'success');
+      
+      // Check immediately against current price!
+      await checkAlerts();
     }
 
     function clearAlert(dir) {
@@ -2930,27 +2953,55 @@
     }
 
     async function checkAlerts() {
-      if (!S.wl.length) return;
       const alerts = loadAlerts();
       if (!Object.keys(alerts).length) return;
       let changed = false;
       for (const sym of Object.keys(alerts)) {
-        const entry = S.wl.find(w => w.symbol === sym);
-        const quote = entry?._quote;
-        if (!quote || !quote.c) continue;
-        const price = quote.c;
+        let price = null;
+        let name = alerts[sym].above?.name || alerts[sym].below?.name || sym;
+
+        // 1. Check if currently active stock on page
+        if (S.sym === sym && S.quote && S.quote.c) {
+          price = S.quote.c;
+          if (S.profile?.name) name = S.profile.name;
+        }
+
+        // 2. Check in wishlist
+        if (!price && S.wl) {
+          const entry = S.wl.find(w => w.symbol === sym);
+          if (entry?._quote?.c) {
+            price = entry._quote.c;
+            if (entry.name) name = entry.name;
+          }
+        }
+
+        // 3. Fallback: fetch current quote
+        if (!price) {
+          try {
+            const q = await fetchQ(sym);
+            if (q && q.c) price = q.c;
+          } catch (e) {}
+        }
+
+        if (!price) continue;
+
         const a = alerts[sym];
         if (a.above && price >= a.above.price) {
-          await sendAlertEmail(sym, a.above.name, 'above', a.above.price, price);
-          delete a.above; changed = true;
+          await sendAlertEmail(sym, name, 'above', a.above.price, price);
+          delete a.above;
+          changed = true;
         }
         if (a.below && price <= a.below.price) {
-          await sendAlertEmail(sym, a.below.name, 'below', a.below.price, price);
-          delete a.below; changed = true;
+          await sendAlertEmail(sym, name, 'below', a.below.price, price);
+          delete a.below;
+          changed = true;
         }
         if (!Object.keys(a).length) delete alerts[sym];
       }
-      if (changed) { saveAlerts(alerts); if (S.sym && alerts[S.sym] !== undefined) renderAlertCard(); }
+      if (changed) {
+        saveAlerts(alerts);
+        renderAlertCard();
+      }
     }
 
     // Utils
