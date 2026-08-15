@@ -1,13 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
   <title>StockPulse — Personal Stock Dashboard</title>
-  <meta name="description" content="Personal stock dashboard with real-time prices, watchlist tracking, and sector overview." />
+  <meta name="description"
+    content="Personal stock dashboard with real-time prices, watchlist tracking, and sector overview." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+    rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <style>
     :root {
       --bg-primary: #08080c;
@@ -37,8 +42,8 @@
       --radius-sm: 8px;
       --radius-xs: 6px;
       --radius-pill: 50px;
-      --shadow-md: 0 4px 20px rgba(0,0,0,0.4);
-      --shadow-lg: 0 8px 40px rgba(0,0,0,0.5);
+      --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.4);
+      --shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.5);
       --shadow-glow: 0 0 30px rgba(124, 58, 237, 0.15);
       --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
       --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -46,8 +51,19 @@
       --safe-bottom: env(safe-area-inset-bottom, 0px);
     }
 
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html { font-size: 14px; -webkit-tap-highlight-color: transparent; }
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      font-size: 14px;
+      -webkit-tap-highlight-color: transparent;
+    }
+
     body {
       font-family: var(--font-sans);
       background: var(--bg-primary);
@@ -57,365 +73,1908 @@
       overflow-x: hidden;
       -webkit-font-smoothing: antialiased;
     }
-    ::-webkit-scrollbar { width: 5px; height: 5px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: var(--border-primary); border-radius: 10px; }
-    button { font-family: inherit; cursor: pointer; border: none; outline: none; -webkit-tap-highlight-color: transparent; }
-    input { font-family: inherit; outline: none; border: none; }
+
+    ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--border-primary);
+      border-radius: 10px;
+    }
+
+    button {
+      font-family: inherit;
+      cursor: pointer;
+      border: none;
+      outline: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    input {
+      font-family: inherit;
+      outline: none;
+      border: none;
+    }
 
     /* ===== LAYOUT ===== */
-    .app { display: flex; flex-direction: column; height: 100vh; height: 100dvh; }
-    .main-layout { display: flex; flex: 1; overflow: hidden; }
-    .content-area { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 20px 24px; }
+    .app {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      height: 100dvh;
+    }
+
+    .main-layout {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .content-area {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 20px 24px;
+    }
 
     /* ===== TOPBAR ===== */
     .topbar {
-      height: 56px; background: var(--bg-secondary);
+      height: 56px;
+      background: var(--bg-secondary);
       border-bottom: 1px solid var(--border-primary);
-      display: flex; align-items: center; gap: 12px;
-      padding: 0 20px; flex-shrink: 0; position: relative; z-index: 100;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 0 20px;
+      flex-shrink: 0;
+      position: relative;
+      z-index: 100;
     }
-    .logo { display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; flex-shrink: 0; }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      user-select: none;
+      flex-shrink: 0;
+    }
+
     .logo-icon {
-      width: 32px; height: 32px; border-radius: 8px;
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
       background: linear-gradient(135deg, #7c3aed, #a78bfa);
-      display: flex; align-items: center; justify-content: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       box-shadow: 0 0 16px rgba(124, 58, 237, 0.25);
     }
-    .logo-icon svg { width: 17px; height: 17px; fill: white; }
-    .logo-text { font-size: 15px; font-weight: 700; }
-    .logo-text span { color: var(--accent-light); }
 
-    .nav-tabs { display: flex; align-items: center; gap: 2px; margin-left: 4px; }
-    .nav-tab {
-      padding: 6px 12px; border-radius: var(--radius-xs);
-      background: transparent; color: var(--text-muted);
-      font-size: 12px; font-weight: 500; transition: var(--transition);
-      display: flex; align-items: center; gap: 5px;
+    .logo-icon svg {
+      width: 17px;
+      height: 17px;
+      fill: white;
     }
-    .nav-tab svg { width: 13px; height: 13px; fill: currentColor; }
-    .nav-tab:hover { color: var(--text-secondary); background: var(--bg-elevated); }
-    .nav-tab.active { background: var(--accent-glow); color: var(--accent-light); }
 
-    .search-wrap { position: relative; flex: 1; max-width: 400px; margin-left: auto; }
+    .logo-text {
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .logo-text span {
+      color: var(--accent-light);
+    }
+
+    .nav-tabs {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      margin-left: 4px;
+    }
+
+    .nav-tab {
+      padding: 6px 12px;
+      border-radius: var(--radius-xs);
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 12px;
+      font-weight: 500;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .nav-tab svg {
+      width: 13px;
+      height: 13px;
+      fill: currentColor;
+    }
+
+    .nav-tab:hover {
+      color: var(--text-secondary);
+      background: var(--bg-elevated);
+    }
+
+    .nav-tab.active {
+      background: var(--accent-glow);
+      color: var(--accent-light);
+    }
+
+    .search-wrap {
+      position: relative;
+      flex: 1;
+      max-width: 400px;
+      margin-left: auto;
+    }
+
     .search-input {
-      width: 100%; height: 36px; padding: 0 14px 0 36px;
-      background: var(--bg-input); border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-pill); color: var(--text-primary); font-size: 13px;
+      width: 100%;
+      height: 36px;
+      padding: 0 14px 0 36px;
+      background: var(--bg-input);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-pill);
+      color: var(--text-primary);
+      font-size: 13px;
       transition: var(--transition);
     }
-    .search-input::placeholder { color: var(--text-muted); }
-    .search-input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-glow); }
-    .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; fill: var(--text-muted); pointer-events: none; }
-    .search-shortcut { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-size: 10px; color: var(--text-muted); background: var(--bg-card); padding: 1px 6px; border-radius: 3px; border: 1px solid var(--border-subtle); pointer-events: none; }
-    .search-dropdown { position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: var(--bg-card); border: 1px solid var(--border-primary); border-radius: var(--radius); box-shadow: var(--shadow-lg); max-height: 300px; overflow-y: auto; z-index: 200; display: none; }
-    .search-dropdown.active { display: block; animation: fadeSlideDown 0.12s ease; }
-    .search-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; cursor: pointer; transition: background 0.1s; border-bottom: 1px solid var(--border-subtle); min-height: 44px; }
-    .search-item:last-child { border-bottom: none; }
-    .search-item:hover, .search-item:active { background: var(--bg-elevated); }
-    .search-item-symbol { font-weight: 600; font-size: 13px; }
-    .search-item-name { font-size: 11px; color: var(--text-secondary); margin-top: 1px; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .search-item-type { font-size: 10px; color: var(--text-muted); background: var(--bg-input); padding: 2px 7px; border-radius: 3px; }
-    .search-empty { padding: 20px; text-align: center; color: var(--text-muted); font-size: 13px; }
 
-    .topbar-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; margin-left: 8px; }
-    .topbar-btn { width: 34px; height: 34px; border-radius: 50%; background: var(--bg-input); border: 1px solid var(--border-subtle); display: flex; align-items: center; justify-content: center; transition: var(--transition); }
-    .topbar-btn:hover { background: var(--bg-elevated); border-color: var(--accent); }
-    .topbar-btn svg { width: 16px; height: 16px; fill: var(--text-secondary); }
-    .topbar-btn:hover svg { fill: var(--accent-light); }
+    .search-input::placeholder {
+      color: var(--text-muted);
+    }
 
-    .market-badge { display: flex; align-items: center; gap: 5px; padding: 5px 10px; border-radius: var(--radius-pill); font-size: 10px; font-weight: 600; letter-spacing: 0.3px; }
-    .market-badge .dot { width: 6px; height: 6px; border-radius: 50%; }
-    .market-badge.open { background: var(--green-bg); color: var(--green); }
-    .market-badge.open .dot { background: var(--green); animation: dotBlink 1.5s infinite; }
-    .market-badge.closed { background: rgba(90,90,114,0.12); color: var(--text-muted); }
-    .market-badge.closed .dot { background: var(--text-muted); }
-    .market-badge.pre-market { background: var(--blue-bg); color: var(--blue); }
-    .market-badge.pre-market .dot { background: var(--blue); animation: dotBlink 1.5s infinite; }
-    .market-badge.after-hours { background: var(--amber-bg); color: var(--amber); }
-    .market-badge.after-hours .dot { background: var(--amber); animation: dotBlink 1.5s infinite; }
-    @keyframes dotBlink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+    .search-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px var(--accent-glow);
+    }
 
-    .info-badges { display: flex; align-items: center; gap: 6px; }
-    .mini-badge { font-size: 10px; color: var(--text-muted); display: flex; align-items: center; gap: 3px; white-space: nowrap; }
-    .mini-badge svg { width: 11px; height: 11px; fill: var(--text-muted); }
-    .mini-badge .cd { font-family: var(--font-mono); color: var(--accent-light); font-weight: 600; }
+    .search-icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 16px;
+      height: 16px;
+      fill: var(--text-muted);
+      pointer-events: none;
+    }
+
+    .search-shortcut {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 10px;
+      color: var(--text-muted);
+      background: var(--bg-card);
+      padding: 1px 6px;
+      border-radius: 3px;
+      border: 1px solid var(--border-subtle);
+      pointer-events: none;
+    }
+
+    .search-dropdown {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      right: 0;
+      background: var(--bg-card);
+      border: 1px solid var(--border-primary);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-lg);
+      max-height: 300px;
+      overflow-y: auto;
+      z-index: 200;
+      display: none;
+    }
+
+    .search-dropdown.active {
+      display: block;
+      animation: fadeSlideDown 0.12s ease;
+    }
+
+    .search-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      cursor: pointer;
+      transition: background 0.1s;
+      border-bottom: 1px solid var(--border-subtle);
+      min-height: 44px;
+    }
+
+    .search-item:last-child {
+      border-bottom: none;
+    }
+
+    .search-item:hover,
+    .search-item:active {
+      background: var(--bg-elevated);
+    }
+
+    .search-item-symbol {
+      font-weight: 600;
+      font-size: 13px;
+    }
+
+    .search-item-name {
+      font-size: 11px;
+      color: var(--text-secondary);
+      margin-top: 1px;
+      max-width: 200px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .search-item-type {
+      font-size: 10px;
+      color: var(--text-muted);
+      background: var(--bg-input);
+      padding: 2px 7px;
+      border-radius: 3px;
+    }
+
+    .search-empty {
+      padding: 20px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+      margin-left: 8px;
+    }
+
+    .topbar-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: var(--bg-input);
+      border: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: var(--transition);
+    }
+
+    .topbar-btn:hover {
+      background: var(--bg-elevated);
+      border-color: var(--accent);
+    }
+
+    .topbar-btn svg {
+      width: 16px;
+      height: 16px;
+      fill: var(--text-secondary);
+    }
+
+    .topbar-btn:hover svg {
+      fill: var(--accent-light);
+    }
+
+    .market-badge {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 10px;
+      border-radius: var(--radius-pill);
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+    }
+
+    .market-badge .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+    }
+
+    .market-badge.open {
+      background: var(--green-bg);
+      color: var(--green);
+    }
+
+    .market-badge.open .dot {
+      background: var(--green);
+      animation: dotBlink 1.5s infinite;
+    }
+
+    .market-badge.closed {
+      background: rgba(90, 90, 114, 0.12);
+      color: var(--text-muted);
+    }
+
+    .market-badge.closed .dot {
+      background: var(--text-muted);
+    }
+
+    .market-badge.pre-market {
+      background: var(--blue-bg);
+      color: var(--blue);
+    }
+
+    .market-badge.pre-market .dot {
+      background: var(--blue);
+      animation: dotBlink 1.5s infinite;
+    }
+
+    .market-badge.after-hours {
+      background: var(--amber-bg);
+      color: var(--amber);
+    }
+
+    .market-badge.after-hours .dot {
+      background: var(--amber);
+      animation: dotBlink 1.5s infinite;
+    }
+
+    @keyframes dotBlink {
+
+      0%,
+      100% {
+        opacity: 1
+      }
+
+      50% {
+        opacity: 0.3
+      }
+    }
+
+    .info-badges {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .mini-badge {
+      font-size: 10px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      white-space: nowrap;
+    }
+
+    .mini-badge svg {
+      width: 11px;
+      height: 11px;
+      fill: var(--text-muted);
+    }
+
+    .mini-badge .cd {
+      font-family: var(--font-mono);
+      color: var(--accent-light);
+      font-weight: 600;
+    }
 
     /* ===== PAGE VIEWS ===== */
-    .page-view { display: none; }
-    .page-view.active { display: block; animation: fadeIn 0.25s ease; }
+    .page-view {
+      display: none;
+    }
+
+    .page-view.active {
+      display: block;
+      animation: fadeIn 0.25s ease;
+    }
 
     /* ===== DASHBOARD ===== */
-    .dash-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
-    .dash-greeting h1 { font-size: 18px; font-weight: 800; }
-    .dash-greeting p { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
-    .refresh-btn { height: 32px; padding: 0 12px; border-radius: var(--radius-xs); background: var(--bg-elevated); border: 1px solid var(--border-subtle); color: var(--text-secondary); font-size: 12px; font-weight: 500; display: flex; align-items: center; gap: 5px; transition: var(--transition); }
-    .refresh-btn:hover { border-color: var(--accent); color: var(--accent-light); }
-    .refresh-btn svg { width: 13px; height: 13px; fill: currentColor; }
+    .dash-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .dash-greeting h1 {
+      font-size: 18px;
+      font-weight: 800;
+    }
+
+    .dash-greeting p {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+
+    .refresh-btn {
+      height: 32px;
+      padding: 0 12px;
+      border-radius: var(--radius-xs);
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+      font-size: 12px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: var(--transition);
+    }
+
+    .refresh-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent-light);
+    }
+
+    .refresh-btn svg {
+      width: 13px;
+      height: 13px;
+      fill: currentColor;
+    }
 
     /* Summary — horizontal scroll on mobile */
-    .summary-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
-    .summary-card {
-      background: var(--bg-card); border: 1px solid var(--border-subtle);
-      border-radius: var(--radius); padding: 14px;
-      display: flex; align-items: center; gap: 10px;
-      transition: var(--transition); min-width: 0;
+    .summary-strip {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-bottom: 20px;
     }
-    .summary-card:hover { border-color: var(--border-primary); }
-    .summary-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-    .summary-icon svg { width: 18px; height: 18px; fill: white; }
-    .si-accent { background: linear-gradient(135deg, #7c3aed, #6d28d9); }
-    .si-green  { background: linear-gradient(135deg, #10b981, #059669); }
-    .si-red    { background: linear-gradient(135deg, #ef4444, #dc2626); }
-    .si-amber  { background: linear-gradient(135deg, #f59e0b, #d97706); }
-    .summary-num { font-family: var(--font-mono); font-size: 18px; font-weight: 700; line-height: 1.2; }
-    .summary-lbl { font-size: 11px; color: var(--text-secondary); }
 
-    .section-title { font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 6px; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-secondary); }
-    .section-title svg { width: 14px; height: 14px; fill: var(--accent-light); }
-    .dash-section { margin-bottom: 24px; }
+    .summary-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius);
+      padding: 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: var(--transition);
+      min-width: 0;
+    }
+
+    .summary-card:hover {
+      border-color: var(--border-primary);
+    }
+
+    .summary-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .summary-icon svg {
+      width: 18px;
+      height: 18px;
+      fill: white;
+    }
+
+    .si-accent {
+      background: linear-gradient(135deg, #7c3aed, #6d28d9);
+    }
+
+    .si-green {
+      background: linear-gradient(135deg, #10b981, #059669);
+    }
+
+    .si-red {
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+    }
+
+    .si-amber {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+    }
+
+    .summary-num {
+      font-family: var(--font-mono);
+      font-size: 18px;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+
+    .summary-lbl {
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+
+    .section-title {
+      font-size: 13px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-secondary);
+    }
+
+    .section-title svg {
+      width: 14px;
+      height: 14px;
+      fill: var(--accent-light);
+    }
+
+    .dash-section {
+      margin-bottom: 24px;
+    }
 
     /* Watchlist table (desktop) / cards (mobile) */
-    .table-wrap { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius); overflow: hidden; }
-    .wl-table { width: 100%; border-collapse: collapse; }
-    .wl-table th { text-align: left; font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600; padding: 10px 14px; border-bottom: 1px solid var(--border-subtle); }
-    .wl-table th.r { text-align: right; }
-    .wl-table td { padding: 10px 14px; border-bottom: 1px solid var(--border-subtle); vertical-align: middle; }
-    .wl-table tr:last-child td { border-bottom: none; }
-    .wl-table tbody tr { transition: background 0.1s; cursor: pointer; }
-    .wl-table tbody tr:hover td { background: var(--bg-card-hover); }
-    .wl-sym { font-weight: 700; font-size: 13px; }
-    .wl-name { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
-    .wl-price { font-family: var(--font-mono); font-size: 13px; font-weight: 600; }
-    .wl-chg { font-family: var(--font-mono); font-size: 12px; font-weight: 500; }
-    .wl-chg.up { color: var(--green); } .wl-chg.down { color: var(--red); }
-    .pct-badge { display: inline-flex; padding: 3px 8px; border-radius: var(--radius-pill); font-size: 11px; font-weight: 600; font-family: var(--font-mono); }
-    .pct-badge.up { background: var(--green-bg); color: var(--green); }
-    .pct-badge.down { background: var(--red-bg); color: var(--red); }
-    .pct-badge.flat { background: rgba(90,90,114,0.1); color: var(--text-muted); }
-    td.r { text-align: right; }
+    .table-wrap {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .wl-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .wl-table th {
+      text-align: left;
+      font-size: 10px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      font-weight: 600;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .wl-table th.r {
+      text-align: right;
+    }
+
+    .wl-table td {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border-subtle);
+      vertical-align: middle;
+    }
+
+    .wl-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .wl-table tbody tr {
+      transition: background 0.1s;
+      cursor: pointer;
+    }
+
+    .wl-table tbody tr:hover td {
+      background: var(--bg-card-hover);
+    }
+
+    .wl-sym {
+      font-weight: 700;
+      font-size: 13px;
+    }
+
+    .wl-name {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 1px;
+    }
+
+    .wl-price {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .wl-chg {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .wl-chg.up {
+      color: var(--green);
+    }
+
+    .wl-chg.down {
+      color: var(--red);
+    }
+
+    .pct-badge {
+      display: inline-flex;
+      padding: 3px 8px;
+      border-radius: var(--radius-pill);
+      font-size: 11px;
+      font-weight: 600;
+      font-family: var(--font-mono);
+    }
+
+    .pct-badge.up {
+      background: var(--green-bg);
+      color: var(--green);
+    }
+
+    .pct-badge.down {
+      background: var(--red-bg);
+      color: var(--red);
+    }
+
+    .pct-badge.flat {
+      background: rgba(90, 90, 114, 0.1);
+      color: var(--text-muted);
+    }
+
+    td.r {
+      text-align: right;
+    }
 
     /* Mobile watchlist cards */
-    .wl-cards { display: none; }
+    .wl-cards {
+      display: none;
+    }
+
     .wl-card-item {
-      background: var(--bg-card); border: 1px solid var(--border-subtle);
-      border-radius: var(--radius); padding: 14px;
-      display: flex; align-items: center; gap: 12px;
-      margin-bottom: 8px; cursor: pointer;
-      transition: var(--transition); min-height: 56px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius);
+      padding: 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      transition: var(--transition);
+      min-height: 56px;
       -webkit-tap-highlight-color: transparent;
     }
-    .wl-card-item:active { background: var(--bg-card-hover); }
-    .wl-card-left { flex: 1; min-width: 0; }
-    .wl-card-right { text-align: right; flex-shrink: 0; }
+
+    .wl-card-item:active {
+      background: var(--bg-card-hover);
+    }
+
+    .wl-card-left {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .wl-card-right {
+      text-align: right;
+      flex-shrink: 0;
+    }
 
     /* Sectors */
-    .sectors-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
+    .sectors-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 10px;
+    }
+
     .sector-card {
-      background: var(--bg-card); border: 1px solid var(--border-subtle);
-      border-radius: var(--radius); padding: 14px 16px;
-      transition: var(--transition); position: relative; overflow: hidden;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      transition: var(--transition);
+      position: relative;
+      overflow: hidden;
     }
-    .sector-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; }
-    .sector-card.tech::before { background: linear-gradient(90deg, #7c3aed, #a78bfa); }
-    .sector-card.finance::before { background: linear-gradient(90deg, #3b82f6, #60a5fa); }
-    .sector-card.health::before { background: linear-gradient(90deg, #10b981, #34d399); }
-    .sector-card.energy::before { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
-    .sector-card.consumer::before { background: linear-gradient(90deg, #f97316, #fb923c); }
-    .sector-card.industrial::before { background: linear-gradient(90deg, #64748b, #94a3b8); }
-    .sector-card.materials::before { background: linear-gradient(90deg, #84cc16, #a3e635); }
-    .sector-card.realestate::before { background: linear-gradient(90deg, #ec4899, #f472b6); }
-    .sector-card.utilities::before { background: linear-gradient(90deg, #06b6d4, #22d3ee); }
-    .sector-card.comm::before { background: linear-gradient(90deg, #8b5cf6, #c4b5fd); }
-    .sector-card:hover { border-color: var(--border-primary); background: var(--bg-card-hover); }
-    .sector-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
-    .sector-name { font-size: 13px; font-weight: 700; }
-    .sector-perf { font-family: var(--font-mono); font-size: 12px; font-weight: 600; }
-    .sector-perf.up { color: var(--green); } .sector-perf.down { color: var(--red); } .sector-perf.loading { color: var(--text-muted); }
-    .sector-tickers { display: flex; flex-wrap: wrap; gap: 4px; }
+
+    .sector-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+    }
+
+    .sector-card.tech::before {
+      background: linear-gradient(90deg, #7c3aed, #a78bfa);
+    }
+
+    .sector-card.finance::before {
+      background: linear-gradient(90deg, #3b82f6, #60a5fa);
+    }
+
+    .sector-card.health::before {
+      background: linear-gradient(90deg, #10b981, #34d399);
+    }
+
+    .sector-card.energy::before {
+      background: linear-gradient(90deg, #f59e0b, #fbbf24);
+    }
+
+    .sector-card.consumer::before {
+      background: linear-gradient(90deg, #f97316, #fb923c);
+    }
+
+    .sector-card.industrial::before {
+      background: linear-gradient(90deg, #64748b, #94a3b8);
+    }
+
+    .sector-card.materials::before {
+      background: linear-gradient(90deg, #84cc16, #a3e635);
+    }
+
+    .sector-card.realestate::before {
+      background: linear-gradient(90deg, #ec4899, #f472b6);
+    }
+
+    .sector-card.utilities::before {
+      background: linear-gradient(90deg, #06b6d4, #22d3ee);
+    }
+
+    .sector-card.comm::before {
+      background: linear-gradient(90deg, #8b5cf6, #c4b5fd);
+    }
+
+    .sector-card:hover {
+      border-color: var(--border-primary);
+      background: var(--bg-card-hover);
+    }
+
+    .sector-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .sector-name {
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .sector-perf {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .sector-perf.up {
+      color: var(--green);
+    }
+
+    .sector-perf.down {
+      color: var(--red);
+    }
+
+    .sector-perf.loading {
+      color: var(--text-muted);
+    }
+
+    .sector-tickers {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+
     .sector-ticker {
-      padding: 3px 8px; border-radius: var(--radius-xs);
-      background: var(--bg-elevated); border: 1px solid var(--border-subtle);
-      font-size: 11px; font-weight: 600; color: var(--text-secondary);
-      cursor: pointer; transition: var(--transition);
-      min-height: 28px; display: flex; align-items: center;
+      padding: 3px 8px;
+      border-radius: var(--radius-xs);
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: var(--transition);
+      min-height: 28px;
+      display: flex;
+      align-items: center;
     }
-    .sector-ticker:hover, .sector-ticker:active { border-color: var(--accent); color: var(--accent-light); }
+
+    .sector-ticker:hover,
+    .sector-ticker:active {
+      border-color: var(--accent);
+      color: var(--accent-light);
+    }
 
     /* ===== STOCK DETAIL ===== */
-    .stock-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 16px; gap: 12px; }
-    .stock-identity { display: flex; align-items: center; gap: 12px; min-width: 0; }
-    .stock-logo-wrap { width: 44px; height: 44px; border-radius: 12px; background: var(--bg-elevated); border: 1px solid var(--border-subtle); display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0; }
-    .stock-logo-wrap img { width: 100%; height: 100%; object-fit: contain; padding: 5px; }
-    .stock-logo-wrap svg { width: 24px; height: 24px; fill: var(--text-muted); }
-    .stock-symbol-row { display: flex; align-items: center; gap: 6px; margin-bottom: 2px; }
-    .stock-symbol { font-size: 20px; font-weight: 800; background: linear-gradient(135deg, var(--text-primary), var(--accent-light)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-    .stock-exchange { font-size: 9px; font-weight: 600; color: var(--text-muted); background: var(--bg-input); padding: 2px 6px; border-radius: 3px; }
-    .stock-company-name { font-size: 12px; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .stock-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
-    .btn-wishlist { display: flex; align-items: center; gap: 5px; padding: 8px 14px; border-radius: var(--radius-sm); background: var(--bg-elevated); border: 1px solid var(--border-subtle); color: var(--text-secondary); font-size: 12px; font-weight: 500; transition: var(--transition); min-height: 36px; }
-    .btn-wishlist:hover { border-color: var(--accent); color: var(--accent-light); }
-    .btn-wishlist.active { background: var(--accent-glow); border-color: var(--accent); color: var(--accent-light); }
-    .btn-wishlist svg { width: 14px; height: 14px; }
-    .btn-refresh { width: 36px; height: 36px; border-radius: var(--radius-sm); background: var(--bg-elevated); border: 1px solid var(--border-subtle); display: flex; align-items: center; justify-content: center; transition: var(--transition); }
-    .btn-refresh:hover { border-color: var(--accent); }
-    .btn-refresh svg { width: 14px; height: 14px; fill: var(--text-secondary); }
-    .btn-refresh.spinning svg { animation: spin 0.8s linear infinite; }
-    @keyframes spin { 100% { transform: rotate(360deg); } }
+    .stock-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      gap: 12px;
+    }
 
-    .price-section { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 16px; margin-bottom: 18px; }
-    .price-main { font-family: var(--font-mono); font-size: 40px; font-weight: 700; letter-spacing: -1px; line-height: 1; }
-    .price-change-group { display: flex; flex-direction: column; gap: 2px; padding-bottom: 3px; }
-    .price-change { display: flex; align-items: center; gap: 5px; font-family: var(--font-mono); font-size: 14px; font-weight: 600; }
-    .price-change .arrow { font-size: 10px; }
-    .price-change.up { color: var(--green); } .price-change.down { color: var(--red); } .price-change.flat { color: var(--text-muted); }
-    .price-session-label { font-size: 10px; color: var(--text-muted); font-family: var(--font-sans); }
+    .stock-identity {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
 
-    .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 16px; }
-    .stat-card { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius); padding: 12px 14px; }
-    .stat-card:hover { border-color: var(--border-primary); }
-    .stat-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 4px; }
-    .stat-value { font-family: var(--font-mono); font-size: 15px; font-weight: 600; }
+    .stock-logo-wrap {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
 
-    .extra-info-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-    .info-card { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius); padding: 12px 14px; }
-    .info-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 4px; }
-    .info-value { font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .info-value.mono { font-family: var(--font-mono); }
+    .stock-logo-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      padding: 5px;
+    }
+
+    .stock-logo-wrap svg {
+      width: 24px;
+      height: 24px;
+      fill: var(--text-muted);
+    }
+
+    .stock-symbol-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 2px;
+    }
+
+    .stock-symbol {
+      font-size: 20px;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--text-primary), var(--accent-light));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .stock-exchange {
+      font-size: 9px;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: var(--bg-input);
+      padding: 2px 6px;
+      border-radius: 3px;
+    }
+
+    .stock-company-name {
+      font-size: 12px;
+      color: var(--text-secondary);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .stock-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .btn-wishlist {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 8px 14px;
+      border-radius: var(--radius-sm);
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+      font-size: 12px;
+      font-weight: 500;
+      transition: var(--transition);
+      min-height: 36px;
+    }
+
+    .btn-wishlist:hover {
+      border-color: var(--accent);
+      color: var(--accent-light);
+    }
+
+    .btn-wishlist.active {
+      background: var(--accent-glow);
+      border-color: var(--accent);
+      color: var(--accent-light);
+    }
+
+    .btn-wishlist svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    .btn-refresh {
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-sm);
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: var(--transition);
+    }
+
+    .btn-refresh:hover {
+      border-color: var(--accent);
+    }
+
+    .btn-refresh svg {
+      width: 14px;
+      height: 14px;
+      fill: var(--text-secondary);
+    }
+
+    .btn-refresh.spinning svg {
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+
+    .price-section {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    .price-main {
+      font-family: var(--font-mono);
+      font-size: 40px;
+      font-weight: 700;
+      letter-spacing: -1px;
+      line-height: 1;
+    }
+
+    .price-change-group {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      padding-bottom: 3px;
+    }
+
+    .price-change {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-family: var(--font-mono);
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .price-change .arrow {
+      font-size: 10px;
+    }
+
+    .price-change.up {
+      color: var(--green);
+    }
+
+    .price-change.down {
+      color: var(--red);
+    }
+
+    .price-change.flat {
+      color: var(--text-muted);
+    }
+
+    .price-session-label {
+      font-size: 10px;
+      color: var(--text-muted);
+      font-family: var(--font-sans);
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .stat-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius);
+      padding: 12px 14px;
+    }
+
+    .stat-card:hover {
+      border-color: var(--border-primary);
+    }
+
+    .stat-label {
+      font-size: 10px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      margin-bottom: 4px;
+    }
+
+    .stat-value {
+      font-family: var(--font-mono);
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    .extra-info-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .info-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius);
+      padding: 12px 14px;
+    }
+
+    .info-label {
+      font-size: 10px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      margin-bottom: 4px;
+    }
+
+    .info-value {
+      font-size: 13px;
+      font-weight: 600;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .info-value.mono {
+      font-family: var(--font-mono);
+    }
 
     /* ===== WISHLIST SIDEBAR (Desktop) ===== */
     .wishlist-panel {
-      width: 280px; min-width: 280px; border-left: 1px solid var(--border-primary);
-      background: var(--bg-secondary); display: flex; flex-direction: column;
-      height: calc(100vh - 56px); overflow: hidden;
+      width: 280px;
+      min-width: 280px;
+      border-left: 1px solid var(--border-primary);
+      background: var(--bg-secondary);
+      display: flex;
+      flex-direction: column;
+      height: calc(100vh - 56px);
+      overflow: hidden;
     }
-    .wishlist-header { padding: 12px 14px; border-bottom: 1px solid var(--border-primary); display: flex; align-items: center; justify-content: space-between; }
-    .wishlist-title { font-size: 11px; font-weight: 700; display: flex; align-items: center; gap: 6px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
-    .wishlist-title svg { width: 13px; height: 13px; fill: var(--accent-light); }
-    .wishlist-count { font-size: 10px; font-weight: 600; color: var(--accent-light); background: var(--accent-glow); padding: 2px 7px; border-radius: var(--radius-pill); }
-    .wishlist-list { flex: 1; overflow-y: auto; padding: 4px; }
+
+    .wishlist-header {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border-primary);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .wishlist-title {
+      font-size: 11px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .wishlist-title svg {
+      width: 13px;
+      height: 13px;
+      fill: var(--accent-light);
+    }
+
+    .wishlist-count {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--accent-light);
+      background: var(--accent-glow);
+      padding: 2px 7px;
+      border-radius: var(--radius-pill);
+    }
+
+    .wishlist-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 4px;
+    }
+
     .wishlist-item {
-      display: flex; align-items: center; padding: 8px;
-      border-radius: var(--radius-sm); cursor: pointer;
-      transition: var(--transition); gap: 8px;
-      border: 1px solid transparent; margin-bottom: 1px;
+      display: flex;
+      align-items: center;
+      padding: 8px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: var(--transition);
+      gap: 8px;
+      border: 1px solid transparent;
+      margin-bottom: 1px;
     }
-    .wishlist-item:hover { background: var(--bg-card); border-color: var(--border-subtle); }
-    .wishlist-item.active { background: var(--accent-glow); border-color: var(--border-accent); }
-    .wishlist-item-info { flex: 1; min-width: 0; }
-    .wishlist-item-symbol { font-size: 12px; font-weight: 700; }
-    .wishlist-item-name { font-size: 10px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .wishlist-item-price { text-align: right; }
-    .wishlist-item-price-val { font-family: var(--font-mono); font-size: 12px; font-weight: 600; }
-    .wishlist-item-change { font-family: var(--font-mono); font-size: 10px; }
-    .wishlist-item-change.up { color: var(--green); } .wishlist-item-change.down { color: var(--red); }
-    .wishlist-item-remove { width: 20px; height: 20px; border-radius: 50%; background: transparent; display: flex; align-items: center; justify-content: center; opacity: 0; transition: var(--transition); flex-shrink: 0; }
-    .wishlist-item:hover .wishlist-item-remove { opacity: 1; }
-    .wishlist-item-remove:hover { background: var(--red-bg); }
-    .wishlist-item-remove svg { width: 11px; height: 11px; fill: var(--red); }
-    .wishlist-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 32px 16px; gap: 8px; }
-    .wishlist-empty svg { width: 32px; height: 32px; fill: var(--text-muted); opacity: 0.25; }
-    .wishlist-empty p { font-size: 11px; color: var(--text-muted); text-align: center; line-height: 1.5; }
-    .wishlist-footer { padding: 10px; border-top: 1px solid var(--border-primary); }
-    .btn-add-wishlist { width: 100%; padding: 8px; border-radius: var(--radius-sm); background: var(--bg-card); border: 1px dashed var(--border-primary); color: var(--text-secondary); font-size: 11px; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 5px; transition: var(--transition); }
-    .btn-add-wishlist:hover { border-color: var(--accent); color: var(--accent-light); border-style: solid; }
-    .btn-add-wishlist svg { width: 13px; height: 13px; }
+
+    .wishlist-item:hover {
+      background: var(--bg-card);
+      border-color: var(--border-subtle);
+    }
+
+    .wishlist-item.active {
+      background: var(--accent-glow);
+      border-color: var(--border-accent);
+    }
+
+    .wishlist-item-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .wishlist-item-symbol {
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .wishlist-item-name {
+      font-size: 10px;
+      color: var(--text-muted);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .wishlist-item-price {
+      text-align: right;
+    }
+
+    .wishlist-item-price-val {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .wishlist-item-change {
+      font-family: var(--font-mono);
+      font-size: 10px;
+    }
+
+    .wishlist-item-change.up {
+      color: var(--green);
+    }
+
+    .wishlist-item-change.down {
+      color: var(--red);
+    }
+
+    .wishlist-item-remove {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: transparent;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: var(--transition);
+      flex-shrink: 0;
+    }
+
+    .wishlist-item:hover .wishlist-item-remove {
+      opacity: 1;
+    }
+
+    .wishlist-item-remove:hover {
+      background: var(--red-bg);
+    }
+
+    .wishlist-item-remove svg {
+      width: 11px;
+      height: 11px;
+      fill: var(--red);
+    }
+
+    .wishlist-empty {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 16px;
+      gap: 8px;
+    }
+
+    .wishlist-empty svg {
+      width: 32px;
+      height: 32px;
+      fill: var(--text-muted);
+      opacity: 0.25;
+    }
+
+    .wishlist-empty p {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-align: center;
+      line-height: 1.5;
+    }
+
+    .wishlist-footer {
+      padding: 10px;
+      border-top: 1px solid var(--border-primary);
+    }
+
+    .btn-add-wishlist {
+      width: 100%;
+      padding: 8px;
+      border-radius: var(--radius-sm);
+      background: var(--bg-card);
+      border: 1px dashed var(--border-primary);
+      color: var(--text-secondary);
+      font-size: 11px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      transition: var(--transition);
+    }
+
+    .btn-add-wishlist:hover {
+      border-color: var(--accent);
+      color: var(--accent-light);
+      border-style: solid;
+    }
+
+    .btn-add-wishlist svg {
+      width: 13px;
+      height: 13px;
+    }
 
     /* ===== MOBILE BOTTOM NAV ===== */
     .mobile-nav {
-      display: none; position: fixed; bottom: 0; left: 0; right: 0;
-      background: var(--bg-secondary); border-top: 1px solid var(--border-primary);
+      display: none;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--bg-secondary);
+      border-top: 1px solid var(--border-primary);
       padding: 6px 0 calc(6px + var(--safe-bottom));
-      z-index: 200; flex-shrink: 0;
+      z-index: 200;
+      flex-shrink: 0;
     }
-    .mobile-nav-inner { display: flex; justify-content: space-around; }
+
+    .mobile-nav-inner {
+      display: flex;
+      justify-content: space-around;
+    }
+
     .mnav-btn {
-      display: flex; flex-direction: column; align-items: center; gap: 2px;
-      background: transparent; color: var(--text-muted); padding: 6px 12px;
-      border-radius: var(--radius-sm); transition: var(--transition);
-      font-size: 10px; font-weight: 500; min-width: 56px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      background: transparent;
+      color: var(--text-muted);
+      padding: 6px 12px;
+      border-radius: var(--radius-sm);
+      transition: var(--transition);
+      font-size: 10px;
+      font-weight: 500;
+      min-width: 56px;
     }
-    .mnav-btn svg { width: 20px; height: 20px; fill: currentColor; }
-    .mnav-btn.active { color: var(--accent-light); }
-    .mnav-btn:active { background: var(--bg-elevated); }
+
+    .mnav-btn svg {
+      width: 20px;
+      height: 20px;
+      fill: currentColor;
+    }
+
+    .mnav-btn.active {
+      color: var(--accent-light);
+    }
+
+    .mnav-btn:active {
+      background: var(--bg-elevated);
+    }
 
     /* Mobile watchlist overlay */
     .mobile-wl-overlay {
-      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6);
-      z-index: 300; align-items: flex-end;
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.6);
+      z-index: 300;
+      align-items: flex-end;
     }
-    .mobile-wl-overlay.active { display: flex; animation: fadeIn 0.15s ease; }
+
+    .mobile-wl-overlay.active {
+      display: flex;
+      animation: fadeIn 0.15s ease;
+    }
+
     .mobile-wl-sheet {
-      width: 100%; max-height: 70vh; background: var(--bg-secondary);
-      border-top-left-radius: 18px; border-top-right-radius: 18px;
-      display: flex; flex-direction: column; animation: slideUp 0.25s ease;
+      width: 100%;
+      max-height: 70vh;
+      background: var(--bg-secondary);
+      border-top-left-radius: 18px;
+      border-top-right-radius: 18px;
+      display: flex;
+      flex-direction: column;
+      animation: slideUp 0.25s ease;
       padding-bottom: var(--safe-bottom);
     }
-    .mobile-wl-handle { width: 36px; height: 4px; border-radius: 2px; background: var(--border-primary); margin: 10px auto 0; flex-shrink: 0; }
-    .mobile-wl-header { padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; }
-    .mobile-wl-list { flex: 1; overflow-y: auto; padding: 4px 12px 12px; }
-    @keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
+
+    .mobile-wl-handle {
+      width: 36px;
+      height: 4px;
+      border-radius: 2px;
+      background: var(--border-primary);
+      margin: 10px auto 0;
+      flex-shrink: 0;
+    }
+
+    .mobile-wl-header {
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .mobile-wl-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 4px 12px 12px;
+    }
+
+    @keyframes slideUp {
+      from {
+        transform: translateY(100%)
+      }
+
+      to {
+        transform: translateY(0)
+      }
+    }
 
     /* Dash empty */
-    .dash-empty { background: var(--bg-card); border: 1px dashed var(--border-primary); border-radius: var(--radius); padding: 28px; text-align: center; color: var(--text-muted); font-size: 12px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
-    .dash-empty svg { width: 32px; height: 32px; fill: var(--text-muted); opacity: 0.25; }
+    .dash-empty {
+      background: var(--bg-card);
+      border: 1px dashed var(--border-primary);
+      border-radius: var(--radius);
+      padding: 28px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .dash-empty svg {
+      width: 32px;
+      height: 32px;
+      fill: var(--text-muted);
+      opacity: 0.25;
+    }
 
     /* Welcome */
-    .welcome-state { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 50vh; gap: 12px; }
-    .welcome-icon { width: 64px; height: 64px; border-radius: 16px; background: linear-gradient(135deg, rgba(124,58,237,0.12), rgba(167,139,250,0.06)); border: 1px solid var(--border-accent); display: flex; align-items: center; justify-content: center; }
-    .welcome-icon svg { width: 32px; height: 32px; fill: var(--accent-light); }
-    .welcome-state h2 { font-size: 18px; font-weight: 700; }
-    .welcome-state p { font-size: 13px; color: var(--text-secondary); max-width: 320px; text-align: center; }
+    .welcome-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 50vh;
+      gap: 12px;
+    }
+
+    .welcome-icon {
+      width: 64px;
+      height: 64px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, rgba(124, 58, 237, 0.12), rgba(167, 139, 250, 0.06));
+      border: 1px solid var(--border-accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .welcome-icon svg {
+      width: 32px;
+      height: 32px;
+      fill: var(--accent-light);
+    }
+
+    .welcome-state h2 {
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .welcome-state p {
+      font-size: 13px;
+      color: var(--text-secondary);
+      max-width: 320px;
+      text-align: center;
+    }
 
     /* Settings modal */
-    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); z-index: 1000; display: none; align-items: center; justify-content: center; }
-    .modal-overlay.active { display: flex; animation: fadeIn 0.15s ease; }
-    .modal { background: var(--bg-card); border: 1px solid var(--border-primary); border-radius: 16px; padding: 28px; max-width: 420px; width: 90%; box-shadow: var(--shadow-lg); }
-    .modal-icon { width: 48px; height: 48px; border-radius: 12px; background: linear-gradient(135deg, var(--accent), var(--accent-light)); display: flex; align-items: center; justify-content: center; margin-bottom: 16px; }
-    .modal-icon svg { width: 24px; height: 24px; fill: white; }
-    .modal h2 { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
-    .modal p { font-size: 12px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 16px; }
-    .modal-input-group { margin-bottom: 16px; }
-    .modal-label { font-size: 11px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; display: block; }
-    .modal-input { width: 100%; height: 40px; padding: 0 14px; background: var(--bg-input); border: 1px solid var(--border-primary); border-radius: var(--radius-sm); color: var(--text-primary); font-size: 13px; font-family: var(--font-mono); }
-    .modal-input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-glow); }
-    .modal-input.error { border-color: var(--red); }
-    .modal-error { font-size: 11px; color: var(--red); margin-top: 4px; display: none; }
-    .modal-error.visible { display: block; }
-    .modal-actions { display: flex; gap: 8px; }
-    .btn-primary { flex: 1; padding: 10px 16px; border-radius: var(--radius-sm); background: linear-gradient(135deg, var(--accent), #6d28d9); color: white; font-size: 13px; font-weight: 600; min-height: 40px; display: flex; align-items: center; justify-content: center; }
-    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
-    .btn-secondary { padding: 10px 16px; border-radius: var(--radius-sm); background: var(--bg-elevated); border: 1px solid var(--border-primary); color: var(--text-secondary); font-size: 13px; font-weight: 500; min-height: 40px; display: flex; align-items: center; justify-content: center; }
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(8px);
+      z-index: 1000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+      animation: fadeIn 0.15s ease;
+    }
+
+    .modal {
+      background: var(--bg-card);
+      border: 1px solid var(--border-primary);
+      border-radius: 16px;
+      padding: 28px;
+      max-width: 420px;
+      width: 90%;
+      box-shadow: var(--shadow-lg);
+    }
+
+    .modal-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-light));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+    }
+
+    .modal-icon svg {
+      width: 24px;
+      height: 24px;
+      fill: white;
+    }
+
+    .modal h2 {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .modal p {
+      font-size: 12px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+      margin-bottom: 16px;
+    }
+
+    .modal-input-group {
+      margin-bottom: 16px;
+    }
+
+    .modal-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+      display: block;
+    }
+
+    .modal-input {
+      width: 100%;
+      height: 40px;
+      padding: 0 14px;
+      background: var(--bg-input);
+      border: 1px solid var(--border-primary);
+      border-radius: var(--radius-sm);
+      color: var(--text-primary);
+      font-size: 13px;
+      font-family: var(--font-mono);
+    }
+
+    .modal-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px var(--accent-glow);
+    }
+
+    .modal-input.error {
+      border-color: var(--red);
+    }
+
+    .modal-error {
+      font-size: 11px;
+      color: var(--red);
+      margin-top: 4px;
+      display: none;
+    }
+
+    .modal-error.visible {
+      display: block;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn-primary {
+      flex: 1;
+      padding: 10px 16px;
+      border-radius: var(--radius-sm);
+      background: linear-gradient(135deg, var(--accent), #6d28d9);
+      color: white;
+      font-size: 13px;
+      font-weight: 600;
+      min-height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-secondary {
+      padding: 10px 16px;
+      border-radius: var(--radius-sm);
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-primary);
+      color: var(--text-secondary);
+      font-size: 13px;
+      font-weight: 500;
+      min-height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
 
     /* Toast */
-    .toast-container { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 2000; display: flex; flex-direction: column; align-items: center; gap: 6px; }
-    .toast { padding: 10px 16px; border-radius: var(--radius-sm); background: var(--bg-elevated); border: 1px solid var(--border-primary); color: var(--text-primary); font-size: 12px; font-weight: 500; box-shadow: var(--shadow-md); animation: fadeSlideUp 0.2s ease; display: flex; align-items: center; gap: 6px; max-width: 300px; white-space: nowrap; }
-    .toast.success { border-color: var(--green); } .toast.error { border-color: var(--red); }
-    .toast-icon { width: 15px; height: 15px; flex-shrink: 0; }
-    .i18n-lbl { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; }
-    .i18n-lbl::after { content: attr(data-en); height: 0; visibility: hidden; overflow: hidden; pointer-events: none; user-select: none; font-weight: inherit; }
+    .toast-container {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 2000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .toast {
+      padding: 10px 16px;
+      border-radius: var(--radius-sm);
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-primary);
+      color: var(--text-primary);
+      font-size: 12px;
+      font-weight: 500;
+      box-shadow: var(--shadow-md);
+      animation: fadeSlideUp 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      max-width: 300px;
+      white-space: nowrap;
+    }
+
+    .toast.success {
+      border-color: var(--green);
+    }
+
+    .toast.error {
+      border-color: var(--red);
+    }
+
+    .toast-icon {
+      width: 15px;
+      height: 15px;
+      flex-shrink: 0;
+    }
+
+    .i18n-lbl {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .i18n-lbl::after {
+      content: attr(data-en);
+      height: 0;
+      visibility: hidden;
+      overflow: hidden;
+      pointer-events: none;
+      user-select: none;
+      font-weight: inherit;
+    }
+
+    /* Price Alert Card */
+    .alert-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-primary);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      margin-top: 16px;
+    }
+
+    .alert-card-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .alert-card-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(245, 158, 11, 0.05));
+      border: 1px solid rgba(245, 158, 11, 0.25);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .alert-card-icon svg {
+      width: 14px;
+      height: 14px;
+      fill: var(--amber);
+    }
+
+    .alert-card-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .alert-card-subtitle {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-left: auto;
+    }
+
+    .alert-rows {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .alert-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .alert-dir-badge {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      padding: 3px 8px;
+      border-radius: var(--radius-xs);
+      flex-shrink: 0;
+      width: 52px;
+      text-align: center;
+    }
+
+    .alert-dir-badge.above {
+      background: var(--green-bg);
+      color: var(--green);
+      border: 1px solid rgba(16, 185, 129, 0.2);
+    }
+
+    .alert-dir-badge.below {
+      background: var(--red-bg);
+      color: var(--red);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+    }
+
+    .alert-input-wrap {
+      position: relative;
+      flex: 1;
+    }
+
+    .alert-input-wrap::before {
+      content: '$';
+      position: absolute;
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 12px;
+      color: var(--text-muted);
+      pointer-events: none;
+      font-family: var(--font-mono);
+    }
+
+    .alert-input {
+      width: 100%;
+      height: 34px;
+      padding: 0 10px 0 22px;
+      background: var(--bg-input);
+      border: 1px solid var(--border-primary);
+      border-radius: var(--radius-xs);
+      color: var(--text-primary);
+      font-size: 12px;
+      font-family: var(--font-mono);
+      transition: border-color var(--transition);
+    }
+
+    .alert-input:focus {
+      border-color: var(--amber);
+      box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.12);
+    }
+
+    .alert-input.has-value {
+      border-color: rgba(245, 158, 11, 0.4);
+    }
+
+    .alert-btn-set {
+      height: 34px;
+      padding: 0 12px;
+      border-radius: var(--radius-xs);
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(245, 158, 11, 0.08));
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      color: var(--amber);
+      font-size: 11px;
+      font-weight: 600;
+      flex-shrink: 0;
+      transition: all var(--transition);
+    }
+
+    .alert-btn-set:hover {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.25), rgba(245, 158, 11, 0.15));
+    }
+
+    .alert-btn-clear {
+      height: 34px;
+      width: 34px;
+      border-radius: var(--radius-xs);
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-primary);
+      color: var(--text-muted);
+      font-size: 14px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all var(--transition);
+    }
+
+    .alert-btn-clear:hover {
+      border-color: var(--red);
+      color: var(--red);
+    }
+
+    .alert-active-tag {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--amber);
+      background: rgba(245, 158, 11, 0.1);
+      border: 1px solid rgba(245, 158, 11, 0.2);
+      border-radius: var(--radius-pill);
+      padding: 2px 8px;
+    }
+
+    .alert-email-note {
+      margin-top: 10px;
+      padding: 8px 12px;
+      background: var(--bg-elevated);
+      border-radius: var(--radius-xs);
+      border: 1px solid var(--border-subtle);
+      font-size: 11px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .alert-email-note svg {
+      width: 12px;
+      height: 12px;
+      fill: var(--text-muted);
+      flex-shrink: 0;
+    }
+
+    .alert-email-note a {
+      color: var(--accent-light);
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    .alert-email-note a:hover {
+      text-decoration: underline;
+    }
 
     /* Animations */
-    @keyframes fadeIn { from{opacity:0} to{opacity:1} }
-    @keyframes fadeSlideUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
-    @keyframes fadeSlideDown { from{opacity:0;transform:translateY(-4px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes fadeIn {
+      from {
+        opacity: 0
+      }
+
+      to {
+        opacity: 1
+      }
+    }
+
+    @keyframes fadeSlideUp {
+      from {
+        opacity: 0;
+        transform: translateY(8px)
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0)
+      }
+    }
+
+    @keyframes fadeSlideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-4px)
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0)
+      }
+    }
 
     /* ===== RESPONSIVE ===== */
     /* Tablet */
     @media (max-width: 1100px) {
-      .wishlist-panel { width: 240px; min-width: 240px; }
+      .wishlist-panel {
+        width: 240px;
+        min-width: 240px;
+      }
     }
 
     /* Mobile */
     @media (max-width: 768px) {
+
       /* Hide desktop sidebar, show bottom nav */
-      .wishlist-panel { display: none !important; }
-      .mobile-nav { display: block; }
-      .nav-tabs { display: none; }
-      .search-shortcut { display: none; }
-      .info-badges { display: none; }
-      .market-badge span { display: none; }
-      .market-badge { padding: 5px 7px; }
+      .wishlist-panel {
+        display: none !important;
+      }
+
+      .mobile-nav {
+        display: block;
+      }
+
+      .nav-tabs {
+        display: none;
+      }
+
+      .search-shortcut {
+        display: none;
+      }
+
+      .info-badges {
+        display: none;
+      }
+
+      .market-badge span {
+        display: none;
+      }
+
+      .market-badge {
+        padding: 5px 7px;
+      }
 
       /* Content needs bottom padding for nav */
       .content-area {
@@ -423,551 +1982,984 @@
       }
 
       /* Search full width */
-      .search-wrap { max-width: none; }
-      .topbar { gap: 8px; padding: 0 12px; height: 50px; }
-      .logo-text { display: none; }
-      .logo-icon { width: 30px; height: 30px; border-radius: 7px; }
-      .logo-icon svg { width: 15px; height: 15px; }
-      .topbar-btn { width: 30px; height: 30px; }
-      .topbar-btn svg { width: 14px; height: 14px; }
+      .search-wrap {
+        max-width: none;
+      }
+
+      .topbar {
+        gap: 8px;
+        padding: 0 12px;
+        height: 50px;
+      }
+
+      .logo-text {
+        display: none;
+      }
+
+      .logo-icon {
+        width: 30px;
+        height: 30px;
+        border-radius: 7px;
+      }
+
+      .logo-icon svg {
+        width: 15px;
+        height: 15px;
+      }
+
+      .topbar-btn {
+        width: 30px;
+        height: 30px;
+      }
+
+      .topbar-btn svg {
+        width: 14px;
+        height: 14px;
+      }
 
       /* Summary strip: 2x2 grid */
-      .summary-strip { grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
-      .summary-card { padding: 12px; gap: 8px; }
-      .summary-icon { width: 32px; height: 32px; border-radius: 8px; }
-      .summary-icon svg { width: 15px; height: 15px; }
-      .summary-num { font-size: 16px; }
+      .summary-strip {
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-bottom: 16px;
+      }
+
+      .summary-card {
+        padding: 12px;
+        gap: 8px;
+      }
+
+      .summary-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+      }
+
+      .summary-icon svg {
+        width: 15px;
+        height: 15px;
+      }
+
+      .summary-num {
+        font-size: 16px;
+      }
 
       /* Dashboard header */
-      .dash-header { margin-bottom: 12px; }
-      .dash-greeting h1 { font-size: 16px; }
-      .dash-greeting p { font-size: 11px; }
+      .dash-header {
+        margin-bottom: 12px;
+      }
+
+      .dash-greeting h1 {
+        font-size: 16px;
+      }
+
+      .dash-greeting p {
+        font-size: 11px;
+      }
 
       /* Table → Cards on mobile */
-      .table-wrap { display: none; }
-      .wl-cards { display: block; }
+      .table-wrap {
+        display: none;
+      }
+
+      .wl-cards {
+        display: block;
+      }
 
       /* Sectors 1 col */
-      .sectors-grid { grid-template-columns: 1fr; gap: 8px; }
+      .sectors-grid {
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
 
       /* Stock detail mobile */
-      .stock-header { flex-direction: column; gap: 10px; }
-      .stock-actions { width: 100%; }
-      .btn-wishlist { flex: 1; justify-content: center; }
-      .price-main { font-size: 34px; }
-      .price-change { font-size: 13px; }
-      .stats-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
-      .extra-info-grid { grid-template-columns: 1fr; gap: 8px; }
-      .stat-card { padding: 10px 12px; }
-      .stat-value { font-size: 14px; }
+      .stock-header {
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .stock-actions {
+        width: 100%;
+      }
+
+      .btn-wishlist {
+        flex: 1;
+        justify-content: center;
+      }
+
+      .price-main {
+        font-size: 34px;
+      }
+
+      .price-change {
+        font-size: 13px;
+      }
+
+      .stats-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+      }
+
+      .extra-info-grid {
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+
+      .stat-card {
+        padding: 10px 12px;
+      }
+
+      .stat-value {
+        font-size: 14px;
+      }
 
       /* Search dropdown */
-      .search-dropdown { left: -12px; right: -12px; border-radius: 0 0 var(--radius) var(--radius); }
+      .search-dropdown {
+        left: -12px;
+        right: -12px;
+        border-radius: 0 0 var(--radius) var(--radius);
+      }
 
       /* Toast above bottom nav */
-      .toast-container { bottom: calc(70px + var(--safe-bottom) + 8px); }
+      .toast-container {
+        bottom: calc(70px + var(--safe-bottom) + 8px);
+      }
     }
 
     @media (max-width: 360px) {
-      .summary-strip { grid-template-columns: 1fr 1fr; }
-      .summary-lbl { font-size: 10px; }
+      .summary-strip {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .summary-lbl {
+        font-size: 10px;
+      }
     }
   </style>
 </head>
+
 <body>
 
-<!-- Settings Modal -->
-<div class="modal-overlay" id="settingsModal">
-  <div class="modal">
-    <div class="modal-icon">
-      <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
-    </div>
-    <h2>Settings</h2>
-    <p>Update your Finnhub API key.</p>
-    <div class="modal-input-group">
-      <label class="modal-label">Finnhub API Key</label>
-      <input type="text" class="modal-input" id="settingsApiKey" placeholder="Your API key..." />
-      <div class="modal-error" id="settingsError">Invalid API key.</div>
-    </div>
-    <div class="modal-actions">
-      <button class="btn-secondary" onclick="closeSettings()"><span class="i18n-lbl" data-en="Cancel">Cancel</span></button>
-      <button class="btn-primary" onclick="saveApiKeyFromSettings()"><span class="i18n-lbl" data-en="Save">Save</span></button>
+  <!-- Settings Modal -->
+  <div class="modal-overlay" id="settingsModal">
+    <div class="modal">
+      <div class="modal-icon">
+        <svg viewBox="0 0 24 24">
+          <path
+            d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" />
+        </svg>
+      </div>
+      <h2 id="settingsTitle">Settings</h2>
+      <p id="settingsDesc">Set your alert email to receive price notifications.</p>
+      <div class="modal-input-group">
+        <label class="modal-label" id="settingsEmailLabel">Alert Email</label>
+        <input type="email" class="modal-input" id="settingsEmail" placeholder="your@email.com" />
+        <div class="modal-error" id="settingsError">Please enter a valid email address.</div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-secondary" onclick="closeSettings()"><span class="i18n-lbl"
+            data-en="Cancel">Cancel</span></button>
+        <button class="btn-primary" onclick="saveSettings()"><span class="i18n-lbl" data-en="Save">Save</span></button>
+      </div>
     </div>
   </div>
-</div>
 
-<!-- App -->
-<div class="app">
-  <header class="topbar">
-    <div class="logo" onclick="switchPage('dashboard')">
-      <div class="logo-icon"><svg viewBox="0 0 24 24"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg></div>
-      <div class="logo-text">Stock<span>Pulse</span></div>
-    </div>
-    <nav class="nav-tabs">
-      <button class="nav-tab active" id="tab-dashboard" onclick="switchPage('dashboard')">
-        <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
-        <span class="i18n-lbl" data-en="Dashboard">Dashboard</span>
-      </button>
-      <button class="nav-tab" id="tab-stock" style="display:none" onclick="switchPage('stock')">
-        <svg viewBox="0 0 24 24"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg>
-        <span id="stockTabLabel">Stock</span>
-      </button>
-    </nav>
-    <div class="search-wrap">
-      <svg class="search-icon" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
-      <input type="text" class="search-input" id="searchInput" placeholder="Search stocks..." autocomplete="off" />
-      <span class="search-shortcut">&#x2318;K</span>
-      <div class="search-dropdown" id="searchDropdown"></div>
-    </div>
-    <div class="topbar-right">
-      <div class="info-badges">
-        <div class="mini-badge" title="Last updated"><svg viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67V7z"/></svg><span id="lastUpdateText">—</span></div>
-        <div class="mini-badge" title="Auto-refresh"><svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg><span class="cd" id="countdownNum">30</span>s</div>
+  <!-- App -->
+  <div class="app">
+    <header class="topbar">
+      <div class="logo" onclick="switchPage('dashboard')">
+        <div class="logo-icon"><svg viewBox="0 0 24 24">
+            <path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z" />
+          </svg></div>
+        <div class="logo-text">Stock<span>Pulse</span></div>
       </div>
-      <div class="market-badge closed" id="marketBadge"><div class="dot"></div><span id="marketBadgeText">Closed</span></div>
-      <button class="topbar-btn" id="langToggleBtn" onclick="toggleLanguage()" title="Switch Language" style="font-weight: 700; font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">EN</button>
-      <button class="topbar-btn" onclick="openSettings()" title="Settings"><svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg></button>
-    </div>
-  </header>
+      <nav class="nav-tabs">
+        <button class="nav-tab active" id="tab-dashboard" onclick="switchPage('dashboard')">
+          <svg viewBox="0 0 24 24">
+            <path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z" />
+          </svg>
+          <span class="i18n-lbl" data-en="Dashboard">Dashboard</span>
+        </button>
+        <button class="nav-tab" id="tab-stock" style="display:none" onclick="switchPage('stock')">
+          <svg viewBox="0 0 24 24">
+            <path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z" />
+          </svg>
+          <span id="stockTabLabel">Stock</span>
+        </button>
+      </nav>
+      <div class="search-wrap">
+        <svg class="search-icon" viewBox="0 0 24 24">
+          <path
+            d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />
+        </svg>
+        <input type="text" class="search-input" id="searchInput" placeholder="Search stocks..." autocomplete="off" />
+        <span class="search-shortcut">&#x2318;K</span>
+        <div class="search-dropdown" id="searchDropdown"></div>
+      </div>
+      <div class="topbar-right">
+        <div class="info-badges">
+          <div class="mini-badge" title="Last updated"><svg viewBox="0 0 24 24">
+              <path
+                d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67V7z" />
+            </svg><span id="lastUpdateText">—</span></div>
+          <div class="mini-badge" title="Auto-refresh"><svg viewBox="0 0 24 24">
+              <path
+                d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" />
+            </svg><span class="cd" id="countdownNum">30</span>s</div>
+        </div>
+        <div class="market-badge closed" id="marketBadge">
+          <div class="dot"></div><span id="marketBadgeText">Closed</span>
+        </div>
+        <button class="topbar-btn" id="langToggleBtn" onclick="toggleLanguage()" title="Switch Language"
+          style="font-weight: 700; font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">EN</button>
+        <button class="topbar-btn" onclick="openSettings()" title="Settings"><svg viewBox="0 0 24 24">
+            <path
+              d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" />
+          </svg></button>
+      </div>
+    </header>
 
-  <div class="main-layout">
-    <main class="content-area">
-      <!-- DASHBOARD -->
-      <div class="page-view active" id="page-dashboard">
-        <div class="dash-header">
-          <div class="dash-greeting">
-            <h1 id="dashGreeting">Good Evening 🌙</h1>
-            <p id="dashDate"></p>
+    <div class="main-layout">
+      <main class="content-area">
+        <!-- DASHBOARD -->
+        <div class="page-view active" id="page-dashboard">
+          <div class="dash-header">
+            <div class="dash-greeting">
+              <h1 id="dashGreeting">Good Evening 🌙</h1>
+              <p id="dashDate"></p>
+            </div>
+            <button class="refresh-btn" id="dashRefreshBtn" onclick="fullRefresh()">
+              <svg viewBox="0 0 24 24">
+                <path
+                  d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" />
+              </svg>
+              <span class="i18n-lbl" data-en="Refresh">Refresh</span>
+            </button>
           </div>
-          <button class="refresh-btn" id="dashRefreshBtn" onclick="fullRefresh()">
-            <svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
-            <span class="i18n-lbl" data-en="Refresh">Refresh</span>
-          </button>
-        </div>
 
-        <div class="summary-strip">
-          <div class="summary-card"><div class="summary-icon si-accent"><svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></div><div><div class="summary-num" id="summaryTotal">—</div><div class="summary-lbl">Watchlist</div></div></div>
-          <div class="summary-card"><div class="summary-icon si-green"><svg viewBox="0 0 24 24"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg></div><div><div class="summary-num" id="summaryGainers">—</div><div class="summary-lbl">Gainers</div></div></div>
-          <div class="summary-card"><div class="summary-icon si-red"><svg viewBox="0 0 24 24"><path d="M20.5 5.51l-6 6.01-4-4L2 17.09l1.41 1.41 7.09-7.97 4 4L22 6.92z"/></svg></div><div><div class="summary-num" id="summaryLosers">—</div><div class="summary-lbl">Losers</div></div></div>
-          <div class="summary-card"><div class="summary-icon si-amber"><svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></div><div><div class="summary-num" id="summaryBest">—</div><div class="summary-lbl">Best</div></div></div>
-        </div>
-
-        <div class="dash-section">
-          <div class="section-title"><svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>Watchlist</div>
-          <div id="dashWatchlist"></div>
-        </div>
-
-        <div class="dash-section">
-          <div class="section-title"><svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>Sectors</div>
-          <div class="sectors-grid" id="sectorsGrid"></div>
-        </div>
-      </div>
-
-      <!-- STOCK DETAIL -->
-      <div class="page-view" id="page-stock">
-        <div class="welcome-state" id="welcomeState">
-          <div class="welcome-icon"><svg viewBox="0 0 24 24"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg></div>
-          <h2>Track Your Stocks</h2>
-          <p>Search for a stock symbol to view real-time prices.</p>
-        </div>
-        <div id="stockDetail" style="display:none">
-          <div class="stock-header">
-            <div class="stock-identity">
-              <div class="stock-logo-wrap" id="stockLogo"><svg viewBox="0 0 24 24"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg></div>
-              <div style="min-width:0">
-                <div class="stock-symbol-row"><span class="stock-symbol" id="stockSymbol">AAPL</span><span class="stock-exchange" id="stockExchange">NASDAQ</span></div>
-                <div class="stock-company-name" id="stockCompanyName">Apple Inc.</div>
+          <div class="summary-strip">
+            <div class="summary-card">
+              <div class="summary-icon si-accent"><svg viewBox="0 0 24 24">
+                  <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+                </svg></div>
+              <div>
+                <div class="summary-num" id="summaryTotal">—</div>
+                <div class="summary-lbl">Watchlist</div>
               </div>
             </div>
-            <div class="stock-actions">
-              <button class="btn-wishlist" id="btnWishlist" onclick="toggleWishlist()"><svg viewBox="0 0 24 24" id="wishlistIcon"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg><span class="i18n-lbl" id="wishlistBtnText" data-en="Add">Add</span></button>
-              <button class="btn-refresh" id="btnRefresh" onclick="refreshData()" title="Refresh"><svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg></button>
+            <div class="summary-card">
+              <div class="summary-icon si-green"><svg viewBox="0 0 24 24">
+                  <path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z" />
+                </svg></div>
+              <div>
+                <div class="summary-num" id="summaryGainers">—</div>
+                <div class="summary-lbl">Gainers</div>
+              </div>
+            </div>
+            <div class="summary-card">
+              <div class="summary-icon si-red"><svg viewBox="0 0 24 24">
+                  <path d="M20.5 5.51l-6 6.01-4-4L2 17.09l1.41 1.41 7.09-7.97 4 4L22 6.92z" />
+                </svg></div>
+              <div>
+                <div class="summary-num" id="summaryLosers">—</div>
+                <div class="summary-lbl">Losers</div>
+              </div>
+            </div>
+            <div class="summary-card">
+              <div class="summary-icon si-amber"><svg viewBox="0 0 24 24">
+                  <path
+                    d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                </svg></div>
+              <div>
+                <div class="summary-num" id="summaryBest">—</div>
+                <div class="summary-lbl">Best</div>
+              </div>
             </div>
           </div>
-          <div class="price-section">
-            <div><div class="price-main" id="priceMain">$0.00</div></div>
-            <div class="price-change-group">
-              <div class="price-change flat" id="priceChange"><span class="arrow" id="priceArrow">—</span><span id="priceChangeVal">$0.00</span><span id="priceChangePct">(0.00%)</span></div>
-              <div class="price-session-label" id="priceSessionLabel">Market Price</div>
-            </div>
+
+          <div class="dash-section">
+            <div class="section-title"><svg viewBox="0 0 24 24">
+                <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+              </svg>Watchlist</div>
+            <div id="dashWatchlist"></div>
           </div>
-          <div class="stats-grid">
-            <div class="stat-card"><div class="stat-label">Open</div><div class="stat-value" id="statOpen">—</div></div>
-            <div class="stat-card"><div class="stat-label">High</div><div class="stat-value" id="statHigh">—</div></div>
-            <div class="stat-card"><div class="stat-label">Low</div><div class="stat-value" id="statLow">—</div></div>
-            <div class="stat-card"><div class="stat-label">Prev Close</div><div class="stat-value" id="statPrevClose">—</div></div>
-          </div>
-          <div class="extra-info-grid">
-            <div class="info-card"><div class="info-label">Industry</div><div class="info-value" id="infoIndustry">—</div></div>
-            <div class="info-card"><div class="info-label">Country</div><div class="info-value" id="infoCountry">—</div></div>
-            <div class="info-card"><div class="info-label">Market Cap</div><div class="info-value mono" id="infoMarketCap">—</div></div>
+
+          <div class="dash-section">
+            <div class="section-title"><svg viewBox="0 0 24 24">
+                <path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z" />
+              </svg>Sectors</div>
+            <div class="sectors-grid" id="sectorsGrid"></div>
           </div>
         </div>
-      </div>
-    </main>
 
-    <!-- Desktop sidebar -->
-    <aside class="wishlist-panel" id="desktopWishlist">
-      <div class="wishlist-header">
-        <div class="wishlist-title"><svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>Watchlist</div>
-        <span class="wishlist-count" id="wishlistCount">0</span>
-      </div>
-      <div class="wishlist-list" id="wishlistList"></div>
-      <div class="wishlist-footer">
-        <button class="btn-add-wishlist" onclick="toggleWishlist()"><svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg><span class="i18n-lbl" data-en="Add Current">Add Current</span></button>
-      </div>
-    </aside>
-  </div>
-</div>
+        <!-- STOCK DETAIL -->
+        <div class="page-view" id="page-stock">
+          <div class="welcome-state" id="welcomeState">
+            <div class="welcome-icon"><svg viewBox="0 0 24 24">
+                <path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z" />
+              </svg></div>
+            <h2>Track Your Stocks</h2>
+            <p>Search for a stock symbol to view real-time prices.</p>
+          </div>
+          <div id="stockDetail" style="display:none">
+            <div class="stock-header">
+              <div class="stock-identity">
+                <div class="stock-logo-wrap" id="stockLogo"><svg viewBox="0 0 24 24">
+                    <path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z" />
+                  </svg></div>
+                <div style="min-width:0">
+                  <div class="stock-symbol-row"><span class="stock-symbol" id="stockSymbol">AAPL</span><span
+                      class="stock-exchange" id="stockExchange">NASDAQ</span></div>
+                  <div class="stock-company-name" id="stockCompanyName">Apple Inc.</div>
+                </div>
+              </div>
+              <div class="stock-actions">
+                <button class="btn-wishlist" id="btnWishlist" onclick="toggleWishlist()"><svg viewBox="0 0 24 24"
+                    id="wishlistIcon">
+                    <path
+                      d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+                  </svg><span class="i18n-lbl" id="wishlistBtnText" data-en="Add">Add</span></button>
+                <button class="btn-refresh" id="btnRefresh" onclick="refreshData()" title="Refresh"><svg
+                    viewBox="0 0 24 24">
+                    <path
+                      d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" />
+                  </svg></button>
+              </div>
+            </div>
+            <div class="price-section">
+              <div>
+                <div class="price-main" id="priceMain">$0.00</div>
+              </div>
+              <div class="price-change-group">
+                <div class="price-change flat" id="priceChange"><span class="arrow" id="priceArrow">—</span><span
+                    id="priceChangeVal">$0.00</span><span id="priceChangePct">(0.00%)</span></div>
+                <div class="price-session-label" id="priceSessionLabel">Market Price</div>
+              </div>
+            </div>
+            <div class="stats-grid">
+              <div class="stat-card">
+                <div class="stat-label">Open</div>
+                <div class="stat-value" id="statOpen">—</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">High</div>
+                <div class="stat-value" id="statHigh">—</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">Low</div>
+                <div class="stat-value" id="statLow">—</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">Prev Close</div>
+                <div class="stat-value" id="statPrevClose">—</div>
+              </div>
+            </div>
+            <div class="extra-info-grid">
+              <div class="info-card">
+                <div class="info-label">Industry</div>
+                <div class="info-value" id="infoIndustry">—</div>
+              </div>
+              <div class="info-card">
+                <div class="info-label">Country</div>
+                <div class="info-value" id="infoCountry">—</div>
+              </div>
+              <div class="info-card">
+                <div class="info-label">Market Cap</div>
+                <div class="info-value mono" id="infoMarketCap">—</div>
+              </div>
+            </div>
 
-<!-- Mobile Bottom Nav -->
-<nav class="mobile-nav">
-  <div class="mobile-nav-inner">
-    <button class="mnav-btn active" id="mnav-dashboard" onclick="switchPage('dashboard')">
-      <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
-      <span class="i18n-lbl" data-en="Dashboard">Dashboard</span>
-    </button>
-    <button class="mnav-btn" id="mnav-stock" onclick="switchPage('stock')">
-      <svg viewBox="0 0 24 24"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg>
-      <span class="i18n-lbl" data-en="Stock">Stock</span>
-    </button>
-    <button class="mnav-btn" id="mnav-watchlist" onclick="openMobileWatchlist()">
-      <svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
-      <span class="i18n-lbl" data-en="Watchlist">Watchlist</span>
-    </button>
-    <button class="mnav-btn" id="mnav-settings" onclick="openSettings()">
-      <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
-      <span class="i18n-lbl" data-en="Settings">Settings</span>
-    </button>
-  </div>
-</nav>
+            <!-- Price Alert Card -->
+            <div class="alert-card" id="alertCard">
+              <div class="alert-card-header">
+                <div class="alert-card-icon"><svg viewBox="0 0 24 24">
+                    <path
+                      d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z" />
+                  </svg></div>
+                <span class="alert-card-title" id="alertCardTitle">Price Alerts</span>
+                <span class="alert-active-tag" id="alertActiveTag" style="display:none">Active</span>
+              </div>
+              <div class="alert-rows">
+                <div class="alert-row">
+                  <span class="alert-dir-badge above">ABOVE</span>
+                  <div class="alert-input-wrap"><input type="number" class="alert-input" id="alertAboveInput"
+                      placeholder="0.00" step="0.01" min="0" /></div>
+                  <button class="alert-btn-set" onclick="setAlert('above')"><span
+                      id="alertAboveBtnTxt">Set</span></button>
+                  <button class="alert-btn-clear" id="alertAboveClear" onclick="clearAlert('above')" title="Clear"
+                    style="display:none">×</button>
+                </div>
+                <div class="alert-row">
+                  <span class="alert-dir-badge below">BELOW</span>
+                  <div class="alert-input-wrap"><input type="number" class="alert-input" id="alertBelowInput"
+                      placeholder="0.00" step="0.01" min="0" /></div>
+                  <button class="alert-btn-set" onclick="setAlert('below')"><span
+                      id="alertBelowBtnTxt">Set</span></button>
+                  <button class="alert-btn-clear" id="alertBelowClear" onclick="clearAlert('below')" title="Clear"
+                    style="display:none">×</button>
+                </div>
+              </div>
+              <div class="alert-email-note" id="alertEmailNote">
+                <svg viewBox="0 0 24 24">
+                  <path
+                    d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z" />
+                </svg>
+                <span id="alertEmailNoteText">Alerts will be sent to — <a onclick="openSettings()">Set email in
+                    Settings</a></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
 
-<!-- Mobile Watchlist Sheet -->
-<div class="mobile-wl-overlay" id="mobileWlOverlay" onclick="if(event.target===this)closeMobileWatchlist()">
-  <div class="mobile-wl-sheet">
-    <div class="mobile-wl-handle"></div>
-    <div class="mobile-wl-header">
-      <div class="wishlist-title"><svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>Watchlist <span class="wishlist-count" id="mobileWlCount">0</span></div>
-      <button class="topbar-btn" onclick="closeMobileWatchlist()" style="width:28px;height:28px"><svg viewBox="0 0 24 24" style="width:14px;height:14px"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>
+      <!-- Desktop sidebar -->
+      <aside class="wishlist-panel" id="desktopWishlist">
+        <div class="wishlist-header">
+          <div class="wishlist-title"><svg viewBox="0 0 24 24">
+              <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+            </svg>Watchlist</div>
+          <span class="wishlist-count" id="wishlistCount">0</span>
+        </div>
+        <div class="wishlist-list" id="wishlistList"></div>
+        <div class="wishlist-footer">
+          <button class="btn-add-wishlist" onclick="toggleWishlist()"><svg viewBox="0 0 24 24">
+              <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
+            </svg><span class="i18n-lbl" data-en="Add Current">Add Current</span></button>
+        </div>
+      </aside>
     </div>
-    <div class="mobile-wl-list" id="mobileWlList"></div>
   </div>
-</div>
 
-<div class="toast-container" id="toastContainer"></div>
+  <!-- Mobile Bottom Nav -->
+  <nav class="mobile-nav">
+    <div class="mobile-nav-inner">
+      <button class="mnav-btn active" id="mnav-dashboard" onclick="switchPage('dashboard')">
+        <svg viewBox="0 0 24 24">
+          <path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z" />
+        </svg>
+        <span class="i18n-lbl" data-en="Dashboard">Dashboard</span>
+      </button>
+      <button class="mnav-btn" id="mnav-stock" onclick="switchPage('stock')">
+        <svg viewBox="0 0 24 24">
+          <path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z" />
+        </svg>
+        <span class="i18n-lbl" data-en="Stock">Stock</span>
+      </button>
+      <button class="mnav-btn" id="mnav-watchlist" onclick="openMobileWatchlist()">
+        <svg viewBox="0 0 24 24">
+          <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+        </svg>
+        <span class="i18n-lbl" data-en="Watchlist">Watchlist</span>
+      </button>
+      <button class="mnav-btn" id="mnav-settings" onclick="openSettings()">
+        <svg viewBox="0 0 24 24">
+          <path
+            d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" />
+        </svg>
+        <span class="i18n-lbl" data-en="Settings">Settings</span>
+      </button>
+    </div>
+  </nav>
 
-<script>
-const SECTORS = [
-  { id:'tech',      name:'Technology',             css:'tech',      etf:'XLK', tickers:['AAPL','MSFT','NVDA','META','GOOGL','AVGO','AMD','INTC','ORCL','CRM'] },
-  { id:'finance',   name:'Financials',             css:'finance',   etf:'XLF', tickers:['JPM','BAC','WFC','GS','MS','V','MA','AXP','BLK'] },
-  { id:'health',    name:'Healthcare',             css:'health',    etf:'XLV', tickers:['JNJ','UNH','PFE','ABBV','MRK','LLY','TMO','AMGN'] },
-  { id:'energy',    name:'Energy',                 css:'energy',    etf:'XLE', tickers:['XOM','CVX','COP','EOG','SLB','MPC','OXY'] },
-  { id:'consumer',  name:'Consumer',               css:'consumer',  etf:'XLY', tickers:['AMZN','HD','NKE','MCD','SBUX','TGT','LOW'] },
-  { id:'industrial',name:'Industrials',            css:'industrial',etf:'XLI', tickers:['CAT','HON','GE','UPS','RTX','BA','DE'] },
-  { id:'materials', name:'Materials',              css:'materials', etf:'XLB', tickers:['LIN','APD','ECL','NEM','FCX','NUE'] },
-  { id:'realestate',name:'Real Estate',            css:'realestate',etf:'XLRE',tickers:['PLD','AMT','EQIX','PSA','O','SPG'] },
-  { id:'utilities', name:'Utilities',              css:'utilities', etf:'XLU', tickers:['NEE','DUK','SO','D','SRE','AEP'] },
-  { id:'comm',      name:'Comm Services',          css:'comm',      etf:'XLC', tickers:['META','GOOGL','NFLX','DIS','VZ','T'] },
-];
+  <!-- Mobile Watchlist Sheet -->
+  <div class="mobile-wl-overlay" id="mobileWlOverlay" onclick="if(event.target===this)closeMobileWatchlist()">
+    <div class="mobile-wl-sheet">
+      <div class="mobile-wl-handle"></div>
+      <div class="mobile-wl-header">
+        <div class="wishlist-title"><svg viewBox="0 0 24 24">
+            <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+          </svg>Watchlist <span class="wishlist-count" id="mobileWlCount">0</span></div>
+        <button class="topbar-btn" onclick="closeMobileWatchlist()" style="width:28px;height:28px"><svg
+            viewBox="0 0 24 24" style="width:14px;height:14px">
+            <path
+              d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+          </svg></button>
+      </div>
+      <div class="mobile-wl-list" id="mobileWlList"></div>
+    </div>
+  </div>
 
-const HARDCODED_API_KEY = 'd9vjs4pr01qgk75onskgd9vjs4pr01qgk75onsl0';
-localStorage.setItem('stockpulse_api_key', HARDCODED_API_KEY);
+  <div class="toast-container" id="toastContainer"></div>
 
-const S = {
-  apiKey: HARDCODED_API_KEY, sym: '', profile: null, quote: null,
-  wl: JSON.parse(localStorage.getItem('stockpulse_wishlist')||'[]'),
-  searchTO: null, refreshTimer: null, cdTimer: null, cd: 30,
-  page: 'dashboard', sectors: {},
-  lang: localStorage.getItem('stockpulse_lang') || 'en'
-};
+  <script>
+    const SECTORS = [
+      { id: 'tech', name: 'Technology', css: 'tech', etf: 'XLK', tickers: ['AAPL', 'MSFT', 'NVDA', 'META', 'GOOGL', 'AVGO', 'AMD', 'INTC', 'ORCL', 'CRM'] },
+      { id: 'finance', name: 'Financials', css: 'finance', etf: 'XLF', tickers: ['JPM', 'BAC', 'WFC', 'GS', 'MS', 'V', 'MA', 'AXP', 'BLK'] },
+      { id: 'health', name: 'Healthcare', css: 'health', etf: 'XLV', tickers: ['JNJ', 'UNH', 'PFE', 'ABBV', 'MRK', 'LLY', 'TMO', 'AMGN'] },
+      { id: 'energy', name: 'Energy', css: 'energy', etf: 'XLE', tickers: ['XOM', 'CVX', 'COP', 'EOG', 'SLB', 'MPC', 'OXY'] },
+      { id: 'consumer', name: 'Consumer', css: 'consumer', etf: 'XLY', tickers: ['AMZN', 'HD', 'NKE', 'MCD', 'SBUX', 'TGT', 'LOW'] },
+      { id: 'industrial', name: 'Industrials', css: 'industrial', etf: 'XLI', tickers: ['CAT', 'HON', 'GE', 'UPS', 'RTX', 'BA', 'DE'] },
+      { id: 'materials', name: 'Materials', css: 'materials', etf: 'XLB', tickers: ['LIN', 'APD', 'ECL', 'NEM', 'FCX', 'NUE'] },
+      { id: 'realestate', name: 'Real Estate', css: 'realestate', etf: 'XLRE', tickers: ['PLD', 'AMT', 'EQIX', 'PSA', 'O', 'SPG'] },
+      { id: 'utilities', name: 'Utilities', css: 'utilities', etf: 'XLU', tickers: ['NEE', 'DUK', 'SO', 'D', 'SRE', 'AEP'] },
+      { id: 'comm', name: 'Comm Services', css: 'comm', etf: 'XLC', tickers: ['META', 'GOOGL', 'NFLX', 'DIS', 'VZ', 'T'] },
+    ];
 
-const I18N = {
-  en: {
-    dashboard: 'Dashboard', stock: 'Stock', watchlist: 'Watchlist', settings: 'Settings', searchPlaceholder: 'Search stocks...',
-    marketClosed: 'Closed', marketOpen: 'Open', marketPre: 'Pre', marketAfter: 'After',
-    marketRealtime: 'Real-time', marketAtClose: 'At Close',
-    refresh: 'Refresh', gainers: 'Gainers', losers: 'Losers', best: 'Best', sectors: 'Sectors',
-    trackStocks: 'Track Your Stocks', trackStocksDesc: 'Search for a stock symbol to view real-time prices.',
-    add: 'Add', addCurrent: 'Add Current',
-    statOpen: 'Open', statHigh: 'High', statLow: 'Low', statPrev: 'Prev Close',
-    infoIndustry: 'Industry', infoCountry: 'Country', infoMarketCap: 'Market Cap',
-    emptyWatchlist: 'Empty watchlist — search to add stocks', emptyWatchlistSidebar: 'Empty watchlist',
-    settingsTitle: 'Settings', settingsDesc: 'Update your Finnhub API key.', settingsKeyLabel: 'Finnhub API Key',
-    cancel: 'Cancel', save: 'Save',
-    tblSymbol: 'Symbol', tblPrice: 'Price', tblChange: 'Change',
-    gMorning: 'Good Morning ☀️', gAfternoon: 'Good Afternoon 🌤', gEvening: 'Good Evening 🌙'
-  },
-  th: {
-    dashboard: 'แดชบอร์ด', stock: 'หุ้น', watchlist: 'รายการเฝ้าดู', settings: 'ตั้งค่า', searchPlaceholder: 'ค้นหาหุ้น...',
-    marketClosed: 'ปิดทำการ', marketOpen: 'เปิดทำการ', marketPre: 'ก่อนเปิด', marketAfter: 'หลังปิด',
-    marketRealtime: 'เรียลไทม์', marketAtClose: 'ราคาปิด',
-    refresh: 'รีเฟรช', gainers: 'บวก', losers: 'ลบ', best: 'ดีที่สุด', sectors: 'อุตสาหกรรม',
-    trackStocks: 'ติดตามหุ้นของคุณ', trackStocksDesc: 'ค้นหาสัญลักษณ์หุ้นเพื่อดูราคาแบบเรียลไทม์',
-    add: 'เพิ่ม', addCurrent: 'เพิ่มปัจจุบัน',
-    statOpen: 'เปิด', statHigh: 'สูงสุด', statLow: 'ต่ำสุด', statPrev: 'ปิดก่อนหน้า',
-    infoIndustry: 'กลุ่มอุตสาหกรรม', infoCountry: 'ประเทศ', infoMarketCap: 'มูลค่าตลาด',
-    emptyWatchlist: 'ไม่มีรายการ — ค้นหาเพื่อเพิ่มหุ้น', emptyWatchlistSidebar: 'ไม่มีรายการเฝ้าดู',
-    settingsTitle: 'การตั้งค่า', settingsDesc: 'อัปเดต Finnhub API key ของคุณ', settingsKeyLabel: 'Finnhub API Key',
-    cancel: 'ยกเลิก', save: 'บันทึก',
-    tblSymbol: 'สัญลักษณ์', tblPrice: 'ราคา', tblChange: 'เปลี่ยนแปลง',
-    gMorning: 'สวัสดีตอนเช้า ☀️', gAfternoon: 'สวัสดีตอนบ่าย 🌤', gEvening: 'สวัสดีตอนเย็น 🌙'
-  }
-};
+    const HARDCODED_API_KEY = 'd9vjs4pr01qgk75onskgd9vjs4pr01qgk75onsl0';
+    localStorage.setItem('stockpulse_api_key', HARDCODED_API_KEY);
 
-function toggleLanguage() {
-  S.lang = S.lang === 'en' ? 'th' : 'en';
-  localStorage.setItem('stockpulse_lang', S.lang);
-  applyLanguage();
-}
+    const S = {
+      apiKey: HARDCODED_API_KEY, sym: '', profile: null, quote: null,
+      wl: JSON.parse(localStorage.getItem('stockpulse_wishlist') || '[]'),
+      searchTO: null, refreshTimer: null, cdTimer: null, cd: 30,
+      page: 'dashboard', sectors: {},
+      lang: localStorage.getItem('stockpulse_lang') || 'en',
+      alertEmail: localStorage.getItem('stockpulse_alert_email') || ''
+    };
 
-function applyLanguage() {
-  const t = I18N[S.lang];
-  document.getElementById('langToggleBtn').textContent = S.lang === 'en' ? 'EN' : 'TH';
-  const setLbl = (sel, txt) => { const el = document.querySelector(sel); if(el) el.textContent = txt; };
-  setLbl('#tab-dashboard .i18n-lbl', t.dashboard);
-  setLbl('#mnav-dashboard .i18n-lbl', t.dashboard);
-  setLbl('#mnav-stock .i18n-lbl', t.stock);
-  setLbl('#mnav-watchlist .i18n-lbl', t.watchlist);
-  setLbl('#mnav-settings .i18n-lbl', t.settings);
-  document.getElementById('searchInput').placeholder = t.searchPlaceholder;
-  if(document.querySelector('.summary-card:nth-child(1) .summary-lbl')) document.querySelector('.summary-card:nth-child(1) .summary-lbl').textContent = t.watchlist;
-  if(document.querySelector('.summary-card:nth-child(2) .summary-lbl')) document.querySelector('.summary-card:nth-child(2) .summary-lbl').textContent = t.gainers;
-  if(document.querySelector('.summary-card:nth-child(3) .summary-lbl')) document.querySelector('.summary-card:nth-child(3) .summary-lbl').textContent = t.losers;
-  if(document.querySelector('.summary-card:nth-child(4) .summary-lbl')) document.querySelector('.summary-card:nth-child(4) .summary-lbl').textContent = t.best;
-  const titles = document.querySelectorAll('.section-title');
-  if(titles.length > 0) titles[0].lastChild.nodeValue = t.watchlist;
-  if(titles.length > 1) titles[1].lastChild.nodeValue = t.sectors;
-  document.querySelector('#welcomeState h2').textContent = t.trackStocks;
-  document.querySelector('#welcomeState p').textContent = t.trackStocksDesc;
-  const statLabels = document.querySelectorAll('.stat-label');
-  if(statLabels.length >= 4) { statLabels[0].textContent = t.statOpen; statLabels[1].textContent = t.statHigh; statLabels[2].textContent = t.statLow; statLabels[3].textContent = t.statPrev; }
-  const infoLabels = document.querySelectorAll('.info-label');
-  if(infoLabels.length >= 3) { infoLabels[0].textContent = t.infoIndustry; infoLabels[1].textContent = t.infoCountry; infoLabels[2].textContent = t.infoMarketCap; }
-  document.querySelector('.wishlist-title').lastChild.nodeValue = t.watchlist;
-  setLbl('.btn-add-wishlist .i18n-lbl', t.addCurrent);
-  document.querySelector('.modal h2').textContent = t.settingsTitle;
-  document.querySelector('.modal p').textContent = t.settingsDesc;
-  document.querySelector('.modal-label').textContent = t.settingsKeyLabel;
-  setLbl('.btn-secondary .i18n-lbl', t.cancel);
-  setLbl('.btn-primary .i18n-lbl', t.save);
-  setLbl('#dashRefreshBtn .i18n-lbl', t.refresh);
-  if (document.querySelector('.mobile-wl-header .wishlist-title')) document.querySelector('.mobile-wl-header .wishlist-title').lastChild.nodeValue = t.watchlist;
+    const I18N = {
+      en: {
+        dashboard: 'Dashboard', stock: 'Stock', watchlist: 'Watchlist', settings: 'Settings', searchPlaceholder: 'Search stocks...',
+        marketClosed: 'Closed', marketOpen: 'Open', marketPre: 'Pre', marketAfter: 'After',
+        marketRealtime: 'Real-time', marketAtClose: 'At Close',
+        refresh: 'Refresh', gainers: 'Gainers', losers: 'Losers', best: 'Best', sectors: 'Sectors',
+        trackStocks: 'Track Your Stocks', trackStocksDesc: 'Search for a stock symbol to view real-time prices.',
+        add: 'Add', addCurrent: 'Add Current',
+        statOpen: 'Open', statHigh: 'High', statLow: 'Low', statPrev: 'Prev Close',
+        infoIndustry: 'Industry', infoCountry: 'Country', infoMarketCap: 'Market Cap',
+        emptyWatchlist: 'Empty watchlist — search to add stocks', emptyWatchlistSidebar: 'Empty watchlist',
+        settingsTitle: 'Settings', settingsDesc: 'Set your alert email to receive price notifications.', settingsEmailLabel: 'Alert Email',
+        cancel: 'Cancel', save: 'Save',
+        tblSymbol: 'Symbol', tblPrice: 'Price', tblChange: 'Change',
+        gMorning: 'Good Morning ☀️', gAfternoon: 'Good Afternoon 🌤', gEvening: 'Good Evening 🌙',
+        alertTitle: 'Price Alerts', alertSet: 'Set', alertSetEmail: 'Alerts will be sent to',
+        alertNoEmail: 'Set email in Settings'
+      },
+      th: {
+        dashboard: 'แดชบอร์ด', stock: 'หุ้น', watchlist: 'รายการเฝ้าดู', settings: 'ตั้งค่า', searchPlaceholder: 'ค้นหาหุ้น...',
+        marketClosed: 'ปิดทำการ', marketOpen: 'เปิดทำการ', marketPre: 'ก่อนเปิด', marketAfter: 'หลังปิด',
+        marketRealtime: 'เรียลไทม์', marketAtClose: 'ราคาปิด',
+        refresh: 'รีเฟรช', gainers: 'บวก', losers: 'ลบ', best: 'ดีที่สุด', sectors: 'อุตสาหกรรม',
+        trackStocks: 'ติดตามหุ้นของคุณ', trackStocksDesc: 'ค้นหาสัญลักษณ์หุ้นเพื่อดูราคาแบบเรียลไทม์',
+        add: 'เพิ่ม', addCurrent: 'เพิ่มปัจจุบัน',
+        statOpen: 'เปิด', statHigh: 'สูงสุด', statLow: 'ต่ำสุด', statPrev: 'ปิดก่อนหน้า',
+        infoIndustry: 'กลุ่มอุตสาหกรรม', infoCountry: 'ประเทศ', infoMarketCap: 'มูลค่าตลาด',
+        emptyWatchlist: 'ไม่มีรายการ — ค้นหาเพื่อเพิ่มหุ้น', emptyWatchlistSidebar: 'ไม่มีรายการเฝ้าดู',
+        settingsTitle: 'การตั้งค่า', settingsDesc: 'ตั้งค่าอีเมลสำหรับรับการแจ้งเตือนราคาหุ้น', settingsEmailLabel: 'อีเมลแจ้งเตือน',
+        cancel: 'ยกเลิก', save: 'บันทึก',
+        tblSymbol: 'สัญลักษณ์', tblPrice: 'ราคา', tblChange: 'เปลี่ยนแปลง',
+        gMorning: 'สวัสดีตอนเช้า ☀️', gAfternoon: 'สวัสดีตอนบ่าย 🌤', gEvening: 'สวัสดีตอนเย็น 🌙',
+        alertTitle: 'แจ้งเตือนราคา', alertSet: 'ตั้งค่า', alertSetEmail: 'แจ้งเตือนจะส่งไปที่',
+        alertNoEmail: 'ตั้งค่าอีเมลในการตั้งค่า'
+      }
+    };
 
-  updateGreeting();
-  updateMarketStatus();
-  updateWishlistButton();
-  updateDashboard();
-  renderWishlist();
-  if (S.quote) renderQuote(S.quote);
-}
+    function toggleLanguage() {
+      S.lang = S.lang === 'en' ? 'th' : 'en';
+      localStorage.setItem('stockpulse_lang', S.lang);
+      applyLanguage();
+    }
 
-document.addEventListener('DOMContentLoaded', () => { initApp(); setupEvents(); applyLanguage(); });
+    function applyLanguage() {
+      const t = I18N[S.lang];
+      document.getElementById('langToggleBtn').textContent = S.lang === 'en' ? 'EN' : 'TH';
+      const setLbl = (sel, txt) => { const el = document.querySelector(sel); if (el) el.textContent = txt; };
+      setLbl('#tab-dashboard .i18n-lbl', t.dashboard);
+      setLbl('#mnav-dashboard .i18n-lbl', t.dashboard);
+      setLbl('#mnav-stock .i18n-lbl', t.stock);
+      setLbl('#mnav-watchlist .i18n-lbl', t.watchlist);
+      setLbl('#mnav-settings .i18n-lbl', t.settings);
+      document.getElementById('searchInput').placeholder = t.searchPlaceholder;
+      if (document.querySelector('.summary-card:nth-child(1) .summary-lbl')) document.querySelector('.summary-card:nth-child(1) .summary-lbl').textContent = t.watchlist;
+      if (document.querySelector('.summary-card:nth-child(2) .summary-lbl')) document.querySelector('.summary-card:nth-child(2) .summary-lbl').textContent = t.gainers;
+      if (document.querySelector('.summary-card:nth-child(3) .summary-lbl')) document.querySelector('.summary-card:nth-child(3) .summary-lbl').textContent = t.losers;
+      if (document.querySelector('.summary-card:nth-child(4) .summary-lbl')) document.querySelector('.summary-card:nth-child(4) .summary-lbl').textContent = t.best;
+      const titles = document.querySelectorAll('.section-title');
+      if (titles.length > 0) titles[0].lastChild.nodeValue = t.watchlist;
+      if (titles.length > 1) titles[1].lastChild.nodeValue = t.sectors;
+      document.querySelector('#welcomeState h2').textContent = t.trackStocks;
+      document.querySelector('#welcomeState p').textContent = t.trackStocksDesc;
+      const statLabels = document.querySelectorAll('.stat-label');
+      if (statLabels.length >= 4) { statLabels[0].textContent = t.statOpen; statLabels[1].textContent = t.statHigh; statLabels[2].textContent = t.statLow; statLabels[3].textContent = t.statPrev; }
+      const infoLabels = document.querySelectorAll('.info-label');
+      if (infoLabels.length >= 3) { infoLabels[0].textContent = t.infoIndustry; infoLabels[1].textContent = t.infoCountry; infoLabels[2].textContent = t.infoMarketCap; }
+      document.querySelector('.wishlist-title').lastChild.nodeValue = t.watchlist;
+      setLbl('.btn-add-wishlist .i18n-lbl', t.addCurrent);
+      document.getElementById('settingsTitle').textContent = t.settingsTitle;
+      document.getElementById('settingsDesc').textContent = t.settingsDesc;
+      document.getElementById('settingsEmailLabel').textContent = t.settingsEmailLabel;
+      setLbl('.btn-secondary .i18n-lbl', t.cancel);
+      setLbl('.btn-primary .i18n-lbl', t.save);
+      setLbl('#dashRefreshBtn .i18n-lbl', t.refresh);
+      if (document.querySelector('.mobile-wl-header .wishlist-title')) document.querySelector('.mobile-wl-header .wishlist-title').lastChild.nodeValue = t.watchlist;
+      // Alert card
+      setLbl('#alertCardTitle', t.alertTitle);
+      setLbl('#alertAboveBtnTxt', t.alertSet);
+      setLbl('#alertBelowBtnTxt', t.alertSet);
+      renderAlertEmailNote();
 
-function initApp() {
-  updateMarketStatus(); setInterval(updateMarketStatus, 60000);
-  renderWishlist(); renderSectors(); updateDashboard();
-  updateWishlistPrices().then(updateDashboard);
-  loadSectorData(); startAutoRefresh(); updateLastRefresh();
-}
+      updateGreeting();
+      updateMarketStatus();
+      updateWishlistButton();
+      updateDashboard();
+      renderWishlist();
+      if (S.quote) renderQuote(S.quote);
+    }
 
-function startAutoRefresh() {
-  clearInterval(S.refreshTimer); clearInterval(S.cdTimer);
-  S.cd = 30; document.getElementById('countdownNum').textContent = S.cd;
-  S.cdTimer = setInterval(() => { S.cd = Math.max(0, S.cd-1); document.getElementById('countdownNum').textContent = S.cd; }, 1000);
-  S.refreshTimer = setInterval(async () => {
-    S.cd = 30;
-    try {
-      await updateWishlistPrices();
-      if (S.sym && S.page==='stock') await refreshCurrentQuote();
-      await loadSectorData(); updateDashboard(); updateLastRefresh();
-    } catch(e) { console.error(e); }
-  }, 30000);
-}
+    document.addEventListener('DOMContentLoaded', () => { initEmailJS(); initApp(); setupEvents(); applyLanguage(); });
 
-function updateGreeting() {
-  const h = new Date().getHours();
-  const t = I18N[S.lang] || I18N.en;
-  document.getElementById('dashGreeting').textContent = h<12?t.gMorning:h<17?t.gAfternoon:t.gEvening;
-  const loc = S.lang === 'th' ? 'th-TH' : 'en-US';
-  document.getElementById('dashDate').textContent = new Date().toLocaleDateString(loc,{weekday:'long',year:'numeric',month:'short',day:'numeric'});
-}
-function updateLastRefresh() {
-  const el = document.getElementById('lastUpdateText');
-  if(el) el.textContent = new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
-}
+    function initApp() {
+      updateMarketStatus(); setInterval(updateMarketStatus, 60000);
+      renderWishlist(); renderSectors(); updateDashboard();
+      updateWishlistPrices().then(updateDashboard);
+      loadSectorData(); startAutoRefresh(); updateLastRefresh();
+    }
 
-function switchPage(page) {
-  S.page = page;
-  document.querySelectorAll('.page-view').forEach(p=>p.classList.remove('active'));
-  document.getElementById('page-'+page)?.classList.add('active');
-  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
-  document.getElementById('tab-'+page)?.classList.add('active');
-  document.querySelectorAll('.mnav-btn').forEach(b=>b.classList.remove('active'));
-  document.getElementById('mnav-'+page)?.classList.add('active');
-}
+    function startAutoRefresh() {
+      clearInterval(S.refreshTimer); clearInterval(S.cdTimer);
+      S.cd = 30; document.getElementById('countdownNum').textContent = S.cd;
+      S.cdTimer = setInterval(() => { S.cd = Math.max(0, S.cd - 1); document.getElementById('countdownNum').textContent = S.cd; }, 1000);
+      S.refreshTimer = setInterval(async () => {
+        S.cd = 30;
+        try {
+          await updateWishlistPrices();
+          await checkAlerts();
+          if (S.sym && S.page === 'stock') await refreshCurrentQuote();
+          await loadSectorData(); updateDashboard(); updateLastRefresh();
+        } catch (e) { console.error(e); }
+      }, 30000);
+    }
 
-// Mobile watchlist
-function openMobileWatchlist() { document.getElementById('mobileWlOverlay').classList.add('active'); renderMobileWishlist(); }
-function closeMobileWatchlist() { document.getElementById('mobileWlOverlay').classList.remove('active'); }
-function renderMobileWishlist() {
-  document.getElementById('mobileWlCount').textContent = S.wl.length;
-  const list = document.getElementById('mobileWlList');
-  const t = I18N[S.lang] || I18N.en;
-  if(!S.wl.length) { list.innerHTML = `<div class="wishlist-empty"><svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg><p>${t.emptyWatchlistSidebar}</p></div>`; return; }
-  list.innerHTML = S.wl.map(s => {
-    const q=s._quote, p=q?'$'+fmtNum(q.c):'—', pct=q?q.dp:null, d=pct!==null?(pct>=0?'up':'down'):'';
-    return `<div class="wl-card-item" onclick="loadStock('${esc(s.symbol)}');closeMobileWatchlist()">
-      <div class="wl-card-left"><div class="wl-sym">${esc(s.symbol)}</div><div class="wl-name">${esc(s.name||'')}</div></div>
-      <div class="wl-card-right"><div class="wl-price">${p}</div><div class="wl-chg ${d}">${pct!==null?(pct>=0?'+':'')+pct.toFixed(2)+'%':''}</div></div>
+    function updateGreeting() {
+      const h = new Date().getHours();
+      const t = I18N[S.lang] || I18N.en;
+      document.getElementById('dashGreeting').textContent = h < 12 ? t.gMorning : h < 17 ? t.gAfternoon : t.gEvening;
+      const loc = S.lang === 'th' ? 'th-TH' : 'en-US';
+      document.getElementById('dashDate').textContent = new Date().toLocaleDateString(loc, { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' });
+    }
+    function updateLastRefresh() {
+      const el = document.getElementById('lastUpdateText');
+      if (el) el.textContent = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function switchPage(page) {
+      S.page = page;
+      document.querySelectorAll('.page-view').forEach(p => p.classList.remove('active'));
+      document.getElementById('page-' + page)?.classList.add('active');
+      document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+      document.getElementById('tab-' + page)?.classList.add('active');
+      document.querySelectorAll('.mnav-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById('mnav-' + page)?.classList.add('active');
+    }
+
+    // Mobile watchlist
+    function openMobileWatchlist() { document.getElementById('mobileWlOverlay').classList.add('active'); renderMobileWishlist(); }
+    function closeMobileWatchlist() { document.getElementById('mobileWlOverlay').classList.remove('active'); }
+    function renderMobileWishlist() {
+      document.getElementById('mobileWlCount').textContent = S.wl.length;
+      const list = document.getElementById('mobileWlList');
+      const t = I18N[S.lang] || I18N.en;
+      if (!S.wl.length) { list.innerHTML = `<div class="wishlist-empty"><svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg><p>${t.emptyWatchlistSidebar}</p></div>`; return; }
+      list.innerHTML = S.wl.map(s => {
+        const q = s._quote, p = q ? '$' + fmtNum(q.c) : '—', pct = q ? q.dp : null, d = pct !== null ? (pct >= 0 ? 'up' : 'down') : '';
+        return `<div class="wl-card-item" onclick="loadStock('${esc(s.symbol)}');closeMobileWatchlist()">
+      <div class="wl-card-left"><div class="wl-sym">${esc(s.symbol)}</div><div class="wl-name">${esc(s.name || '')}</div></div>
+      <div class="wl-card-right"><div class="wl-price">${p}</div><div class="wl-chg ${d}">${pct !== null ? (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%' : ''}</div></div>
     </div>`;
-  }).join('');
-}
+      }).join('');
+    }
 
-// API
-const API = 'https://finnhub.io/api/v1';
-async function api(ep, p={}) { p.token=S.apiKey; const r=await fetch(API+ep+'?'+new URLSearchParams(p)); if(r.status===401)throw new Error('Invalid API key'); if(r.status===429)throw new Error('Rate limited'); if(!r.ok)throw new Error('API error'); return r.json(); }
-const fetchQ=s=>api('/quote',{symbol:s}), fetchP=s=>api('/stock/profile2',{symbol:s}), fetchS=q=>api('/search',{q});
+    // API
+    const API = 'https://finnhub.io/api/v1';
+    async function api(ep, p = {}) { p.token = S.apiKey; const r = await fetch(API + ep + '?' + new URLSearchParams(p)); if (r.status === 401) throw new Error('Invalid API key'); if (r.status === 429) throw new Error('Rate limited'); if (!r.ok) throw new Error('API error'); return r.json(); }
+    const fetchQ = s => api('/quote', { symbol: s }), fetchP = s => api('/stock/profile2', { symbol: s }), fetchS = q => api('/search', { q });
 
-// Search
-async function searchSymbols(q) {
-  try {
-    const data=await fetchS(q); const dd=document.getElementById('searchDropdown');
-    if(!data.result?.length){dd.innerHTML='<div class="search-empty">No results</div>';dd.classList.add('active');return;}
-    const f=data.result.filter(r=>['Common Stock','ADR','ETF',null,undefined,''].includes(r.type)).slice(0,6);
-    if(!f.length){dd.innerHTML='<div class="search-empty">No stocks found</div>';dd.classList.add('active');return;}
-    dd.innerHTML=f.map(r=>`<div class="search-item" onclick="selectSearch('${esc(r.symbol)}')"><div><div class="search-item-symbol">${esc(r.symbol)}</div><div class="search-item-name">${esc(r.description||'')}</div></div><span class="search-item-type">${esc(r.type||'Stock')}</span></div>`).join('');
-    dd.classList.add('active');
-  } catch(e){console.error(e);}
-}
-function selectSearch(sym){document.getElementById('searchInput').value='';closeDD();loadStock(sym);}
-function closeDD(){document.getElementById('searchDropdown').classList.remove('active');}
+    // Search
+    async function searchSymbols(q) {
+      try {
+        const data = await fetchS(q); const dd = document.getElementById('searchDropdown');
+        if (!data.result?.length) { dd.innerHTML = '<div class="search-empty">No results</div>'; dd.classList.add('active'); return; }
+        const f = data.result.filter(r => ['Common Stock', 'ADR', 'ETF', null, undefined, ''].includes(r.type)).slice(0, 6);
+        if (!f.length) { dd.innerHTML = '<div class="search-empty">No stocks found</div>'; dd.classList.add('active'); return; }
+        dd.innerHTML = f.map(r => `<div class="search-item" onclick="selectSearch('${esc(r.symbol)}')"><div><div class="search-item-symbol">${esc(r.symbol)}</div><div class="search-item-name">${esc(r.description || '')}</div></div><span class="search-item-type">${esc(r.type || 'Stock')}</span></div>`).join('');
+        dd.classList.add('active');
+      } catch (e) { console.error(e); }
+    }
+    function selectSearch(sym) { document.getElementById('searchInput').value = ''; closeDD(); loadStock(sym); }
+    function closeDD() { document.getElementById('searchDropdown').classList.remove('active'); }
 
-// Load stock
-async function loadStock(sym) {
-  sym=sym.toUpperCase(); S.sym=sym;
-  document.getElementById('tab-stock').style.display='flex';
-  document.getElementById('stockTabLabel').textContent=sym;
-  document.getElementById('welcomeState').style.display='none';
-  document.getElementById('stockDetail').style.display='block';
-  switchPage('stock'); updateWishlistButton(); renderWishlist();
-  try {
-    const [qr,pr]=await Promise.allSettled([fetchQ(sym),fetchP(sym)]);
-    if(qr.status==='fulfilled'&&qr.value.c){S.quote=qr.value;renderQuote(qr.value);}else showToast('No quote for '+sym,'error');
-    if(pr.status==='fulfilled'&&pr.value.name){S.profile=pr.value;renderProfile(pr.value);}
-    else{document.getElementById('stockSymbol').textContent=sym;document.getElementById('stockCompanyName').textContent='';document.getElementById('stockExchange').textContent='';document.getElementById('stockLogo').innerHTML='<svg viewBox="0 0 24 24"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg>';document.getElementById('infoIndustry').textContent='—';document.getElementById('infoCountry').textContent='—';document.getElementById('infoMarketCap').textContent='—';}
-    updateLastRefresh();
-  } catch(e){showToast(e.message,'error');}
-}
+    // Load stock
+    async function loadStock(sym) {
+      sym = sym.toUpperCase(); S.sym = sym;
+      document.getElementById('tab-stock').style.display = 'flex';
+      document.getElementById('stockTabLabel').textContent = sym;
+      document.getElementById('welcomeState').style.display = 'none';
+      document.getElementById('stockDetail').style.display = 'block';
+      switchPage('stock'); updateWishlistButton(); renderWishlist();
+      renderAlertCard();
+      try {
+        const [qr, pr] = await Promise.allSettled([fetchQ(sym), fetchP(sym)]);
+        if (qr.status === 'fulfilled' && qr.value.c) { S.quote = qr.value; renderQuote(qr.value); } else showToast('No quote for ' + sym, 'error');
+        if (pr.status === 'fulfilled' && pr.value.name) { S.profile = pr.value; renderProfile(pr.value); }
+        else { document.getElementById('stockSymbol').textContent = sym; document.getElementById('stockCompanyName').textContent = ''; document.getElementById('stockExchange').textContent = ''; document.getElementById('stockLogo').innerHTML = '<svg viewBox="0 0 24 24"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg>'; document.getElementById('infoIndustry').textContent = '—'; document.getElementById('infoCountry').textContent = '—'; document.getElementById('infoMarketCap').textContent = '—'; }
+        updateLastRefresh();
+      } catch (e) { showToast(e.message, 'error'); }
+    }
 
-function renderProfile(p) {
-  document.getElementById('stockSymbol').textContent=p.ticker||S.sym;
-  document.getElementById('stockCompanyName').textContent=p.name||'';
-  document.getElementById('stockExchange').textContent=p.exchange||'';
-  document.getElementById('infoIndustry').textContent=p.finnhubIndustry||'—';
-  document.getElementById('infoCountry').textContent=p.country||'—';
-  document.getElementById('infoMarketCap').textContent=p.marketCapitalization?fmtCap(p.marketCapitalization):'—';
-  const lw=document.getElementById('stockLogo');
-  lw.innerHTML=p.logo?`<img src="${p.logo}" alt="${esc(p.name)}" onerror="this.parentElement.innerHTML='<svg viewBox=\\'0 0 24 24\\'><path d=\\'M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z\\'/></svg>'" />`:'<svg viewBox="0 0 24 24"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg>';
-}
+    function renderProfile(p) {
+      document.getElementById('stockSymbol').textContent = p.ticker || S.sym;
+      document.getElementById('stockCompanyName').textContent = p.name || '';
+      document.getElementById('stockExchange').textContent = p.exchange || '';
+      document.getElementById('infoIndustry').textContent = p.finnhubIndustry || '—';
+      document.getElementById('infoCountry').textContent = p.country || '—';
+      document.getElementById('infoMarketCap').textContent = p.marketCapitalization ? fmtCap(p.marketCapitalization) : '—';
+      const lw = document.getElementById('stockLogo');
+      lw.innerHTML = p.logo ? `<img src="${p.logo}" alt="${esc(p.name)}" onerror="this.parentElement.innerHTML='<svg viewBox=\\'0 0 24 24\\'><path d=\\'M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z\\'/></svg>'" />` : '<svg viewBox="0 0 24 24"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg>';
+    }
 
-function renderQuote(q) {
-  const c=q.c,d=q.d,dp=q.dp,up=d>0,dn=d<0,dir=up?'up':dn?'down':'flat';
-  document.getElementById('priceMain').textContent='$'+fmtNum(c);
-  document.getElementById('priceMain').style.color=up?'var(--green)':dn?'var(--red)':'var(--text-primary)';
-  document.getElementById('priceChange').className='price-change '+dir;
-  document.getElementById('priceArrow').textContent=up?'▲':dn?'▼':'—';
-  document.getElementById('priceChangeVal').textContent=(up?'+':dn?'-':'')+'$'+Math.abs(d).toFixed(2);
-  document.getElementById('priceChangePct').textContent='('+(dp>=0?'+':'')+dp.toFixed(2)+'%)';
-  const l = I18N[S.lang] || I18N.en;
-  const sm={regular:l.marketRealtime,'post-market':l.marketAfter,'pre-market':l.marketPre,closed:l.marketAtClose};
-  document.getElementById('priceSessionLabel').textContent=sm[getSession()]||l.marketAtClose;
-  document.getElementById('statOpen').textContent=q.o?'$'+fmtNum(q.o):'—';
-  document.getElementById('statHigh').textContent=q.h?'$'+fmtNum(q.h):'—';
-  document.getElementById('statLow').textContent=q.l?'$'+fmtNum(q.l):'—';
-  document.getElementById('statPrevClose').textContent=q.pc?'$'+fmtNum(q.pc):'—';
-}
+    function renderQuote(q) {
+      const c = q.c, d = q.d, dp = q.dp, up = d > 0, dn = d < 0, dir = up ? 'up' : dn ? 'down' : 'flat';
+      document.getElementById('priceMain').textContent = '$' + fmtNum(c);
+      document.getElementById('priceMain').style.color = up ? 'var(--green)' : dn ? 'var(--red)' : 'var(--text-primary)';
+      document.getElementById('priceChange').className = 'price-change ' + dir;
+      document.getElementById('priceArrow').textContent = up ? '▲' : dn ? '▼' : '—';
+      document.getElementById('priceChangeVal').textContent = (up ? '+' : dn ? '-' : '') + '$' + Math.abs(d).toFixed(2);
+      document.getElementById('priceChangePct').textContent = '(' + (dp >= 0 ? '+' : '') + dp.toFixed(2) + '%)';
+      const l = I18N[S.lang] || I18N.en;
+      const sm = { regular: l.marketRealtime, 'post-market': l.marketAfter, 'pre-market': l.marketPre, closed: l.marketAtClose };
+      document.getElementById('priceSessionLabel').textContent = sm[getSession()] || l.marketAtClose;
+      document.getElementById('statOpen').textContent = q.o ? '$' + fmtNum(q.o) : '—';
+      document.getElementById('statHigh').textContent = q.h ? '$' + fmtNum(q.h) : '—';
+      document.getElementById('statLow').textContent = q.l ? '$' + fmtNum(q.l) : '—';
+      document.getElementById('statPrevClose').textContent = q.pc ? '$' + fmtNum(q.pc) : '—';
+    }
 
-async function refreshCurrentQuote(){if(!S.sym)return;try{const q=await fetchQ(S.sym);if(q&&q.c){S.quote=q;renderQuote(q);}}catch{}}
-async function refreshData(){if(!S.sym)return;const b=document.getElementById('btnRefresh');b.classList.add('spinning');try{await loadStock(S.sym);showToast('Refreshed','success');}catch{showToast('Failed','error');}setTimeout(()=>b.classList.remove('spinning'),800);}
-async function fullRefresh(){const b=document.getElementById('dashRefreshBtn');b.disabled=true;b.querySelector('.i18n-lbl').textContent='...';try{await updateWishlistPrices();if(S.sym)await refreshCurrentQuote();await loadSectorData();updateDashboard();updateLastRefresh();showToast('Refreshed','success');}catch{showToast('Error','error');}b.disabled=false;b.querySelector('.i18n-lbl').textContent=(I18N[S.lang]||I18N.en).refresh;}
+    async function refreshCurrentQuote() { if (!S.sym) return; try { const q = await fetchQ(S.sym); if (q && q.c) { S.quote = q; renderQuote(q); } } catch { } }
+    async function refreshData() { if (!S.sym) return; const b = document.getElementById('btnRefresh'); b.classList.add('spinning'); try { await loadStock(S.sym); showToast('Refreshed', 'success'); } catch { showToast('Failed', 'error'); } setTimeout(() => b.classList.remove('spinning'), 800); }
+    async function fullRefresh() { const b = document.getElementById('dashRefreshBtn'); b.disabled = true; b.querySelector('.i18n-lbl').textContent = '...'; try { await updateWishlistPrices(); if (S.sym) await refreshCurrentQuote(); await loadSectorData(); updateDashboard(); updateLastRefresh(); showToast('Refreshed', 'success'); } catch { showToast('Error', 'error'); } b.disabled = false; b.querySelector('.i18n-lbl').textContent = (I18N[S.lang] || I18N.en).refresh; }
 
-// Sectors
-async function loadSectorData(){for(const s of SECTORS){try{const q=await fetchQ(s.etf);if(q&&q.c)S.sectors[s.etf]=q;await slp(120);}catch{}}renderSectors();}
-function renderSectors(){
-  document.getElementById('sectorsGrid').innerHTML=SECTORS.map(s=>{
-    const e=S.sectors[s.etf],p=e?e.dp:null,cl=p===null?'loading':p>=0?'up':'down',tx=p===null?'—':(p>=0?'+':'')+p.toFixed(2)+'%';
-    const vis=s.tickers.slice(0,4);
-    return `<div class="sector-card ${s.css}"><div class="sector-top"><div class="sector-name">${esc(s.name)}</div><span class="sector-perf ${cl}">${tx}</span></div><div class="sector-tickers">${vis.map(t=>`<span class="sector-ticker" onclick="loadStock('${t}');event.stopPropagation()">${t}</span>`).join('')}<span class="sector-ticker" style="opacity:.4;cursor:default">+${s.tickers.length-vis.length}</span></div></div>`;
-  }).join('');
-}
+    // Sectors
+    async function loadSectorData() { for (const s of SECTORS) { try { const q = await fetchQ(s.etf); if (q && q.c) S.sectors[s.etf] = q; await slp(120); } catch { } } renderSectors(); }
+    function renderSectors() {
+      document.getElementById('sectorsGrid').innerHTML = SECTORS.map(s => {
+        const e = S.sectors[s.etf], p = e ? e.dp : null, cl = p === null ? 'loading' : p >= 0 ? 'up' : 'down', tx = p === null ? '—' : (p >= 0 ? '+' : '') + p.toFixed(2) + '%';
+        const vis = s.tickers.slice(0, 4);
+        return `<div class="sector-card ${s.css}"><div class="sector-top"><div class="sector-name">${esc(s.name)}</div><span class="sector-perf ${cl}">${tx}</span></div><div class="sector-tickers">${vis.map(t => `<span class="sector-ticker" onclick="loadStock('${t}');event.stopPropagation()">${t}</span>`).join('')}<span class="sector-ticker" style="opacity:.4;cursor:default">+${s.tickers.length - vis.length}</span></div></div>`;
+      }).join('');
+    }
 
-// Dashboard
-function updateDashboard() {
-  const wd=S.wl.filter(s=>s._quote),ga=wd.filter(s=>s._quote.dp>=0).length,lo=wd.filter(s=>s._quote.dp<0).length;
-  let best=wd.length?wd.reduce((a,b)=>a._quote.dp>b._quote.dp?a:b):null;
-  document.getElementById('summaryTotal').textContent=S.wl.length;
-  document.getElementById('summaryGainers').textContent=ga;
-  document.getElementById('summaryLosers').textContent=lo;
-  document.getElementById('summaryBest').textContent=best?best.symbol+' '+(best._quote.dp>=0?'+':'')+best._quote.dp.toFixed(2)+'%':'—';
+    // Dashboard
+    function updateDashboard() {
+      const wd = S.wl.filter(s => s._quote), ga = wd.filter(s => s._quote.dp >= 0).length, lo = wd.filter(s => s._quote.dp < 0).length;
+      let best = wd.length ? wd.reduce((a, b) => a._quote.dp > b._quote.dp ? a : b) : null;
+      document.getElementById('summaryTotal').textContent = S.wl.length;
+      document.getElementById('summaryGainers').textContent = ga;
+      document.getElementById('summaryLosers').textContent = lo;
+      document.getElementById('summaryBest').textContent = best ? best.symbol + ' ' + (best._quote.dp >= 0 ? '+' : '') + best._quote.dp.toFixed(2) + '%' : '—';
 
-  const t = I18N[S.lang] || I18N.en;
-  const c=document.getElementById('dashWatchlist');
-  if(!S.wl.length){c.innerHTML=`<div class="dash-empty"><svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg><span>${t.emptyWatchlist}</span></div>`;return;}
+      const t = I18N[S.lang] || I18N.en;
+      const c = document.getElementById('dashWatchlist');
+      if (!S.wl.length) { c.innerHTML = `<div class="dash-empty"><svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg><span>${t.emptyWatchlist}</span></div>`; return; }
 
-  // Desktop table
-  const rows=S.wl.map(s=>{const q=s._quote,p=q?'$'+fmtNum(q.c):'—',pct=q?q.dp:null,d=pct===null?'flat':pct>=0?'up':'down',pt=pct!==null?(pct>=0?'+':'')+pct.toFixed(2)+'%':'—',ct=q?(q.d>=0?'+':'')+q.d.toFixed(2):'—';
-    return `<tr onclick="loadStock('${esc(s.symbol)}')"><td><div class="wl-sym">${esc(s.symbol)}</div><div class="wl-name">${esc(s.name||'')}</div></td><td><div class="wl-price">${p}</div></td><td><div class="wl-chg ${d}">${ct}</div></td><td><span class="pct-badge ${d}">${pt}</span></td></tr>`;}).join('');
+      // Desktop table
+      const rows = S.wl.map(s => {
+        const q = s._quote, p = q ? '$' + fmtNum(q.c) : '—', pct = q ? q.dp : null, d = pct === null ? 'flat' : pct >= 0 ? 'up' : 'down', pt = pct !== null ? (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%' : '—', ct = q ? (q.d >= 0 ? '+' : '') + q.d.toFixed(2) : '—';
+        return `<tr onclick="loadStock('${esc(s.symbol)}')"><td><div class="wl-sym">${esc(s.symbol)}</div><div class="wl-name">${esc(s.name || '')}</div></td><td><div class="wl-price">${p}</div></td><td><div class="wl-chg ${d}">${ct}</div></td><td><span class="pct-badge ${d}">${pt}</span></td></tr>`;
+      }).join('');
 
-  // Mobile cards
-  const cards=S.wl.map(s=>{const q=s._quote,p=q?'$'+fmtNum(q.c):'—',pct=q?q.dp:null,d=pct!==null?(pct>=0?'up':'down'):'',pt=pct!==null?(pct>=0?'+':'')+pct.toFixed(2)+'%':'';
-    return `<div class="wl-card-item" onclick="loadStock('${esc(s.symbol)}')"><div class="wl-card-left"><div class="wl-sym">${esc(s.symbol)}</div><div class="wl-name">${esc(s.name||'')}</div></div><div class="wl-card-right"><div class="wl-price">${p}</div><div class="wl-chg ${d}">${pt}</div></div></div>`;}).join('');
+      // Mobile cards
+      const cards = S.wl.map(s => {
+        const q = s._quote, p = q ? '$' + fmtNum(q.c) : '—', pct = q ? q.dp : null, d = pct !== null ? (pct >= 0 ? 'up' : 'down') : '', pt = pct !== null ? (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%' : '';
+        return `<div class="wl-card-item" onclick="loadStock('${esc(s.symbol)}')"><div class="wl-card-left"><div class="wl-sym">${esc(s.symbol)}</div><div class="wl-name">${esc(s.name || '')}</div></div><div class="wl-card-right"><div class="wl-price">${p}</div><div class="wl-chg ${d}">${pt}</div></div></div>`;
+      }).join('');
 
-  c.innerHTML=`<div class="table-wrap"><table class="wl-table"><thead><tr><th>${t.tblSymbol}</th><th>${t.tblPrice}</th><th>${t.tblChange}</th><th>%</th></tr></thead><tbody>${rows}</tbody></table></div><div class="wl-cards">${cards}</div>`;
-}
+      c.innerHTML = `<div class="table-wrap"><table class="wl-table"><thead><tr><th>${t.tblSymbol}</th><th>${t.tblPrice}</th><th>${t.tblChange}</th><th>%</th></tr></thead><tbody>${rows}</tbody></table></div><div class="wl-cards">${cards}</div>`;
+    }
 
-// Market status
-function getSession(){const n=new Date(),uH=n.getUTCHours(),uM=n.getUTCMinutes(),d=n.getUTCDay(),t=uH*60+uM,dst=n.getUTCMonth()>=2&&n.getUTCMonth()<=10,o=dst?-4:-5,et=((t+o*60)%1440+1440)%1440;let ed=d;if(t+o*60<0)ed=(d-1+7)%7;if(t+o*60>=1440)ed=(d+1)%7;if(ed===0||ed===6)return'closed';if(et>=240&&et<570)return'pre-market';if(et>=570&&et<960)return'regular';if(et>=960&&et<1200)return'post-market';return'closed';}
-function updateMarketStatus(){const s=getSession(),b=document.getElementById('marketBadge'),t=document.getElementById('marketBadgeText');b.className='market-badge';const l=I18N[S.lang]||I18N.en;const m={regular:['open',l.marketOpen],'pre-market':['pre-market',l.marketPre],'post-market':['after-hours',l.marketAfter],closed:['closed',l.marketClosed]};const[cl,lb]=m[s]||m.closed;b.classList.add(cl);t.textContent=lb;}
+    // Market status
+    function getSession() { const n = new Date(), uH = n.getUTCHours(), uM = n.getUTCMinutes(), d = n.getUTCDay(), t = uH * 60 + uM, dst = n.getUTCMonth() >= 2 && n.getUTCMonth() <= 10, o = dst ? -4 : -5, et = ((t + o * 60) % 1440 + 1440) % 1440; let ed = d; if (t + o * 60 < 0) ed = (d - 1 + 7) % 7; if (t + o * 60 >= 1440) ed = (d + 1) % 7; if (ed === 0 || ed === 6) return 'closed'; if (et >= 240 && et < 570) return 'pre-market'; if (et >= 570 && et < 960) return 'regular'; if (et >= 960 && et < 1200) return 'post-market'; return 'closed'; }
+    function updateMarketStatus() { const s = getSession(), b = document.getElementById('marketBadge'), t = document.getElementById('marketBadgeText'); b.className = 'market-badge'; const l = I18N[S.lang] || I18N.en; const m = { regular: ['open', l.marketOpen], 'pre-market': ['pre-market', l.marketPre], 'post-market': ['after-hours', l.marketAfter], closed: ['closed', l.marketClosed] }; const [cl, lb] = m[s] || m.closed; b.classList.add(cl); t.textContent = lb; }
 
-// Wishlist
-function toggleWishlist(){if(!S.sym)return;const i=S.wl.findIndex(w=>w.symbol===S.sym);if(i>=0){S.wl.splice(i,1);showToast(S.sym+' removed','success');}else{S.wl.push({symbol:S.sym,name:S.profile?S.profile.name:S.sym});showToast(S.sym+' added','success');}saveWl();renderWishlist();updateWishlistButton();updateWishlistPrices().then(updateDashboard);}
-function removeWl(sym,ev){if(ev)ev.stopPropagation();S.wl=S.wl.filter(w=>w.symbol!==sym);saveWl();renderWishlist();updateWishlistButton();updateDashboard();showToast(sym+' removed','success');}
-function saveWl(){localStorage.setItem('stockpulse_wishlist',JSON.stringify(S.wl.map(({symbol,name})=>({symbol,name}))));}
-function updateWishlistButton(){const b=document.getElementById('btnWishlist'),ic=document.getElementById('wishlistIcon'),tx=document.getElementById('wishlistBtnText'),isIn=S.wl.some(w=>w.symbol===S.sym);if(isIn){b.classList.add('active');ic.innerHTML='<path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>';tx.textContent='★';}else{b.classList.remove('active');ic.innerHTML='<path d="M22 9.24l-7.19-.62L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27 18.18 21l-1.63-7.03L22 9.24zM12 15.4l-3.76 2.27 1-4.28-3.32-2.88 4.38-.38L12 6.1l1.71 4.04 4.38.38-3.32 2.88 1 4.28L12 15.4z"/>';tx.textContent=(I18N[S.lang]||I18N.en).add;}}
+    // Wishlist
+    function toggleWishlist() { if (!S.sym) return; const i = S.wl.findIndex(w => w.symbol === S.sym); if (i >= 0) { S.wl.splice(i, 1); showToast(S.sym + ' removed', 'success'); } else { S.wl.push({ symbol: S.sym, name: S.profile ? S.profile.name : S.sym }); showToast(S.sym + ' added', 'success'); } saveWl(); renderWishlist(); updateWishlistButton(); updateWishlistPrices().then(updateDashboard); }
+    function removeWl(sym, ev) { if (ev) ev.stopPropagation(); S.wl = S.wl.filter(w => w.symbol !== sym); saveWl(); renderWishlist(); updateWishlistButton(); updateDashboard(); showToast(sym + ' removed', 'success'); }
+    function saveWl() { localStorage.setItem('stockpulse_wishlist', JSON.stringify(S.wl.map(({ symbol, name }) => ({ symbol, name })))); }
+    function updateWishlistButton() { const b = document.getElementById('btnWishlist'), ic = document.getElementById('wishlistIcon'), tx = document.getElementById('wishlistBtnText'), isIn = S.wl.some(w => w.symbol === S.sym); if (isIn) { b.classList.add('active'); ic.innerHTML = '<path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>'; tx.textContent = '★'; } else { b.classList.remove('active'); ic.innerHTML = '<path d="M22 9.24l-7.19-.62L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27 18.18 21l-1.63-7.03L22 9.24zM12 15.4l-3.76 2.27 1-4.28-3.32-2.88 4.38-.38L12 6.1l1.71 4.04 4.38.38-3.32 2.88 1 4.28L12 15.4z"/>'; tx.textContent = (I18N[S.lang] || I18N.en).add; } }
 
-function renderWishlist(){
-  const list=document.getElementById('wishlistList'),cnt=document.getElementById('wishlistCount');
-  cnt.textContent=S.wl.length;
-  const t = I18N[S.lang] || I18N.en;
-  if(!S.wl.length){list.innerHTML=`<div class="wishlist-empty"><svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg><p>${t.emptyWatchlistSidebar}</p></div>`;return;}
-  list.innerHTML=S.wl.map(s=>{const a=s.symbol===S.sym,q=s._quote,p=q?'$'+fmtNum(q.c):'—',pct=q?q.dp:null,d=pct!==null?(pct>=0?'up':'down'):'',pt=pct!==null?(pct>=0?'+':'')+pct.toFixed(2)+'%':'';
-    return `<div class="wishlist-item${a?' active':''}" onclick="loadStock('${esc(s.symbol)}')"><div class="wishlist-item-info"><div class="wishlist-item-symbol">${esc(s.symbol)}</div><div class="wishlist-item-name">${esc(s.name||s.symbol)}</div></div><div class="wishlist-item-price"><div class="wishlist-item-price-val">${p}</div><div class="wishlist-item-change ${d}">${pt}</div></div><button class="wishlist-item-remove" onclick="removeWl('${esc(s.symbol)}',event)"><svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button></div>`;
-  }).join('');
-}
+    function renderWishlist() {
+      const list = document.getElementById('wishlistList'), cnt = document.getElementById('wishlistCount');
+      cnt.textContent = S.wl.length;
+      const t = I18N[S.lang] || I18N.en;
+      if (!S.wl.length) { list.innerHTML = `<div class="wishlist-empty"><svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg><p>${t.emptyWatchlistSidebar}</p></div>`; return; }
+      list.innerHTML = S.wl.map(s => {
+        const a = s.symbol === S.sym, q = s._quote, p = q ? '$' + fmtNum(q.c) : '—', pct = q ? q.dp : null, d = pct !== null ? (pct >= 0 ? 'up' : 'down') : '', pt = pct !== null ? (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%' : '';
+        return `<div class="wishlist-item${a ? ' active' : ''}" onclick="loadStock('${esc(s.symbol)}')"><div class="wishlist-item-info"><div class="wishlist-item-symbol">${esc(s.symbol)}</div><div class="wishlist-item-name">${esc(s.name || s.symbol)}</div></div><div class="wishlist-item-price"><div class="wishlist-item-price-val">${p}</div><div class="wishlist-item-change ${d}">${pt}</div></div><button class="wishlist-item-remove" onclick="removeWl('${esc(s.symbol)}',event)"><svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button></div>`;
+      }).join('');
+    }
 
-async function updateWishlistPrices(){if(!S.wl.length)return;for(let i=0;i<S.wl.length;i++){try{const q=await fetchQ(S.wl[i].symbol);if(q&&q.c)S.wl[i]._quote=q;}catch{}if(i<S.wl.length-1)await slp(150);}renderWishlist();}
+    async function updateWishlistPrices() { if (!S.wl.length) return; for (let i = 0; i < S.wl.length; i++) { try { const q = await fetchQ(S.wl[i].symbol); if (q && q.c) S.wl[i]._quote = q; } catch { } if (i < S.wl.length - 1) await slp(150); } renderWishlist(); }
 
-// Settings
-function openSettings(){document.getElementById('settingsApiKey').value=S.apiKey;document.getElementById('settingsModal').classList.add('active');}
-function closeSettings(){document.getElementById('settingsModal').classList.remove('active');document.getElementById('settingsError').classList.remove('visible');document.getElementById('settingsApiKey').classList.remove('error');}
-async function saveApiKeyFromSettings(){const inp=document.getElementById('settingsApiKey'),err=document.getElementById('settingsError'),k=inp.value.trim();if(!k){inp.classList.add('error');err.textContent='Enter a key.';err.classList.add('visible');return;}try{S.apiKey=k;const r=await fetchQ('AAPL');if(r&&r.c){localStorage.setItem('stockpulse_api_key',k);closeSettings();showToast('Key saved!','success');}else throw new Error();}catch{inp.classList.add('error');err.textContent='Invalid key.';err.classList.add('visible');S.apiKey=HARDCODED_API_KEY;}}
+    // Settings
+    function openSettings() {
+      const inp = document.getElementById('settingsEmail');
+      inp.value = S.alertEmail || '';
+      document.getElementById('settingsError').classList.remove('visible');
+      inp.classList.remove('error');
+      document.getElementById('settingsModal').classList.add('active');
+    }
+    function closeSettings() {
+      document.getElementById('settingsModal').classList.remove('active');
+      document.getElementById('settingsError').classList.remove('visible');
+      document.getElementById('settingsEmail').classList.remove('error');
+    }
+    function saveSettings() {
+      const inp = document.getElementById('settingsEmail');
+      const err = document.getElementById('settingsError');
+      const email = inp.value.trim();
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        inp.classList.add('error');
+        err.textContent = (I18N[S.lang] || I18N.en).settingsEmailLabel + ': invalid email.';
+        err.classList.add('visible');
+        return;
+      }
+      S.alertEmail = email;
+      localStorage.setItem('stockpulse_alert_email', email);
+      closeSettings();
+      renderAlertEmailNote();
+      showToast('Email saved!', 'success');
+    }
 
-// Events
-function setupEvents(){
-  const si=document.getElementById('searchInput');
-  si.addEventListener('input',e=>{clearTimeout(S.searchTO);const q=e.target.value.trim();if(!q){closeDD();return;}S.searchTO=setTimeout(()=>searchSymbols(q),300);});
-  si.addEventListener('keydown',e=>{if(e.key==='Enter'){const q=si.value.trim().toUpperCase();if(q){loadStock(q);closeDD();si.value='';si.blur();}}if(e.key==='Escape'){closeDD();si.blur();}});
-  document.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key==='k'){e.preventDefault();si.focus();}});
-  document.addEventListener('click',e=>{if(!e.target.closest('.search-wrap'))closeDD();});
-  document.getElementById('settingsModal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeSettings();});
-}
+    // Events
+    function setupEvents() {
+      const si = document.getElementById('searchInput');
+      si.addEventListener('input', e => { clearTimeout(S.searchTO); const q = e.target.value.trim(); if (!q) { closeDD(); return; } S.searchTO = setTimeout(() => searchSymbols(q), 300); });
+      si.addEventListener('keydown', e => { if (e.key === 'Enter') { const q = si.value.trim().toUpperCase(); if (q) { loadStock(q); closeDD(); si.value = ''; si.blur(); } } if (e.key === 'Escape') { closeDD(); si.blur(); } });
+      document.addEventListener('keydown', e => { if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); si.focus(); } });
+      document.addEventListener('click', e => { if (!e.target.closest('.search-wrap')) closeDD(); });
+      document.getElementById('settingsModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeSettings(); });
+      document.getElementById('alertAboveInput').addEventListener('input', e => { e.target.classList.toggle('has-value', !!e.target.value); });
+      document.getElementById('alertBelowInput').addEventListener('input', e => { e.target.classList.toggle('has-value', !!e.target.value); });
+    }
 
-// Utils
-function fmtNum(n){return n==null?'0.00':Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
-function fmtCap(c){return c>=1e6?'$'+(c/1e6).toFixed(2)+'T':c>=1e3?'$'+(c/1e3).toFixed(2)+'B':'$'+c.toFixed(0)+'M';}
-function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-function slp(ms){return new Promise(r=>setTimeout(r,ms));}
-function showToast(m,t='success'){const c=document.getElementById('toastContainer'),el=document.createElement('div');el.className='toast '+t;const ic=t==='success'?'<svg class="toast-icon" viewBox="0 0 24 24"><path fill="#10b981" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>':'<svg class="toast-icon" viewBox="0 0 24 24"><path fill="#ef4444" d="M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z"/></svg>';el.innerHTML=ic+' '+m;c.appendChild(el);setTimeout(()=>{el.style.opacity='0';el.style.transition='.2s';setTimeout(()=>el.remove(),200);},2500);}
-</script>
+    // ===== EMAILJS =====
+    const EMAILJS_PUBLIC_KEY = 'YOUR_PUBLIC_KEY';   // ← แทนด้วย Public Key จาก EmailJS
+    const EMAILJS_SERVICE_ID = 'YOUR_SERVICE_ID';   // ← แทนด้วย Service ID
+    const EMAILJS_TEMPLATE_ID = 'YOUR_TEMPLATE_ID';  // ← แทนด้วย Template ID
+
+    function initEmailJS() {
+      if (typeof emailjs !== 'undefined' && EMAILJS_PUBLIC_KEY !== 'YOUR_PUBLIC_KEY') {
+        emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
+      }
+    }
+
+    async function sendAlertEmail(symbol, name, direction, targetPrice, currentPrice) {
+      const email = S.alertEmail;
+      if (!email) { showToast('⚠ No alert email set', 'error'); return; }
+      const dirLabel = direction === 'above' ? 'risen above' : 'fallen below';
+      const params = {
+        to_email: email,
+        stock_symbol: symbol,
+        stock_name: name || symbol,
+        direction: dirLabel,
+        target_price: '$' + Number(targetPrice).toFixed(2),
+        current_price: '$' + Number(currentPrice).toFixed(2),
+        timestamp: new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })
+      };
+      if (typeof emailjs !== 'undefined' && EMAILJS_PUBLIC_KEY !== 'YOUR_PUBLIC_KEY') {
+        try {
+          await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, params);
+          showToast(`📧 Alert email sent for ${symbol}`, 'success');
+        } catch (e) {
+          console.error('EmailJS error:', e);
+          showToast(`Alert fired for ${symbol} (email failed)`, 'error');
+        }
+      } else {
+        // EmailJS not configured — show toast only
+        console.log('[Alert] Would send email:', params);
+        showToast(`🔔 ${symbol} hit $${Number(currentPrice).toFixed(2)} (configure EmailJS to send email)`, 'success');
+      }
+    }
+
+    // ===== PRICE ALERTS =====
+    const ALERTS_KEY = 'stockpulse_alerts';
+
+    function loadAlerts() { try { return JSON.parse(localStorage.getItem(ALERTS_KEY) || '{}'); } catch { return {}; } }
+    function saveAlerts(a) { localStorage.setItem(ALERTS_KEY, JSON.stringify(a)); }
+
+    function setAlert(dir) {
+      if (!S.sym) return;
+      const inp = document.getElementById(dir === 'above' ? 'alertAboveInput' : 'alertBelowInput');
+      const val = parseFloat(inp.value);
+      if (!val || val <= 0) { inp.classList.add('error'); setTimeout(() => inp.classList.remove('error'), 1500); return; }
+      const alerts = loadAlerts();
+      if (!alerts[S.sym]) alerts[S.sym] = {};
+      alerts[S.sym][dir] = { price: val, name: S.profile ? S.profile.name : S.sym };
+      saveAlerts(alerts);
+      renderAlertCard();
+      showToast(`Alert set: ${S.sym} ${dir === 'above' ? '▲' : '▼'} $${val.toFixed(2)}`, 'success');
+    }
+
+    function clearAlert(dir) {
+      if (!S.sym) return;
+      const alerts = loadAlerts();
+      if (alerts[S.sym]) { delete alerts[S.sym][dir]; if (!Object.keys(alerts[S.sym]).length) delete alerts[S.sym]; }
+      saveAlerts(alerts);
+      renderAlertCard();
+      showToast('Alert cleared', 'success');
+    }
+
+    function renderAlertCard() {
+      if (!S.sym) return;
+      const alerts = loadAlerts();
+      const a = alerts[S.sym] || {};
+      const hasAbove = !!a.above, hasBelow = !!a.below;
+      const aboveInp = document.getElementById('alertAboveInput');
+      const belowInp = document.getElementById('alertBelowInput');
+      const aboveClear = document.getElementById('alertAboveClear');
+      const belowClear = document.getElementById('alertBelowClear');
+      const tag = document.getElementById('alertActiveTag');
+      aboveInp.value = hasAbove ? a.above.price : '';
+      aboveInp.classList.toggle('has-value', hasAbove);
+      belowInp.value = hasBelow ? a.below.price : '';
+      belowInp.classList.toggle('has-value', hasBelow);
+      aboveClear.style.display = hasAbove ? 'flex' : 'none';
+      belowClear.style.display = hasBelow ? 'flex' : 'none';
+      tag.style.display = (hasAbove || hasBelow) ? 'inline-flex' : 'none';
+      renderAlertEmailNote();
+    }
+
+    function renderAlertEmailNote() {
+      const t = I18N[S.lang] || I18N.en;
+      const note = document.getElementById('alertEmailNoteText');
+      if (!note) return;
+      if (S.alertEmail) {
+        note.innerHTML = `${t.alertSetEmail} <strong style="color:var(--text-primary)">${S.alertEmail}</strong>`;
+      } else {
+        note.innerHTML = `${t.alertSetEmail} — <a onclick="openSettings()">${t.alertNoEmail}</a>`;
+      }
+    }
+
+    async function checkAlerts() {
+      if (!S.wl.length) return;
+      const alerts = loadAlerts();
+      if (!Object.keys(alerts).length) return;
+      let changed = false;
+      for (const sym of Object.keys(alerts)) {
+        const entry = S.wl.find(w => w.symbol === sym);
+        const quote = entry?._quote;
+        if (!quote || !quote.c) continue;
+        const price = quote.c;
+        const a = alerts[sym];
+        if (a.above && price >= a.above.price) {
+          await sendAlertEmail(sym, a.above.name, 'above', a.above.price, price);
+          delete a.above; changed = true;
+        }
+        if (a.below && price <= a.below.price) {
+          await sendAlertEmail(sym, a.below.name, 'below', a.below.price, price);
+          delete a.below; changed = true;
+        }
+        if (!Object.keys(a).length) delete alerts[sym];
+      }
+      if (changed) { saveAlerts(alerts); if (S.sym && alerts[S.sym] !== undefined) renderAlertCard(); }
+    }
+
+    // Utils
+    function fmtNum(n) { return n == null ? '0.00' : Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+    function fmtCap(c) { return c >= 1e6 ? '$' + (c / 1e6).toFixed(2) + 'T' : c >= 1e3 ? '$' + (c / 1e3).toFixed(2) + 'B' : '$' + c.toFixed(0) + 'M'; }
+    function esc(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+    function slp(ms) { return new Promise(r => setTimeout(r, ms)); }
+    function showToast(m, t = 'success') { const c = document.getElementById('toastContainer'), el = document.createElement('div'); el.className = 'toast ' + t; const ic = t === 'success' ? '<svg class="toast-icon" viewBox="0 0 24 24"><path fill="#10b981" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>' : '<svg class="toast-icon" viewBox="0 0 24 24"><path fill="#ef4444" d="M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z"/></svg>'; el.innerHTML = ic + ' ' + m; c.appendChild(el); setTimeout(() => { el.style.opacity = '0'; el.style.transition = '.2s'; setTimeout(() => el.remove(), 200); }, 2500); }
+  </script>
 </body>
+
 </html>
