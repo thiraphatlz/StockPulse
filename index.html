@@ -14,7 +14,7 @@
     rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+  <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
   <style>
     :root {
       --bg-primary: #08080c;
@@ -1112,41 +1112,22 @@
     .chart-wrap {
       background: var(--bg-card);
       border: 1px solid var(--border-primary);
-      border-radius: var(--radius);
+      border-radius: 16px;
       padding: 16px;
-      margin-bottom: 16px;
-    }
-    .chart-header {
+      margin-bottom: 24px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
       display: flex;
-      justify-content: flex-end;
-      margin-bottom: 10px;
+      flex-direction: column;
     }
-    .chart-tabs {
-      display: flex;
-      gap: 4px;
-      background: var(--bg-input);
-      padding: 4px;
-      border-radius: var(--radius-sm);
-    }
-    .chart-tab {
-      padding: 4px 12px;
-      border-radius: var(--radius-xs);
-      font-size: 11px;
-      font-weight: 600;
-      color: var(--text-secondary);
-      background: transparent;
-      transition: var(--transition);
-    }
-    .chart-tab.active {
-      background: var(--bg-elevated);
-      color: var(--text-primary);
-      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-    }
+
     .chart-container {
       width: 100%;
-      height: 250px;
+      height: 350px;
       position: relative;
+      border-radius: 8px;
+      overflow: hidden;
     }
+
     .chart-loading {
       position: absolute;
       top: 0; left: 0; right: 0; bottom: 0;
@@ -2661,15 +2642,8 @@
             </div>
             
             <div class="chart-wrap">
-              <div class="chart-header">
-                <div class="chart-tabs">
-                  <button class="chart-tab active" id="chartTab1D" onclick="setChartRange('1D')">1D</button>
-                  <button class="chart-tab" id="chartTab1W" onclick="setChartRange('1W')">1W</button>
-                  <button class="chart-tab" id="chartTab1M" onclick="setChartRange('1M')">1M</button>
-                </div>
-              </div>
               <div class="chart-container" id="stockChartContainer">
-                <div class="chart-loading" id="chartLoading" style="display:none">Loading chart...</div>
+                <!-- TradingView Widget injects here -->
               </div>
             </div>
 
@@ -3297,97 +3271,43 @@
         if (q && q.c) { 
           S.quote = q; 
           renderQuote(q);
-          if (chartSeries && currentChartRange === '1D') {
-            const time = q.t || Math.floor(Date.now() / 1000);
-            if (time >= lastChartTime) {
-              try { chartSeries.update({ time: time, value: q.c }); lastChartTime = time; } catch(e) {}
-            }
-          }
         } 
       } catch { } 
     }
 
-    let stockChart = null;
-    let chartSeries = null;
-    let currentChartRange = '1D';
-    const chartParams = {
-      '1D': { interval: '2m', range: '1d' },
-      '1W': { interval: '15m', range: '5d' },
-      '1M': { interval: '1d', range: '1mo' }
-    };
+    let tvWidget = null;
+    let currentChartSymbol = null;
 
-    function initChart() {
-      if (stockChart) return;
-      const container = document.getElementById('stockChartContainer');
-      if (!window.LightweightCharts) return;
-      stockChart = LightweightCharts.createChart(container, {
-        autoSize: true,
-        height: 250,
-        layout: { background: { color: 'transparent' }, textColor: '#9898b0' },
-        grid: { vertLines: { color: 'rgba(42, 42, 58, 0.5)' }, horzLines: { color: 'rgba(42, 42, 58, 0.5)' } },
-        rightPriceScale: { borderVisible: false },
-        timeScale: { borderVisible: false, timeVisible: true, secondsVisible: false },
-        crosshair: { mode: LightweightCharts.CrosshairMode.Magnet }
-      });
-      chartSeries = stockChart.addAreaSeries({
-        lineColor: '#7c3aed',
-        topColor: 'rgba(124, 58, 237, 0.4)',
-        bottomColor: 'rgba(124, 58, 237, 0.0)',
-        lineWidth: 2,
-        priceFormat: { type: 'price', precision: 2, minMove: 0.01 }
-      });
-    }
-
-    async function setChartRange(range) {
-      if (!S.sym) return;
-      currentChartRange = range;
-      ['1D', '1W', '1M'].forEach(r => document.getElementById(`chartTab${r}`).classList.remove('active'));
-      document.getElementById(`chartTab${range}`).classList.add('active');
-      await renderChart();
-    }
-
-    let lastChartTime = 0;
     async function renderChart() {
       if (!S.sym) return;
-      initChart();
-      const loading = document.getElementById('chartLoading');
-      loading.style.display = 'flex';
-      try {
-        const { interval, range } = chartParams[currentChartRange];
-        const res = await fetch(`/api/chart?symbol=${encodeURIComponent(S.sym)}&interval=${interval}&range=${range}`);
-        const data = await res.json();
-        if (data && data.data && chartSeries) {
-          // Format data for AreaSeries (needs time and value)
-          let formatted = data.data.map(d => ({
-            time: d.time,
-            value: d.close
-          }));
-          
-          // Sort strictly by time and remove duplicates (Lightweight Charts requirement)
-          formatted.sort((a, b) => a.time - b.time);
-          const uniqueFormatted = [];
-          for (let i = 0; i < formatted.length; i++) {
-            if (i === 0 || formatted[i].time > uniqueFormatted[uniqueFormatted.length - 1].time) {
-              uniqueFormatted.push(formatted[i]);
-            }
-          }
-          
-          if (uniqueFormatted.length > 0) {
-            lastChartTime = uniqueFormatted[uniqueFormatted.length - 1].time;
-            chartSeries.setData(uniqueFormatted);
-            stockChart.timeScale().fitContent();
-          } else {
-            chartSeries.setData([]);
-          }
-        } else {
-          if (chartSeries) chartSeries.setData([]);
-        }
-      } catch (e) {
-        console.error('Chart error', e);
-        if (chartSeries) chartSeries.setData([]);
-      } finally {
-        loading.style.display = 'none';
-      }
+      if (typeof TradingView === 'undefined') return;
+      if (currentChartSymbol === S.sym) return; // Prevent re-rendering same chart
+      
+      currentChartSymbol = S.sym;
+      const isThai = S.sym.endsWith('.BK');
+      const tvSymbol = isThai ? `SET:${S.sym.replace('.BK', '')}` : S.sym;
+      const container = document.getElementById('stockChartContainer');
+      container.innerHTML = ''; // Clear container
+
+      tvWidget = new TradingView.widget({
+        "autosize": true,
+        "symbol": tvSymbol,
+        "interval": "15", // 15m default
+        "timezone": "Etc/UTC",
+        "theme": "dark",
+        "style": "1",
+        "locale": S.lang === 'th' ? "th_TH" : "en",
+        "enable_publishing": false,
+        "backgroundColor": "transparent",
+        "gridColor": "rgba(42, 42, 58, 0.5)",
+        "hide_top_toolbar": false,
+        "hide_legend": false,
+        "save_image": false,
+        "container_id": "stockChartContainer",
+        "toolbar_bg": "#13131b",
+        "hide_volume": false,
+        "studies": ["Volume@tv-basicstudies"]
+      });
     }
 
     async function refreshData() { if (!S.sym) return; const b = document.getElementById('btnRefresh'); b.classList.add('spinning'); try { await loadStock(S.sym); showToast('Refreshed', 'success'); } catch { showToast('Failed', 'error'); } setTimeout(() => b.classList.remove('spinning'), 800); }

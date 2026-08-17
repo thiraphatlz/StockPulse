@@ -22,7 +22,7 @@ export default async function handler(req, res) {
   // Helper to fetch from Yahoo Finance Chart API
   async function fetchYahoo(sym) {
     // includePrePost=true fetches pre-market and after-hours data in meta
-    const url = `https://query2.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?interval=1d&range=1d&includePrePost=true`;
+    const url = `https://query2.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?interval=1m&range=1d&includePrePost=true`;
     const headerSets = [
       {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
@@ -72,16 +72,55 @@ export default async function handler(req, res) {
     const isThai = meta.currency === 'THB' || symbol.endsWith('.BK') || meta.exchangeName === 'SET';
 
     // Extended-hours prices (pre-market / after-hours)
-    // Yahoo returns preMarketChangePercent as a decimal (e.g. -0.012 = -1.2%), multiply by 100
-    const preMarketPrice         = meta.preMarketPrice         ?? null;
-    const preMarketChange        = meta.preMarketChange        ?? null;
-    const preMarketChangePercent = meta.preMarketChangePercent != null
+    let preMarketPrice         = meta.preMarketPrice         ?? null;
+    let preMarketChange        = meta.preMarketChange        ?? null;
+    let preMarketChangePercent = meta.preMarketChangePercent != null
       ? meta.preMarketChangePercent * 100 : null;
 
-    const postMarketPrice         = meta.postMarketPrice         ?? null;
-    const postMarketChange        = meta.postMarketChange        ?? null;
-    const postMarketChangePercent = meta.postMarketChangePercent != null
+    let postMarketPrice         = meta.postMarketPrice         ?? null;
+    let postMarketChange        = meta.postMarketChange        ?? null;
+    let postMarketChangePercent = meta.postMarketChangePercent != null
       ? meta.postMarketChangePercent * 100 : null;
+
+    // Fallback: extract extended hours from 1m chart candles if missing from meta
+    if (!preMarketPrice && !postMarketPrice && yResult.timestamp && yResult.indicators?.quote?.[0]?.close) {
+      const timestamps = yResult.timestamp;
+      const closes = yResult.indicators.quote[0].close;
+      const periods = meta.currentTradingPeriod;
+      for (let i = timestamps.length - 1; i >= 0; i--) {
+        const t = timestamps[i];
+        const c = closes[i];
+        if (c == null) continue;
+        if (periods?.pre && t >= periods.pre.start && t < periods.pre.end) {
+          if (preMarketPrice === null) preMarketPrice = c;
+        } else if (periods?.post && t >= periods.post.start && t < periods.post.end) {
+          if (postMarketPrice === null) postMarketPrice = c;
+        }
+      }
+      
+      if (preMarketPrice !== null && preMarketChange === null) {
+        preMarketChange = preMarketPrice - curPrice;
+        preMarketChangePercent = curPrice ? (preMarketChange / curPrice) * 100 : 0;
+      }
+      if (postMarketPrice !== null && postMarketChange === null) {
+        postMarketChange = postMarketPrice - curPrice;
+        postMarketChangePercent = curPrice ? (postMarketChange / curPrice) * 100 : 0;
+      }
+    }
+
+    // Determine actual Market State based on current time
+    let computedMarketState = 'CLOSED';
+    const nowSec = Math.floor(Date.now() / 1000);
+    const periods = meta.currentTradingPeriod;
+    if (periods) {
+      if (periods.pre && nowSec >= periods.pre.start && nowSec < periods.pre.end) {
+        computedMarketState = 'PRE';
+      } else if (periods.regular && nowSec >= periods.regular.start && nowSec < periods.regular.end) {
+        computedMarketState = 'REGULAR';
+      } else if (periods.post && nowSec >= periods.post.start && nowSec < periods.post.end) {
+        computedMarketState = 'POST';
+      }
+    }
 
     const responsePayload = {
       symbol: meta.symbol || symbol,
@@ -99,7 +138,7 @@ export default async function handler(req, res) {
       pc: prevClose,
       t:  meta.regularMarketTime    || Math.floor(Date.now() / 1000),
       marketCap: meta.marketCap     || 0,
-      marketState: meta.marketState || 'CLOSED', // REGULAR | PRE | POST | CLOSED
+      marketState: computedMarketState, // computed from timestamps
       isThai,
       // Pre-market
       preMarketPrice,
