@@ -2904,7 +2904,6 @@
         alertTitle: 'Price Alerts', alertSet: 'Set', alertSetEmail: 'Alerts will be sent to',
         alertNoEmail: 'Set email in Settings',
         activeAlerts: 'Active Alerts', noActiveAlerts: 'No active price alerts — search a stock to set alerts',
-        // Portfolio
         portfolio: 'Portfolio', pfTitle: 'My Portfolio', pfAddPos: 'Add Position',
         pfNew: 'New Portfolio', pfNoPortfolio: 'No portfolio yet.<br>Create your first portfolio to get started.',
         pfNoPositions: 'No positions yet.<br>Click "Add Position" to get started.',
@@ -2917,6 +2916,10 @@
         pfCalcShares: (shares) => `≈ ${shares} shares will be purchased`,
         pfCurFetch: 'Fetching current price...',
         pfCurLoaded: (p) => `Current price: $${p}`,
+        pfLoading: 'Loading...', pfLoadingPos: 'Loading positions...',
+        pfPositions: (n) => `${n} position${n !== 1 ? 's' : ''}`,
+        pfNoPortfolioCreate: 'Create',
+        pfNewLabel: 'New Portfolio',
       },
       th: {
         dashboard: 'แดชบอร์ด', stock: 'หุ้น', watchlist: 'รายการเฝ้าดู', settings: 'ตั้งค่า', searchPlaceholder: 'ค้นหาหุ้น...',
@@ -2936,10 +2939,10 @@
         alertNoEmail: 'ตั้งค่าอีเมลในการตั้งค่า',
         activeAlerts: 'การแจ้งเตือนที่ตั้งไว้', noActiveAlerts: 'ไม่มีรายการแจ้งเตือน — ค้นหาหุ้นเพื่อตั้งค่าแจ้งเตือน',
         // Portfolio
-        portfolio: 'พอร์ต', pfTitle: 'พอร์ตสลิปของฉัน', pfAddPos: 'เพิ่ม Position',
+        portfolio: 'พอร์ต', pfTitle: 'พอร์ตโฟลิโอของฉัน', pfAddPos: 'เพิ่ม Position',
         pfNew: 'พอร์ตใหม่', pfNoPortfolio: 'ยังไม่มีพอร์ต<br>สร้างพอร์ตแรกเพื่อเริ่มต้น',
         pfNoPositions: 'ยังไม่มี Position<br>กด "เพิ่ม Position" เพื่อเริ่มต้น',
-        pfTotalCost: 'ต้นทุนรวม', pfMktVal: 'มูลค่าตลาด', pfPL: 'กำไร/ขาดทุน (Unrealized)', pfReturn: 'ผลตอบแทน',
+        pfTotalCost: 'ต้นทุนรวม', pfMktVal: 'มูลค่าตลาด', pfPL: 'กำไร/ขาดทุน', pfReturn: 'ผลตอบแทน',
         pfSymbol: 'หุ้น', pfShares: 'จำนวนหุ้น', pfAvgCost: 'ต้นทุนเฉลี่ย', pfPrice: 'ราคาปัจจุบัน',
         pfCostBasis: 'ต้นทุนทั้งหมด', pfMktValue: 'มูลค่า',
         pfModalTitle: 'เพิ่ม Position', pfLblSymbol: 'สัญลักษณ์หุ้น',
@@ -2948,6 +2951,10 @@
         pfCalcShares: (shares) => `≈ ${shares} หุ้น`,
         pfCurFetch: 'กำลังดึงราคา...',
         pfCurLoaded: (p) => `ราคาปัจจุบัน: $${p}`,
+        pfLoading: 'กำลังโหลด...', pfLoadingPos: 'กำลังโหลดรายการ...',
+        pfPositions: (n) => `${n} รายการ`,
+        pfNoPortfolioCreate: 'สร้าง',
+        pfNewLabel: 'พอร์ตใหม่',
       }
     };
 
@@ -2966,6 +2973,8 @@
       setLbl('#mnav-stock .i18n-lbl', t.stock);
       setLbl('#mnav-watchlist .i18n-lbl', t.watchlist);
       setLbl('#mnav-settings .i18n-lbl', t.settings);
+      setLbl('#tab-portfolio .i18n-lbl', t.portfolio);
+      setLbl('#mnav-portfolio .i18n-lbl', t.portfolio);
       document.getElementById('searchInput').placeholder = t.searchPlaceholder;
       if (document.querySelector('.summary-card:nth-child(1) .summary-lbl')) document.querySelector('.summary-card:nth-child(1) .summary-lbl').textContent = t.watchlist;
       if (document.querySelector('.summary-card:nth-child(2) .summary-lbl')) document.querySelector('.summary-card:nth-child(2) .summary-lbl').textContent = t.gainers;
@@ -3491,9 +3500,11 @@
 
         if (rawData && rawData.length > 0) {
           // Format and deduplicate timestamps for Lightweight Charts
+          // Apply UTC+7 offset so the chart axis shows Thai time (e.g. 20:00-03:00)
+          const TZ_OFFSET = 7 * 3600; // seconds
           const sorted = rawData
             .filter(d => d && d.time && typeof d.close === 'number' && !isNaN(d.close))
-            .map(d => ({ time: Number(d.time), value: Number(d.close) }))
+            .map(d => ({ time: Number(d.time) + TZ_OFFSET, value: Number(d.close) }))
             .sort((a, b) => a.time - b.time);
 
           const unique = [];
@@ -3989,7 +4000,8 @@
 
     // --- Portfolio CRUD ---
     async function pfEnterPage() {
-      document.getElementById('pfContent').innerHTML = '<div class="pf-loading"><div class="pf-spinner"></div>Loading...</div>';
+      const t = I18N[S.lang] || I18N.en;
+      document.getElementById('pfContent').innerHTML = `<div class="pf-loading"><div class="pf-spinner"></div>${t.pfLoading}</div>`;
       document.getElementById('pfSummary').style.display = 'none';
       document.getElementById('pfAddPositionBtn').style.display = 'none';
       await fetchUsdThb();
@@ -4004,7 +4016,8 @@
       if (!PF.activeId && PF.portfolios.length > 0) PF.activeId = PF.portfolios[0].id;
       renderPfTabs();
       if (PF.portfolios.length === 0) {
-        document.getElementById('pfContent').innerHTML = '<div class="pf-empty"><svg viewBox="0 0 24 24"><path d="M20 7H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V9c0-1.1-.9-2-2-2zm0 12H4V9h16v10zM12 3.5l-4 4h2.5V11h3V7.5H16l-4-4z"/></svg><p>No portfolio yet.<br>Create your first portfolio to get started.</p></div>';
+        const t2 = I18N[S.lang] || I18N.en;
+        document.getElementById('pfContent').innerHTML = `<div class="pf-empty"><svg viewBox="0 0 24 24"><path d="M20 7H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V9c0-1.1-.9-2-2-2zm0 12H4V9h16v10zM12 3.5l-4 4h2.5V11h3V7.5H16l-4-4z"/></svg><p>${t2.pfNoPortfolio}</p></div>`;
         document.getElementById('pfSummary').style.display = 'none';
         document.getElementById('pfAddPositionBtn').style.display = 'none';
       } else {
@@ -4040,7 +4053,8 @@
     // --- Position CRUD ---
     async function loadPositions() {
       if (!PF.activeId) return;
-      document.getElementById('pfContent').innerHTML = '<div class="pf-loading"><div class="pf-spinner"></div>Loading positions...</div>';
+      const t = I18N[S.lang] || I18N.en;
+      document.getElementById('pfContent').innerHTML = `<div class="pf-loading"><div class="pf-spinner"></div>${t.pfLoadingPos}</div>`;
       const { data, error } = await SB.from('positions').select('*').eq('portfolio_id', PF.activeId).order('created_at');
       if (error) { showToast('Error loading positions: ' + error.message, 'error'); return; }
       PF.positions = data || [];
@@ -4230,9 +4244,10 @@
           </span>
         </button>`).join('');
       if (PF.portfolios.length < MAX_PORTFOLIOS) {
+        const tPf = I18N[S.lang] || I18N.en;
         html += `<button class="pf-tab pf-tab-add" onclick="createPortfolio()">
           <svg viewBox="0 0 24 24" style="width:12px;height:12px;fill:currentColor;"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
-          New Portfolio
+          ${tPf.pfNewLabel}
         </button>`;
       }
       bar.innerHTML = html;
@@ -4351,7 +4366,7 @@
         <div class="pf-sum-card">
           <div class="pf-sum-lbl">${t.pfReturn}</div>
           <div class="pf-sum-val ${sumDir}">${sumSign}${totalPlPct.toFixed(2)}%</div>
-          <div class="pf-sum-sub">${PF.positions.length} position${PF.positions.length !== 1 ? 's' : ''}</div>
+          <div class="pf-sum-sub">${t.pfPositions(PF.positions.length)}</div>
         </div>`;
 
       document.getElementById('pfAddPositionBtn').style.display = 'flex';
