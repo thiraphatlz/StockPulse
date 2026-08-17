@@ -1080,6 +1080,35 @@
       font-family: var(--font-sans);
     }
 
+    .ext-hours-ref {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      margin-top: 4px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .ext-hours-badge {
+      font-size: 9px;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 3px;
+      letter-spacing: 0.3px;
+      text-transform: uppercase;
+    }
+
+    .ext-hours-badge.pre {
+      background: var(--blue-bg);
+      color: var(--blue);
+    }
+
+    .ext-hours-badge.post {
+      background: var(--amber-bg);
+      color: var(--amber);
+    }
+
     .chart-wrap {
       background: var(--bg-card);
       border: 1px solid var(--border-primary);
@@ -2622,6 +2651,7 @@
             <div class="price-section">
               <div>
                 <div class="price-main" id="priceMain">$0.00</div>
+                <div class="ext-hours-ref" id="extHoursRef" style="display:none"></div>
               </div>
               <div class="price-change-group">
                 <div class="price-change flat" id="priceChange"><span class="arrow" id="priceArrow">—</span><span
@@ -2823,8 +2853,8 @@
     const I18N = {
       en: {
         dashboard: 'Dashboard', stock: 'Stock', watchlist: 'Watchlist', settings: 'Settings', searchPlaceholder: 'Search stocks...',
-        marketClosed: 'Closed', marketOpen: 'Open', marketPre: 'Pre', marketAfter: 'After',
-        marketRealtime: 'Real-time', marketAtClose: 'At Close',
+        marketClosed: 'Closed', marketOpen: 'Open', marketPre: 'Pre-Market', marketAfter: 'After Hours',
+        marketRealtime: 'Real-time', marketAtClose: 'At Close', atClose: 'At close:',
         refresh: 'Refresh', gainers: 'Gainers', losers: 'Losers', best: 'Best', sectors: 'Sectors',
         trackStocks: 'Track Your Stocks', trackStocksDesc: 'Search for a stock symbol to view real-time prices.',
         add: 'Add', addCurrent: 'Add Current',
@@ -2854,8 +2884,8 @@
       },
       th: {
         dashboard: 'แดชบอร์ด', stock: 'หุ้น', watchlist: 'รายการเฝ้าดู', settings: 'ตั้งค่า', searchPlaceholder: 'ค้นหาหุ้น...',
-        marketClosed: 'ปิดทำการ', marketOpen: 'เปิดทำการ', marketPre: 'ก่อนเปิด', marketAfter: 'หลังปิด',
-        marketRealtime: 'เรียลไทม์', marketAtClose: 'ราคาปิด',
+        marketClosed: 'ปิดทำการ', marketOpen: 'เปิดทำการ', marketPre: 'ก่อนตลาดเปิด', marketAfter: 'หลังตลาดปิด',
+        marketRealtime: 'เรียลไทม์', marketAtClose: 'ราคาปิด', atClose: 'ราคาปิด:',
         refresh: 'รีเฟรช', gainers: 'บวก', losers: 'ลบ', best: 'ดีที่สุด', sectors: 'อุตสาหกรรม',
         trackStocks: 'ติดตามหุ้นของคุณ', trackStocksDesc: 'ค้นหาสัญลักษณ์หุ้นเพื่อดูราคาแบบเรียลไทม์',
         add: 'เพิ่ม', addCurrent: 'เพิ่มปัจจุบัน',
@@ -3205,16 +3235,55 @@
 
     function renderQuote(q) {
       const cs = getCurSym(S.sym, q);
-      const c = q.c, d = q.d, dp = q.dp, up = d > 0, dn = d < 0, dir = up ? 'up' : dn ? 'down' : 'flat';
-      document.getElementById('priceMain').textContent = cs + fmtNum(c);
+      const l = I18N[S.lang] || I18N.en;
+      const session = q.isThai ? getSETSession() : getUSSession();
+
+      // Determine the price to display — prefer extended-hours when applicable
+      let displayPrice = q.c;
+      let displayChange = q.d;
+      let displayChangePct = q.dp;
+      let extHoursType = null; // 'pre' | 'post' | null
+
+      if (!q.isThai) {
+        if ((session === 'pre-market' || q.marketState === 'PRE') && q.preMarketPrice) {
+          displayPrice = q.preMarketPrice;
+          displayChange = q.preMarketChange ?? (q.preMarketPrice - q.c);
+          displayChangePct = q.preMarketChangePercent ?? (q.c ? displayChange / q.c * 100 : 0);
+          extHoursType = 'pre';
+        } else if ((session === 'post-market' || q.marketState === 'POST') && q.postMarketPrice) {
+          displayPrice = q.postMarketPrice;
+          displayChange = q.postMarketChange ?? (q.postMarketPrice - q.c);
+          displayChangePct = q.postMarketChangePercent ?? (q.c ? displayChange / q.c * 100 : 0);
+          extHoursType = 'post';
+        }
+      }
+
+      const up = displayChange > 0, dn = displayChange < 0, dir = up ? 'up' : dn ? 'down' : 'flat';
+
+      document.getElementById('priceMain').textContent = cs + fmtNum(displayPrice);
       document.getElementById('priceMain').style.color = up ? 'var(--green)' : dn ? 'var(--red)' : 'var(--text-primary)';
       document.getElementById('priceChange').className = 'price-change ' + dir;
       document.getElementById('priceArrow').textContent = up ? '▲' : dn ? '▼' : '—';
-      document.getElementById('priceChangeVal').textContent = (up ? '+' : dn ? '-' : '') + cs + Math.abs(d).toFixed(2);
-      document.getElementById('priceChangePct').textContent = '(' + (dp >= 0 ? '+' : '') + dp.toFixed(2) + '%)';
-      const l = I18N[S.lang] || I18N.en;
+      document.getElementById('priceChangeVal').textContent = (up ? '+' : dn ? '-' : '') + cs + Math.abs(displayChange).toFixed(2);
+      document.getElementById('priceChangePct').textContent = '(' + (displayChangePct >= 0 ? '+' : '') + displayChangePct.toFixed(2) + '%)';
+
+      // Extended-hours reference: show regular close price as context
+      const extRef = document.getElementById('extHoursRef');
+      if (extRef) {
+        if (extHoursType && q.c) {
+          const badgeLabel = extHoursType === 'pre' ? (l.marketPre || 'Pre-Market') : (l.marketAfter || 'After Hours');
+          const badgeCls = extHoursType === 'pre' ? 'pre' : 'post';
+          extRef.style.display = 'flex';
+          extRef.innerHTML = `<span class="ext-hours-badge ${badgeCls}">${badgeLabel}</span><span>${l.atClose || 'At close:'} ${cs}${fmtNum(q.c)}</span>`;
+        } else {
+          extRef.style.display = 'none';
+        }
+      }
+
+      // Session label
       const sm = { regular: l.marketRealtime, 'post-market': l.marketAfter, 'pre-market': l.marketPre, closed: l.marketAtClose };
-      document.getElementById('priceSessionLabel').textContent = sm[q.isThai ? getSETSession() : getUSSession()] || l.marketAtClose;
+      document.getElementById('priceSessionLabel').textContent = sm[session] || l.marketAtClose;
+
       document.getElementById('statOpen').textContent = q.o ? cs + fmtNum(q.o) : '—';
       document.getElementById('statHigh').textContent = q.h ? cs + fmtNum(q.h) : '—';
       document.getElementById('statLow').textContent = q.l ? cs + fmtNum(q.l) : '—';
@@ -3970,10 +4039,15 @@
 
       const { data, error } = await SB.from('positions').insert({
         portfolio_id: PF.activeId,
-        symbol, shares: parseFloat(shares.toFixed(6)),
-        avg_cost_usd: pricePerShare,
+        symbol, 
+        shares: parseFloat(shares.toFixed(6)),
+        avg_cost: pricePerShare,
+        avg_cost_usd: pricePerShare, // legacy column
+        invested_amount: amount,
+        invested_currency: PF.posAmountCur,
         commission_usd: 0,
-        purchase_date: purchaseDate, note: null
+        purchase_date: purchaseDate, 
+        note: null
       }).select().single();
       if (error) { showToast('Error: ' + error.message, 'error'); return; }
       PF.positions.push(data);
@@ -4043,27 +4117,38 @@
         } catch(e) {}
       }
 
-      let totalCostUsd = 0, totalValueUsd = 0;
+      let costUsd = 0, valUsd = 0;
+      let costThb = 0, valThb = 0;
+
       const rows = PF.positions.map(pos => {
         const isThai = pos.symbol.endsWith('.BK');
         const cs = isThai ? '฿' : '$';
         const curPrice = priceMap[pos.symbol] || null;
+        const avgPrice = pos.avg_cost ?? pos.avg_cost_usd;
+        
+        const invCur = pos.invested_currency || (isThai ? 'THB' : 'USD');
+        const invAmt = pos.invested_amount ?? (pos.shares * avgPrice);
+        const invCs = invCur === 'THB' ? '฿' : '$';
 
-        const costPosNative = pos.avg_cost_usd * pos.shares + (pos.commission_usd || 0);
-        const valPosNative  = curPrice ? curPrice * pos.shares : null;
+        const valNative = curPrice ? curPrice * pos.shares : null;
+        const valPosUsd = valNative != null ? (isThai ? valNative / rate : valNative) : null;
+        const valPosThb = valNative != null ? (isThai ? valNative : valNative * rate) : null;
 
-        const costPosUsd = isThai ? costPosNative / rate : costPosNative;
-        const valPosUsd  = valPosNative != null ? (isThai ? valPosNative / rate : valPosNative) : null;
+        const currentValInInvCur = invCur === 'THB' ? valPosThb : valPosUsd;
 
-        const costPosThb = isThai ? costPosNative : costPosNative * rate;
-        const valPosThb  = valPosNative != null ? (isThai ? valPosNative : valPosNative * rate) : null;
+        let plUsd = null, plThb = null, plPct = null;
 
-        const plUsd = valPosUsd != null ? valPosUsd - costPosUsd : null;
-        const plThb = valPosThb != null ? valPosThb - costPosThb : null;
-        const plPct = (plUsd != null && costPosUsd > 0) ? (plUsd / costPosUsd) * 100 : null;
-
-        if (!isNaN(costPosUsd)) totalCostUsd += costPosUsd;
-        if (valPosUsd != null) totalValueUsd += valPosUsd;
+        if (invCur === 'USD') {
+          costUsd += invAmt;
+          if (valPosUsd != null) valUsd += valPosUsd;
+          plUsd = valPosUsd != null ? valPosUsd - invAmt : null;
+          plPct = (plUsd != null && invAmt > 0) ? (plUsd / invAmt) * 100 : null;
+        } else {
+          costThb += invAmt;
+          if (valPosThb != null) valThb += valPosThb;
+          plThb = valPosThb != null ? valPosThb - invAmt : null;
+          plPct = (plThb != null && invAmt > 0) ? (plThb / invAmt) * 100 : null;
+        }
 
         const dir = plPct == null ? '' : plPct >= 0 ? 'pf-green' : 'pf-red';
         const dirSign = plPct == null ? '' : plPct >= 0 ? '+' : '';
@@ -4072,18 +4157,17 @@
           <td><div class="pf-sym" style="cursor:pointer" onclick="loadStock('${esc(pos.symbol)}')">${esc(pos.symbol)} ${isThai ? '<span class="search-tag-th">SET</span>' : ''}</div>
               ${pos.purchase_date ? `<div class="pf-note">${new Date(pos.purchase_date+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</div>` : ''}</td>
           <td class="pf-td-r pf-mono">${Number(pos.shares) % 1 === 0 ? pos.shares : Number(pos.shares).toFixed(4)}</td>
-          <td class="pf-td-r pf-mono">${cs}${fmtNum(pos.avg_cost_usd)}</td>
+          <td class="pf-td-r pf-mono">${cs}${fmtNum(avgPrice)}</td>
           <td class="pf-td-r pf-mono">${curPrice ? cs + fmtNum(curPrice) : '<span style="color:var(--text-muted)">—</span>'}</td>
-          <td class="pf-td-r pf-mono">${cs}${fmtNum(costPosNative)}</td>
-          <td class="pf-td-r pf-mono">${valPosNative != null ? cs + fmtNum(valPosNative) : '—'}</td>
-          <td class="pf-td-r pf-mono ${dir}">${plUsd != null ? dirSign + '$' + fmtNum(plUsd) : '—'}</td>
+          <td class="pf-td-r pf-mono">${invCs}${fmtNum(invAmt)}</td>
+          <td class="pf-td-r pf-mono">${currentValInInvCur != null ? invCs + fmtNum(currentValInInvCur) : '—'}</td>
+          <td class="pf-td-r pf-mono ${invCur === 'USD' ? dir : ''}" style="${invCur === 'THB' ? 'opacity:0.3' : ''}">${plUsd != null ? dirSign + '$' + fmtNum(plUsd) : '—'}</td>
           <td class="pf-td-r pf-mono ${dir}">${plPct != null ? dirSign + plPct.toFixed(2) + '%' : '—'}</td>
-          <td class="pf-td-r pf-mono" style="color:var(--text-muted);font-size:11px;">${plThb != null ? (plThb >= 0 ? '+' : '') + '฿' + Math.round(plThb).toLocaleString() : '—'}</td>
+          <td class="pf-td-r pf-mono ${invCur === 'THB' ? dir : ''}" style="font-size:11px;${invCur === 'USD' ? 'opacity:0.3' : ''}">${plThb != null ? dirSign + '฿' + Math.round(plThb).toLocaleString() : '—'}</td>
           <td><button class="pf-del-btn" onclick="deletePosition('${pos.id}')" title="Remove"><svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button></td>
         </tr>`;
       }).join('');
 
-      const totalCostThb = totalCostUsd * rate;
       const totalValueThb = totalValueUsd * rate;
       const totalPlUsd = totalValueUsd - totalCostUsd;
       const totalPlThb = totalValueThb - totalCostThb;
