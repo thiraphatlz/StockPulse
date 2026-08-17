@@ -14,7 +14,7 @@
     rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+  <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
   <style>
     :root {
       --bg-primary: #08080c;
@@ -1112,19 +1112,66 @@
     .chart-wrap {
       background: var(--bg-card);
       border: 1px solid var(--border-primary);
-      border-radius: 16px;
+      border-radius: var(--radius);
       padding: 16px;
-      margin-bottom: 24px;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+      margin-bottom: 16px;
+      box-shadow: var(--shadow-md);
       display: flex;
       flex-direction: column;
+      position: relative;
+    }
+
+    .chart-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .chart-info-tag {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      background: var(--bg-elevated);
+      padding: 3px 8px;
+      border-radius: var(--radius-xs);
+      font-family: var(--font-mono);
+    }
+
+    .chart-tabs {
+      display: flex;
+      gap: 4px;
+      background: var(--bg-input);
+      padding: 3px;
+      border-radius: var(--radius-xs);
+    }
+
+    .chart-tab {
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      background: transparent;
+      transition: var(--transition);
+      cursor: pointer;
+    }
+
+    .chart-tab:hover {
+      color: var(--text-primary);
+    }
+
+    .chart-tab.active {
+      background: var(--bg-elevated);
+      color: var(--text-primary);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
     }
 
     .chart-container {
       width: 100%;
-      height: 350px;
+      height: 300px;
       position: relative;
-      border-radius: 8px;
+      border-radius: var(--radius-sm);
       overflow: hidden;
     }
 
@@ -1132,12 +1179,15 @@
       position: absolute;
       top: 0; left: 0; right: 0; bottom: 0;
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
-      background: rgba(19, 19, 27, 0.7);
+      background: rgba(19, 19, 27, 0.75);
+      backdrop-filter: blur(2px);
       color: var(--text-muted);
       font-size: 12px;
       z-index: 10;
+      gap: 8px;
     }
 
     .stats-grid {
@@ -2642,8 +2692,20 @@
             </div>
             
             <div class="chart-wrap">
+              <div class="chart-header">
+                <div class="chart-info-tag" id="chartInfoTag">1D • Area Chart</div>
+                <div class="chart-tabs">
+                  <button class="chart-tab active" id="chartTab1D" onclick="setChartRange('1D')">1D</button>
+                  <button class="chart-tab" id="chartTab1W" onclick="setChartRange('1W')">1W</button>
+                  <button class="chart-tab" id="chartTab1M" onclick="setChartRange('1M')">1M</button>
+                  <button class="chart-tab" id="chartTab1Y" onclick="setChartRange('1Y')">1Y</button>
+                </div>
+              </div>
               <div class="chart-container" id="stockChartContainer">
-                <!-- TradingView Widget injects here -->
+                <div class="chart-loading" id="chartLoading" style="display:none">
+                  <div class="pf-spinner" style="width:20px;height:20px;"></div>
+                  <span>Loading chart...</span>
+                </div>
               </div>
             </div>
 
@@ -3271,43 +3333,214 @@
         if (q && q.c) { 
           S.quote = q; 
           renderQuote(q);
+          if (chartSeries && currentChartRange === '1D') {
+            const time = q.t || Math.floor(Date.now() / 1000);
+            if (time >= lastChartTime) {
+              try { chartSeries.update({ time: time, value: q.c }); lastChartTime = time; } catch(e) {}
+            }
+          }
         } 
       } catch { } 
     }
 
-    let tvWidget = null;
-    let currentChartSymbol = null;
+    let stockChart = null;
+    let chartSeries = null;
+    let currentChartRange = '1D';
+    let lastChartTime = 0;
+    const chartParams = {
+      '1D': { interval: '2m', range: '1d' },
+      '1W': { interval: '15m', range: '5d' },
+      '1M': { interval: '1d', range: '1mo' },
+      '1Y': { interval: '1d', range: '1y' }
+    };
+
+    function initChart() {
+      if (stockChart) return;
+      const container = document.getElementById('stockChartContainer');
+      if (!window.LightweightCharts || !container) return;
+      stockChart = LightweightCharts.createChart(container, {
+        autoSize: true,
+        height: 300,
+        layout: {
+          background: { color: 'transparent' },
+          textColor: '#9898b0',
+          fontFamily: 'Inter, sans-serif',
+          fontSize: 11
+        },
+        grid: {
+          vertLines: { color: 'rgba(42, 42, 58, 0.4)' },
+          horzLines: { color: 'rgba(42, 42, 58, 0.4)' }
+        },
+        rightPriceScale: {
+          borderVisible: false,
+          scaleMargins: { top: 0.1, bottom: 0.1 }
+        },
+        timeScale: {
+          borderVisible: false,
+          timeVisible: true,
+          secondsVisible: false
+        },
+        crosshair: {
+          mode: LightweightCharts.CrosshairMode.Normal,
+          vertLine: { color: 'rgba(124, 58, 237, 0.5)', width: 1, style: 3 },
+          horzLine: { color: 'rgba(124, 58, 237, 0.5)', width: 1, style: 3 }
+        }
+      });
+
+      chartSeries = stockChart.addAreaSeries({
+        lineColor: '#7c3aed',
+        topColor: 'rgba(124, 58, 237, 0.4)',
+        bottomColor: 'rgba(124, 58, 237, 0.0)',
+        lineWidth: 2,
+        priceFormat: { type: 'price', precision: 2, minMove: 0.01 }
+      });
+
+      window.addEventListener('resize', () => {
+        if (stockChart && container) {
+          stockChart.applyOptions({ width: container.clientWidth });
+        }
+      });
+    }
+
+    async function setChartRange(range) {
+      if (!S.sym) return;
+      currentChartRange = range;
+      ['1D', '1W', '1M', '1Y'].forEach(r => {
+        const tab = document.getElementById(`chartTab${r}`);
+        if (tab) tab.classList.toggle('active', r === range);
+      });
+      const tag = document.getElementById('chartInfoTag');
+      if (tag) tag.textContent = `${range} • Area Chart`;
+      await renderChart();
+    }
+
+    async function fetchChartCandles(sym, interval, range) {
+      sym = sym.trim().toUpperCase();
+
+      // 1. Try Vercel Serverless Function
+      try {
+        const res = await fetch(`/api/chart?symbol=${encodeURIComponent(sym)}&interval=${interval}&range=${range}`);
+        if (res.ok) {
+          const json = await res.json();
+          if (json?.data?.length) return json.data;
+        }
+      } catch (e) {}
+
+      // 2. Client-side fallback via Yahoo Finance proxy
+      try {
+        const is1D = range === '1d';
+        const prePost = is1D ? '&includePrePost=true' : '';
+        const yUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?interval=${interval}&range=${range}${prePost}`;
+        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(yUrl)}`;
+        const res = await fetch(proxyUrl);
+        if (res.ok) {
+          const d = await res.json();
+          const result = d?.chart?.result?.[0];
+          if (result?.timestamp?.length && result?.indicators?.quote?.[0]?.close) {
+            const timestamps = result.timestamp;
+            const closes = result.indicators.quote[0].close;
+            const parsed = timestamps.map((t, i) => {
+              const c = closes[i];
+              if (c == null) return null;
+              return {
+                time: t,
+                close: c,
+                open: result.indicators.quote[0].open?.[i] ?? c,
+                high: result.indicators.quote[0].high?.[i] ?? c,
+                low: result.indicators.quote[0].low?.[i] ?? c
+              };
+            }).filter(Boolean);
+            if (parsed.length > 0) return parsed;
+          }
+        }
+      } catch (e) {}
+
+      // 3. Fallback to Finnhub candle API for US stocks
+      if (!sym.endsWith('.BK') && !sym.endsWith('.TH')) {
+        try {
+          const now = Math.floor(Date.now() / 1000);
+          let res = 'D', from = now - 40 * 86400;
+          if (range === '1d') { res = '5'; from = now - 2 * 86400; }
+          else if (range === '5d') { res = '60'; from = now - 8 * 86400; }
+          else if (range === '1y') { res = 'D'; from = now - 370 * 86400; }
+          const fhUrl = `https://finnhub.io/api/v1/stock/candle?symbol=${encodeURIComponent(sym)}&resolution=${res}&from=${from}&to=${now}&token=${S.apiKey || HARDCODED_API_KEY}`;
+          const r = await fetch(fhUrl);
+          if (r.ok) {
+            const d = await r.json();
+            if (d?.s === 'ok' && Array.isArray(d.t)) {
+              return d.t.map((t, i) => ({ time: t, close: d.c[i], open: d.o[i], high: d.h[i], low: d.l[i] })).filter(x => x.close != null);
+            }
+          }
+        } catch (e) {}
+      }
+
+      return null;
+    }
 
     async function renderChart() {
       if (!S.sym) return;
-      if (typeof TradingView === 'undefined') return;
-      if (currentChartSymbol === S.sym) return; // Prevent re-rendering same chart
-      
-      currentChartSymbol = S.sym;
-      const isThai = S.sym.endsWith('.BK');
-      const tvSymbol = isThai ? `SET:${S.sym.replace('.BK', '')}` : S.sym;
-      const container = document.getElementById('stockChartContainer');
-      container.innerHTML = ''; // Clear container
+      initChart();
+      if (!stockChart || !chartSeries) return;
 
-      tvWidget = new TradingView.widget({
-        "autosize": true,
-        "symbol": tvSymbol,
-        "interval": "15", // 15m default
-        "timezone": "Etc/UTC",
-        "theme": "dark",
-        "style": "1",
-        "locale": S.lang === 'th' ? "th_TH" : "en",
-        "enable_publishing": false,
-        "backgroundColor": "transparent",
-        "gridColor": "rgba(42, 42, 58, 0.5)",
-        "hide_top_toolbar": false,
-        "hide_legend": false,
-        "save_image": false,
-        "container_id": "stockChartContainer",
-        "toolbar_bg": "#13131b",
-        "hide_volume": false,
-        "studies": ["Volume@tv-basicstudies"]
-      });
+      const loading = document.getElementById('chartLoading');
+      if (loading) loading.style.display = 'flex';
+
+      try {
+        const param = chartParams[currentChartRange] || chartParams['1D'];
+        const rawData = await fetchChartCandles(S.sym, param.interval, param.range);
+
+        if (rawData && rawData.length > 0) {
+          // Format and deduplicate timestamps for Lightweight Charts
+          const sorted = rawData
+            .filter(d => d && d.time && typeof d.close === 'number' && !isNaN(d.close))
+            .map(d => ({ time: Number(d.time), value: Number(d.close) }))
+            .sort((a, b) => a.time - b.time);
+
+          const unique = [];
+          for (let i = 0; i < sorted.length; i++) {
+            if (i === 0 || sorted[i].time > unique[unique.length - 1].time) {
+              unique.push(sorted[i]);
+            }
+          }
+
+          if (unique.length > 0) {
+            lastChartTime = unique[unique.length - 1].time;
+            
+            // Dynamic theme matching stock price movement
+            const firstVal = unique[0].value;
+            const lastVal = unique[unique.length - 1].value;
+            const isUp = lastVal >= firstVal;
+            const lineColor = isUp ? '#10b981' : '#ef4444';
+            const topColor = isUp ? 'rgba(16, 185, 129, 0.35)' : 'rgba(239, 68, 68, 0.35)';
+
+            chartSeries.applyOptions({
+              lineColor: lineColor,
+              topColor: topColor,
+              bottomColor: 'rgba(0, 0, 0, 0.0)'
+            });
+
+            const showTime = currentChartRange === '1D' || currentChartRange === '1W';
+            stockChart.applyOptions({
+              timeScale: {
+                timeVisible: showTime,
+                secondsVisible: false
+              }
+            });
+
+            chartSeries.setData(unique);
+            stockChart.timeScale().fitContent();
+          } else {
+            chartSeries.setData([]);
+          }
+        } else {
+          chartSeries.setData([]);
+        }
+      } catch (e) {
+        console.error('Chart error', e);
+        if (chartSeries) chartSeries.setData([]);
+      } finally {
+        if (loading) loading.style.display = 'none';
+      }
     }
 
     async function refreshData() { if (!S.sym) return; const b = document.getElementById('btnRefresh'); b.classList.add('spinning'); try { await loadStock(S.sym); showToast('Refreshed', 'success'); } catch { showToast('Failed', 'error'); } setTimeout(() => b.classList.remove('spinning'), 800); }
@@ -4088,7 +4321,10 @@
         </tr>`;
       }).join('');
 
-      const totalValueThb = totalValueUsd * rate;
+      const totalCostUsd = costUsd + (rate > 0 ? costThb / rate : 0);
+      const totalValueUsd = valUsd + (rate > 0 ? valThb / rate : 0);
+      const totalCostThb = costThb + (costUsd * rate);
+      const totalValueThb = valThb + (valUsd * rate);
       const totalPlUsd = totalValueUsd - totalCostUsd;
       const totalPlThb = totalValueThb - totalCostThb;
       const totalPlPct = totalCostUsd > 0 ? (totalPlUsd / totalCostUsd) * 100 : 0;
@@ -4154,7 +4390,12 @@
             changed = true;
           }
         });
-        if (changed) { saveWl(); renderWishlist(); updateDashboard(); }
+        if (changed) { 
+          saveWl(); 
+          renderWishlist(); 
+          updateDashboard(); 
+          updateWishlistPrices().then(updateDashboard); 
+        }
       } catch(e) { console.warn('WL Supabase error:', e); }
     }
 
