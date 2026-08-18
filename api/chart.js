@@ -48,8 +48,8 @@ export default async function handler(req, res) {
   }
 
   async function fetchYahoo(sym) {
-    // includePrePost for 1D shows pre/after-market bars
-    const prePost = range === '1d' ? '&includePrePost=true' : '';
+    // includePrePost=false ensures chart only displays regular market session (e.g. 20:30-03:00 Thai time for US)
+    const prePost = '&includePrePost=false';
     const url = `https://query2.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?interval=${interval}&range=${range}${prePost}`;
 
     const headerSets = [
@@ -73,7 +73,8 @@ export default async function handler(req, res) {
         const d = await r.json();
         const result = d?.chart?.result?.[0];
         if (!result?.timestamp?.length) continue;
-        const q = result.indicators.quote[0];
+        const q = result.indicators?.quote?.[0];
+        if (!q) continue;
         const parsed = result.timestamp
           .map((t, i) => {
             const close = q.close?.[i];
@@ -98,25 +99,23 @@ export default async function handler(req, res) {
   try {
     let data = null;
 
-    // Primary: Finnhub for US stocks (reliable, API-key based)
-    if (!isThai) {
-      data = await fetchFinnhub(symbol);
-      if (data?.length) console.log(`Finnhub: ${symbol} → ${data.length} candles`);
-    }
+    // Primary: Yahoo Finance (accurate interval candles for US & Thai stocks)
+    data = await fetchYahoo(symbol);
+    if (data?.length) console.log(`Yahoo: ${symbol} → ${data.length} candles`);
 
-    // Fallback 1: Yahoo Finance with query2 + browser-like headers
-    if (!data?.length) {
-      data = await fetchYahoo(symbol);
-      if (data?.length) console.log(`Yahoo: ${symbol} → ${data.length} candles`);
-    }
-
-    // Fallback 2: Try .BK suffix for Thai stocks typed without it
+    // Fallback 1: Try .BK suffix for Thai stocks typed without it
     if (!data?.length && !symbol.includes('.')) {
       data = await fetchYahoo(`${symbol}.BK`);
       if (data?.length) {
         symbol = `${symbol}.BK`;
         console.log(`Yahoo (.BK): ${symbol} → ${data.length} candles`);
       }
+    }
+
+    // Fallback 2: Finnhub for US stocks if Yahoo fails
+    if (!data?.length && !isThai) {
+      data = await fetchFinnhub(symbol);
+      if (data?.length) console.log(`Finnhub fallback: ${symbol} → ${data.length} candles`);
     }
 
     if (!data?.length) {

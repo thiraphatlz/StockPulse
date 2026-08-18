@@ -3343,7 +3343,7 @@
           S.quote = q; 
           renderQuote(q);
           if (chartSeries && currentChartRange === '1D') {
-            const time = q.t || Math.floor(Date.now() / 1000);
+            const time = (q.t || Math.floor(Date.now() / 1000)) + (7 * 3600);
             if (time >= lastChartTime) {
               try { chartSeries.update({ time: time, value: q.c }); lastChartTime = time; } catch(e) {}
             }
@@ -3437,8 +3437,7 @@
 
       // 2. Client-side fallback via Yahoo Finance proxy
       try {
-        const is1D = range === '1d';
-        const prePost = is1D ? '&includePrePost=true' : '';
+        const prePost = '&includePrePost=false';
         const yUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?interval=${interval}&range=${range}${prePost}`;
         const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(yUrl)}`;
         const res = await fetch(proxyUrl);
