@@ -4289,18 +4289,17 @@
         shares = amountUsd / pricePerShare;
       }
 
-      const { data, error } = await SB.from('positions').insert({
+      const payload = {
         portfolio_id: PF.activeId,
         symbol, 
         shares: parseFloat(shares.toFixed(6)),
-        avg_cost: pricePerShare,
-        avg_cost_usd: pricePerShare, // legacy column
-        invested_amount: amount,
-        invested_currency: PF.posAmountCur,
+        avg_cost_usd: pricePerShare,
         commission_usd: 0,
         purchase_date: purchaseDate, 
         note: null
-      }).select().single();
+      };
+
+      const { data, error } = await SB.from('positions').insert(payload).select().single();
       if (error) { showToast('Error: ' + error.message, 'error'); return; }
       PF.positions.push(data);
       closePosModal();
@@ -4560,8 +4559,8 @@
         const wl = S.wl.find(w => w.symbol === pos.symbol);
         const curPrice = (S.sym === pos.symbol && S.quote?.c) ? S.quote.c : wl?._quote?.c;
         if (!curPrice) return;
-        const isThai = pos.symbol.endsWith('.BK');
-        const invAmt = pos.invested_amount ?? (pos.shares * pos.avg_cost);
+        const avgPrice = pos.avg_cost_usd ?? pos.avg_cost ?? 0;
+        const invAmt = pos.invested_amount ?? (pos.shares * avgPrice);
         const invUsd = (pos.invested_currency === 'THB') ? invAmt / rate : invAmt;
         const valU = isThai ? (curPrice * pos.shares) / rate : curPrice * pos.shares;
         costUsd += invUsd; valUsd += valU;
