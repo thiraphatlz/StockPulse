@@ -78,10 +78,8 @@ export default async function handler(req, res) {
       return res.status(404).json({ error: `Stock not found: ${symbol}` });
     }
 
-    const [yQuote, fhMetric] = await Promise.all([
-      fetchYahooQuote(symbol).catch(() => null),
-      fetchFinnhubMetric(symbol).catch(() => null)
-    ]);
+    const fhMetric = await fetchFinnhubMetric(symbol).catch(() => null);
+    const yQuote = null;
 
     const meta = yResult.meta;
     const curPrice = meta.regularMarketPrice ?? meta.chartPreviousClose ?? 0;

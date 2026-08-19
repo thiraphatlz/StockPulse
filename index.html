@@ -3436,8 +3436,14 @@
       updateMarketStatus(); setInterval(updateMarketStatus, 30000);
       updateMarketClock(); setInterval(updateMarketClock, 10000);
       renderWishlist(); renderSectors(); updateDashboard();
-      updateWishlistPrices().then(updateDashboard);
-      loadSectorData(); startAutoRefresh(); updateLastRefresh();
+      
+      // Load wishlist prices and sectors concurrently
+      Promise.allSettled([
+        updateWishlistPrices().then(updateDashboard),
+        loadSectorData()
+      ]);
+
+      startAutoRefresh(); updateLastRefresh();
       // Load alerts from Supabase then subscribe for real-time cross-device sync
       loadAlerts().then(() => { renderDashboardAlerts(); updateAlertStats(); });
       subscribeAlerts();
@@ -3509,30 +3515,106 @@
       }).join('');
     }
 
+    // ===== ULTRA-FAST CACHE LAYER =====
+    const CACHE = {
+      quote: new Map(),   // key -> { data, exp }
+      metric: new Map(),  // key -> { data, exp }
+      profile: new Map(), // key -> { data, exp }
+      chart: new Map(),   // key -> { data, exp }
+      get(type, key) {
+        const item = this[type]?.get(key);
+        if (item && Date.now() < item.exp) return item.data;
+        return null;
+      },
+      set(type, key, data, ttlMs) {
+        if (!this[type]) return;
+        this[type].set(key, { data, exp: Date.now() + ttlMs });
+      }
+    };
+
     // API
     const API = 'https://finnhub.io/api/v1';
-    async function api(ep, p = {}) { p.token = S.apiKey; const r = await fetch(API + ep + '?' + new URLSearchParams(p)); if (r.status === 401) throw new Error('Invalid API key'); if (r.status === 429) throw new Error('Rate limited'); if (!r.ok) throw new Error('API error'); return r.json(); }
+    async function api(ep, p = {}) {
+      p.token = S.apiKey || HARDCODED_API_KEY;
+      const cacheKey = ep + '?' + new URLSearchParams(p).toString();
+      const cached = CACHE.get('metric', cacheKey) || CACHE.get('profile', cacheKey);
+      if (cached) return cached;
+
+      try {
+        const r = await fetch(API + ep + '?' + new URLSearchParams(p), { signal: AbortSignal.timeout(4000) });
+        if (r.status === 401) throw new Error('Invalid API key');
+        if (r.status === 429) {
+          console.warn('Finnhub rate limited, using fallback if available');
+          throw new Error('Rate limited');
+        }
+        if (!r.ok) throw new Error('API error');
+        const data = await r.json();
+        if (ep.includes('metric')) CACHE.set('metric', cacheKey, data, 120000); // 2 min
+        else if (ep.includes('profile')) CACHE.set('profile', cacheKey, data, 300000); // 5 min
+        return data;
+      } catch(err) {
+        if (err.name === 'TimeoutError') console.warn('API timeout on', ep);
+        throw err;
+      }
+    }
     const fetchP = s => api('/stock/profile2', { symbol: s }), fetchS = q => api('/search', { q }), fetchM = s => api('/stock/metric', { symbol: s, metric: 'all' });
 
     async function fetchQ(s) {
       if (!s) return null;
       s = s.trim().toUpperCase();
 
-      // 1. Try our Vercel Serverless Function first (handles both Thai & US)
+      // 0. Check in-memory quote cache (15 seconds TTL)
+      const cached = CACHE.get('quote', s);
+      if (cached) return cached;
+
+      const isThai = s.endsWith('.BK') || s.endsWith('.TH');
+
+      // 1. Try our Vercel Serverless Function first (with 1.5s timeout)
       try {
-        const res = await fetch(`/api/quote?symbol=${encodeURIComponent(s)}`);
+        const res = await fetch(`/api/quote?symbol=${encodeURIComponent(s)}`, { signal: AbortSignal.timeout(1500) });
         if (res.ok) {
           const data = await res.json();
-          if (data && data.c) return data;
+          if (data && data.c) {
+            CACHE.set('quote', s, data, 15000);
+            return data;
+          }
         }
       } catch(e) {}
 
-      // 2. Client fallback for Thai stocks (.BK) if serverless not running
-      if (s.endsWith('.BK') || s.endsWith('.TH')) {
+      // 2. Direct Finnhub for US stocks (Super Fast ~200ms)
+      if (!isThai) {
+        try {
+          const q = await api('/quote', { symbol: s });
+          if (q && q.c) {
+            const formatted = {
+              symbol: s,
+              currency: 'USD',
+              exchange: 'US',
+              c: q.c,
+              d: q.d,
+              dp: q.dp,
+              h: q.h,
+              l: q.l,
+              o: q.o,
+              pc: q.pc,
+              v: null,
+              avgVolume: null,
+              fiftyTwoWeekHigh: null,
+              fiftyTwoWeekLow: null,
+              isThai: false
+            };
+            CACHE.set('quote', s, formatted, 15000);
+            return formatted;
+          }
+        } catch(e) {}
+      }
+
+      // 3. Client fallback for Thai stocks (.BK)
+      if (isThai) {
         try {
           const yUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(s)}?interval=1d&range=1d`;
           const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(yUrl)}`;
-          const res = await fetch(proxyUrl);
+          const res = await fetch(proxyUrl, { signal: AbortSignal.timeout(3000) });
           if (res.ok) {
             const data = await res.json();
             const meta = data?.chart?.result?.[0]?.meta;
@@ -3540,7 +3622,7 @@
               const curPrice = meta.regularMarketPrice ?? meta.chartPreviousClose ?? 0;
               const prevClose = meta.chartPreviousClose ?? meta.previousClose ?? curPrice;
               const change = curPrice - prevClose;
-              return {
+              const result = {
                 symbol: meta.symbol || s,
                 name: meta.longName || meta.shortName || s,
                 currency: meta.currency || 'THB',
@@ -3565,62 +3647,14 @@
                 marketCap: meta.marketCap || 0,
                 isThai: true
               };
+              CACHE.set('quote', s, result, 15000);
+              return result;
             }
           }
         } catch(e) {}
       }
 
-      // 3. Client fallback for US stocks (Yahoo Finance Chart Proxy)
-      try {
-        const yUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(s)}?interval=1d&range=1d`;
-        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(yUrl)}`;
-        const res = await fetch(proxyUrl);
-        if (res.ok) {
-          const data = await res.json();
-          const meta = data?.chart?.result?.[0]?.meta;
-          if (meta && meta.regularMarketPrice) {
-            const curPrice = meta.regularMarketPrice ?? meta.chartPreviousClose ?? 0;
-            const prevClose = meta.chartPreviousClose ?? meta.previousClose ?? curPrice;
-            const change = curPrice - prevClose;
-            return {
-              symbol: meta.symbol || s,
-              name: meta.longName || meta.shortName || s,
-              currency: meta.currency || 'USD',
-              exchange: meta.exchangeName || 'US',
-              c: curPrice,
-              d: change,
-              dp: prevClose ? (change / prevClose) * 100 : 0,
-              h: meta.regularMarketDayHigh ?? curPrice,
-              l: meta.regularMarketDayLow ?? curPrice,
-              o: meta.regularMarketOpen ?? curPrice,
-              pc: prevClose,
-              v: meta.regularMarketVolume ?? null,
-              avgVolume: meta.averageDailyVolume3Month ?? meta.averageDailyVolume10Day ?? null,
-              fiftyTwoWeekHigh: meta.fiftyTwoWeekHigh ?? null,
-              fiftyTwoWeekLow: meta.fiftyTwoWeekLow ?? null,
-              trailingPE: meta.trailingPE ?? null,
-              epsTrailingTwelveMonths: meta.epsTrailingTwelveMonths ?? null,
-              beta: meta.beta ?? null,
-              dividendYield: meta.dividendYield ?? null,
-              priceToBook: meta.priceToBook ?? null,
-              forwardPE: meta.forwardPE ?? null,
-              marketCap: meta.marketCap || 0,
-              isThai: false
-            };
-          }
-        }
-      } catch(e) {}
-
-      // 4. Fallback to Finnhub for US stocks
-      try {
-        const q = await api('/quote', { symbol: s });
-        if (q && q.c) {
-          q.currency = 'USD';
-          return q;
-        }
-      } catch(e) {}
-
-      // 5. Try with .BK if no dot
+      // 4. Try with .BK if no dot and not found
       if (!s.includes('.')) {
         return fetchQ(`${s}.BK`);
       }
@@ -4120,12 +4154,19 @@
     async function fetchChartCandles(sym, interval, range) {
       sym = sym.trim().toUpperCase();
 
+      const chartCacheKey = `${sym}_${interval}_${range}`;
+      const cachedChart = CACHE.get('chart', chartCacheKey);
+      if (cachedChart) return cachedChart;
+
       // 1. Try Vercel Serverless Function
       try {
-        const res = await fetch(`/api/chart?symbol=${encodeURIComponent(sym)}&interval=${interval}&range=${range}`);
+        const res = await fetch(`/api/chart?symbol=${encodeURIComponent(sym)}&interval=${interval}&range=${range}`, { signal: AbortSignal.timeout(2000) });
         if (res.ok) {
           const json = await res.json();
-          if (json?.data?.length) return json.data;
+          if (json?.data?.length) {
+            CACHE.set('chart', chartCacheKey, json.data, 30000);
+            return json.data;
+          }
         }
       } catch (e) {}
 
@@ -4134,7 +4175,7 @@
         const prePost = '&includePrePost=false';
         const yUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?interval=${interval}&range=${range}${prePost}`;
         const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(yUrl)}`;
-        const res = await fetch(proxyUrl);
+        const res = await fetch(proxyUrl, { signal: AbortSignal.timeout(3000) });
         if (res.ok) {
           const d = await res.json();
           const result = d?.chart?.result?.[0];
@@ -4152,7 +4193,10 @@
                 low: result.indicators.quote[0].low?.[i] ?? c
               };
             }).filter(Boolean);
-            if (parsed.length > 0) return parsed;
+            if (parsed.length > 0) {
+              CACHE.set('chart', chartCacheKey, parsed, 30000);
+              return parsed;
+            }
           }
         }
       } catch (e) {}
@@ -4166,11 +4210,15 @@
           else if (range === '5d') { res = '60'; from = now - 8 * 86400; }
           else if (range === '1y') { res = 'D'; from = now - 370 * 86400; }
           const fhUrl = `https://finnhub.io/api/v1/stock/candle?symbol=${encodeURIComponent(sym)}&resolution=${res}&from=${from}&to=${now}&token=${S.apiKey || HARDCODED_API_KEY}`;
-          const r = await fetch(fhUrl);
+          const r = await fetch(fhUrl, { signal: AbortSignal.timeout(3000) });
           if (r.ok) {
             const d = await r.json();
             if (d?.s === 'ok' && Array.isArray(d.t)) {
-              return d.t.map((t, i) => ({ time: t, close: d.c[i], open: d.o[i], high: d.h[i], low: d.l[i] })).filter(x => x.close != null);
+              const parsed = d.t.map((t, i) => ({ time: t, close: d.c[i], open: d.o[i], high: d.h[i], low: d.l[i] })).filter(x => x.close != null);
+              if (parsed.length > 0) {
+                CACHE.set('chart', chartCacheKey, parsed, 30000);
+                return parsed;
+              }
             }
           }
         } catch (e) {}
@@ -4251,7 +4299,15 @@
     async function fullRefresh() { const b = document.getElementById('dashRefreshBtn'); b.disabled = true; b.querySelector('.i18n-lbl').textContent = '...'; try { await updateWishlistPrices(); if (S.sym) await refreshCurrentQuote(); await loadSectorData(); updateDashboard(); updateLastRefresh(); showToast('Refreshed', 'success'); } catch { showToast('Error', 'error'); } b.disabled = false; b.querySelector('.i18n-lbl').textContent = (I18N[S.lang] || I18N.en).refresh; }
 
     // Sectors
-    async function loadSectorData() { for (const s of SECTORS) { try { const q = await fetchQ(s.etf); if (q && q.c) S.sectors[s.etf] = q; await slp(120); } catch { } } renderSectors(); }
+    async function loadSectorData() {
+      await Promise.allSettled(SECTORS.map(async (s) => {
+        try {
+          const q = await fetchQ(s.etf);
+          if (q && q.c) S.sectors[s.etf] = q;
+        } catch(e) {}
+      }));
+      renderSectors();
+    }
     function renderSectors() {
       document.getElementById('sectorsGrid').innerHTML = SECTORS.map(s => {
         const e = S.sectors[s.etf], p = e ? e.dp : null, cl = p === null ? 'loading' : p >= 0 ? 'up' : 'down', tx = p === null ? '—' : (p >= 0 ? '+' : '') + p.toFixed(2) + '%';
@@ -4509,7 +4565,16 @@
       }).join('');
     }
 
-    async function updateWishlistPrices() { if (!S.wl.length) return; for (let i = 0; i < S.wl.length; i++) { try { const q = await fetchQ(S.wl[i].symbol); if (q && q.c) S.wl[i]._quote = q; } catch { } if (i < S.wl.length - 1) await slp(150); } renderWishlist(); }
+    async function updateWishlistPrices() {
+      if (!S.wl.length) return;
+      await Promise.allSettled(S.wl.map(async (item) => {
+        try {
+          const q = await fetchQ(item.symbol);
+          if (q && q.c) item._quote = q;
+        } catch(e) {}
+      }));
+      renderWishlist();
+    }
 
     // Settings
     function openSettings() {
