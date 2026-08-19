@@ -2377,6 +2377,46 @@
         font-size: 10px;
       }
     }
+
+    /* === Dashboard Portfolio Snapshot === */
+    .pf-snapshot-strip { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; }
+    .pf-snap-card { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius); padding: 14px 16px; position: relative; overflow: hidden; transition: var(--transition); cursor: pointer; }
+    .pf-snap-card:hover { border-color: var(--border-primary); }
+    .pf-snap-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, var(--accent), var(--accent-light)); }
+    .pf-snap-lbl { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 5px; }
+    .pf-snap-val { font-family: var(--font-mono); font-size: 18px; font-weight: 700; }
+    .pf-snap-sub { font-size: 11px; font-family: var(--font-mono); margin-top: 2px; color: var(--text-muted); }
+    .pf-snap-val.up { color: var(--green); } .pf-snap-val.down { color: var(--red); }
+
+    /* === Top Movers === */
+    .dash-movers { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+    .mover-pill { display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: var(--radius-pill); font-size: 12px; font-weight: 600; background: var(--bg-card); border: 1px solid var(--border-subtle); cursor: pointer; transition: var(--transition); }
+    .mover-pill:hover { border-color: var(--accent); }
+    .mover-pill.up { border-color: rgba(16,185,129,0.3); background: var(--green-bg); color: var(--green); }
+    .mover-pill.down { border-color: rgba(239,68,68,0.3); background: var(--red-bg); color: var(--red); }
+    .mover-sym { font-weight: 800; }
+    .mover-pct { font-family: var(--font-mono); font-size: 11px; }
+
+    /* === Alert Stats on Dashboard === */
+    .dash-alert-stats { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+    .alert-stat-badge { display: flex; align-items: center; gap: 5px; padding: 4px 12px; border-radius: var(--radius-pill); font-size: 11px; font-weight: 600; background: var(--amber-bg); border: 1px solid rgba(245,158,11,0.2); color: var(--amber); }
+    .alert-near-badge { background: var(--red-bg); border-color: rgba(239,68,68,0.2); color: var(--red); animation: alertpulse 2s infinite; }
+    @keyframes alertpulse { 0%,100%{opacity:1} 50%{opacity:0.55} }
+
+    /* === Alert Card — Compact Layout + Quick Fills === */
+    .alert-quick-fills { display: none; }
+    .alert-qf-btn { font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: var(--radius-pill); background: var(--bg-card); border: 1px solid var(--border-subtle); color: var(--text-muted); cursor: pointer; transition: var(--transition); }
+    .alert-qf-btn:hover { border-color: var(--amber); color: var(--amber); }
+    @media (min-width: 769px) {
+      .alert-card { padding: 14px 16px; }
+      .alert-card-header { margin-bottom: 6px; }
+      .alert-rows { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+      .alert-row { background: var(--bg-elevated); border-radius: var(--radius-xs); padding: 8px 10px; border: 1px solid var(--border-subtle); flex-direction: column; align-items: flex-start; gap: 6px; }
+      .alert-quick-fills { display: flex; gap: 4px; flex-wrap: wrap; }
+    }
+    @media (max-width: 768px) {
+      .pf-snapshot-strip { grid-template-columns: 1fr 1fr; }
+    }
   </style>
 </head>
 
@@ -2600,6 +2640,15 @@
             </div>
           </div>
 
+          <!-- Portfolio Snapshot (visible after portfolio unlock) -->
+          <div class="dash-section" id="dashPfSnapshotSection" style="display:none;">
+            <div class="section-title">
+              <svg viewBox="0 0 24 24"><path d="M20 7H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V9c0-1.1-.9-2-2-2zm0 12H4V9h16v10zM12 3.5l-4 4h2.5V11h3V7.5H16l-4-4z"/></svg>
+              Portfolio Snapshot
+            </div>
+            <div id="dashPfSnapshot"></div>
+          </div>
+
           <div class="dash-section">
             <div class="section-title"><svg viewBox="0 0 24 24">
                 <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
@@ -2754,22 +2803,28 @@
               </div>
               <div class="alert-rows">
                 <div class="alert-row">
-                  <span class="alert-dir-badge above">ABOVE</span>
-                  <div class="alert-input-wrap"><input type="number" class="alert-input" id="alertAboveInput"
-                      placeholder="0.00" step="0.01" min="0" /></div>
-                  <button class="alert-btn-set" onclick="setAlert('above')"><span
-                      id="alertAboveBtnTxt">Set</span></button>
-                  <button class="alert-btn-clear" id="alertAboveClear" onclick="clearAlert('above')" title="Clear"
-                    style="display:none">×</button>
+                  <div style="display:flex;align-items:center;gap:8px;width:100%;">
+                    <span class="alert-dir-badge above">ABOVE</span>
+                    <div class="alert-input-wrap" style="flex:1;"><input type="number" class="alert-input" id="alertAboveInput"
+                        placeholder="0.00" step="0.01" min="0" /></div>
+                    <button class="alert-btn-set" onclick="setAlert('above')"><span
+                        id="alertAboveBtnTxt">Set</span></button>
+                    <button class="alert-btn-clear" id="alertAboveClear" onclick="clearAlert('above')" title="Clear"
+                      style="display:none">×</button>
+                  </div>
+                  <div class="alert-quick-fills" id="alertAboveQuick"></div>
                 </div>
                 <div class="alert-row">
-                  <span class="alert-dir-badge below">BELOW</span>
-                  <div class="alert-input-wrap"><input type="number" class="alert-input" id="alertBelowInput"
-                      placeholder="0.00" step="0.01" min="0" /></div>
-                  <button class="alert-btn-set" onclick="setAlert('below')"><span
-                      id="alertBelowBtnTxt">Set</span></button>
-                  <button class="alert-btn-clear" id="alertBelowClear" onclick="clearAlert('below')" title="Clear"
-                    style="display:none">×</button>
+                  <div style="display:flex;align-items:center;gap:8px;width:100%;">
+                    <span class="alert-dir-badge below">BELOW</span>
+                    <div class="alert-input-wrap" style="flex:1;"><input type="number" class="alert-input" id="alertBelowInput"
+                        placeholder="0.00" step="0.01" min="0" /></div>
+                    <button class="alert-btn-set" onclick="setAlert('below')"><span
+                        id="alertBelowBtnTxt">Set</span></button>
+                    <button class="alert-btn-clear" id="alertBelowClear" onclick="clearAlert('below')" title="Clear"
+                      style="display:none">×</button>
+                  </div>
+                  <div class="alert-quick-fills" id="alertBelowQuick"></div>
                 </div>
               </div>
               <div class="alert-email-note" id="alertEmailNote">
@@ -3032,6 +3087,9 @@
       renderWishlist(); renderSectors(); updateDashboard();
       updateWishlistPrices().then(updateDashboard);
       loadSectorData(); startAutoRefresh(); updateLastRefresh();
+      // Load alerts from Supabase then subscribe for real-time cross-device sync
+      loadAlerts().then(() => { renderDashboardAlerts(); updateAlertStats(); });
+      subscribeAlerts();
     }
 
     function startAutoRefresh() {
@@ -3593,6 +3651,7 @@
 
       c.innerHTML = `<div class="table-wrap"><table class="wl-table"><thead><tr><th>${t.tblSymbol}</th><th>${t.tblPrice}</th><th>${t.tblChange}</th><th>%</th></tr></thead><tbody>${rows}</tbody></table></div><div class="wl-cards">${cards}</div>`;
       renderDashboardAlerts();
+      updateDashboardExtras();
     }
 
     // Market status
@@ -3738,40 +3797,64 @@
       await sendAlertEmail('TEST', 'Test Stock (Apple Inc.)', 'risen above', 100.00, 105.50);
     }
 
-    // ===== PRICE ALERTS =====
-    const ALERTS_KEY = 'stockpulse_alerts';
+    // ===== PRICE ALERTS — Supabase-backed (cross-device real-time sync) =====
+    // NOTE: Run in Supabase SQL Editor once:
+    // CREATE TABLE alerts (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), symbol text NOT NULL, direction text NOT NULL CHECK (direction IN ('above','below')), price numeric NOT NULL, name text, created_at timestamptz DEFAULT now(), UNIQUE(symbol, direction));
+    // ALTER TABLE alerts ENABLE ROW LEVEL SECURITY;
+    // CREATE POLICY "allow all" ON alerts FOR ALL USING (true) WITH CHECK (true);
+    let _alertsCache = {}; // in-memory mirror; refreshed by Realtime + explicit load
 
-    function loadAlerts() { try { return JSON.parse(localStorage.getItem(ALERTS_KEY) || '{}'); } catch { return {}; } }
-    function saveAlerts(a) { localStorage.setItem(ALERTS_KEY, JSON.stringify(a)); }
+    async function loadAlerts() {
+      if (!SB) return _alertsCache;
+      try {
+        const { data } = await SB.from('alerts').select('*');
+        const map = {};
+        (data || []).forEach(r => {
+          if (!map[r.symbol]) map[r.symbol] = {};
+          map[r.symbol][r.direction] = { price: r.price, name: r.name };
+        });
+        _alertsCache = map;
+      } catch (e) { console.warn('loadAlerts error:', e); }
+      return _alertsCache;
+    }
+
+    function loadAlertsSync() { return _alertsCache; }
 
     async function setAlert(dir) {
       if (!S.sym) return;
       const inp = document.getElementById(dir === 'above' ? 'alertAboveInput' : 'alertBelowInput');
       const val = parseFloat(inp.value);
       if (!val || val <= 0) { inp.classList.add('error'); setTimeout(() => inp.classList.remove('error'), 1500); return; }
-      const alerts = loadAlerts();
-      if (!alerts[S.sym]) alerts[S.sym] = {};
-      alerts[S.sym][dir] = { price: val, name: S.profile ? S.profile.name : S.sym };
-      saveAlerts(alerts);
+      const name = S.profile?.name || S.sym;
+      if (SB) {
+        const { error } = await SB.from('alerts')
+          .upsert({ symbol: S.sym, direction: dir, price: val, name }, { onConflict: 'symbol,direction' });
+        if (error) { showToast('Error saving alert: ' + error.message, 'error'); return; }
+      }
+      // Optimistic local update
+      if (!_alertsCache[S.sym]) _alertsCache[S.sym] = {};
+      _alertsCache[S.sym][dir] = { price: val, name };
       renderAlertCard();
       showToast(`Alert set: ${S.sym} ${dir === 'above' ? '▲' : '▼'} $${val.toFixed(2)}`, 'success');
-      
-      // Check immediately against current price!
       await checkAlerts();
     }
 
-    function clearAlert(dir) {
+    async function clearAlert(dir) {
       if (!S.sym) return;
-      const alerts = loadAlerts();
-      if (alerts[S.sym]) { delete alerts[S.sym][dir]; if (!Object.keys(alerts[S.sym]).length) delete alerts[S.sym]; }
-      saveAlerts(alerts);
+      if (SB) {
+        await SB.from('alerts').delete().eq('symbol', S.sym).eq('direction', dir);
+      }
+      if (_alertsCache[S.sym]) {
+        delete _alertsCache[S.sym][dir];
+        if (!Object.keys(_alertsCache[S.sym]).length) delete _alertsCache[S.sym];
+      }
       renderAlertCard();
       showToast('Alert cleared', 'success');
     }
 
     function renderAlertCard() {
       if (!S.sym) return;
-      const alerts = loadAlerts();
+      const alerts = loadAlertsSync();
       const a = alerts[S.sym] || {};
       const hasAbove = !!a.above, hasBelow = !!a.below;
       const aboveInp = document.getElementById('alertAboveInput');
@@ -3788,12 +3871,27 @@
       tag.style.display = (hasAbove || hasBelow) ? 'inline-flex' : 'none';
       renderAlertEmailNote();
       renderDashboardAlerts();
+      // Quick-fill % shortcut buttons (desktop only)
+      if (S.quote?.c) {
+        const cur = S.quote.c;
+        const pcts = [1, 2, 5, 10];
+        const aqEl = document.getElementById('alertAboveQuick');
+        const bqEl = document.getElementById('alertBelowQuick');
+        if (aqEl) aqEl.innerHTML = pcts.map(p => {
+          const t = (cur * (1 + p / 100)).toFixed(2);
+          return `<button class="alert-qf-btn" onclick="document.getElementById('alertAboveInput').value='${t}';document.getElementById('alertAboveInput').classList.add('has-value')">+${p}%</button>`;
+        }).join('');
+        if (bqEl) bqEl.innerHTML = pcts.map(p => {
+          const t = (cur * (1 - p / 100)).toFixed(2);
+          return `<button class="alert-qf-btn" onclick="document.getElementById('alertBelowInput').value='${t}';document.getElementById('alertBelowInput').classList.add('has-value')">-${p}%</button>`;
+        }).join('');
+      }
     }
 
     function renderDashboardAlerts() {
       const container = document.getElementById('dashAlertsList');
       if (!container) return;
-      const alerts = loadAlerts();
+      const alerts = loadAlertsSync();
       const t = I18N[S.lang] || I18N.en;
 
       const entries = [];
@@ -3835,16 +3933,17 @@
       }).join('') + `</div>`;
     }
 
-    function removeAlertItem(sym, dir) {
-      const alerts = loadAlerts();
-      if (alerts[sym]) {
-        delete alerts[sym][dir];
-        if (!Object.keys(alerts[sym]).length) delete alerts[sym];
-        saveAlerts(alerts);
-        renderDashboardAlerts();
-        if (S.sym === sym) renderAlertCard();
-        showToast(`Removed alert for ${sym}`, 'success');
+    async function removeAlertItem(sym, dir) {
+      if (SB) {
+        await SB.from('alerts').delete().eq('symbol', sym).eq('direction', dir);
       }
+      if (_alertsCache[sym]) {
+        delete _alertsCache[sym][dir];
+        if (!Object.keys(_alertsCache[sym]).length) delete _alertsCache[sym];
+      }
+      renderDashboardAlerts();
+      if (S.sym === sym) renderAlertCard();
+      showToast(`Removed alert for ${sym}`, 'success');
     }
 
     function renderAlertEmailNote() {
@@ -3859,55 +3958,42 @@
     }
 
     async function checkAlerts() {
-      const alerts = loadAlerts();
+      const alerts = loadAlertsSync();
       if (!Object.keys(alerts).length) return;
       let changed = false;
       for (const sym of Object.keys(alerts)) {
         let price = null;
         let name = alerts[sym].above?.name || alerts[sym].below?.name || sym;
 
-        // 1. Check if currently active stock on page
         if (S.sym === sym && S.quote && S.quote.c) {
           price = S.quote.c;
           if (S.profile?.name) name = S.profile.name;
         }
-
-        // 2. Check in wishlist
         if (!price && S.wl) {
           const entry = S.wl.find(w => w.symbol === sym);
-          if (entry?._quote?.c) {
-            price = entry._quote.c;
-            if (entry.name) name = entry.name;
-          }
+          if (entry?._quote?.c) { price = entry._quote.c; if (entry.name) name = entry.name; }
         }
-
-        // 3. Fallback: fetch current quote
         if (!price) {
-          try {
-            const q = await fetchQ(sym);
-            if (q && q.c) price = q.c;
-          } catch (e) {}
+          try { const q = await fetchQ(sym); if (q && q.c) price = q.c; } catch (e) {}
         }
-
         if (!price) continue;
 
         const a = alerts[sym];
         if (a.above && price >= a.above.price) {
           await sendAlertEmail(sym, name, 'above', a.above.price, price);
-          delete a.above;
+          if (SB) await SB.from('alerts').delete().eq('symbol', sym).eq('direction', 'above');
+          if (_alertsCache[sym]) delete _alertsCache[sym].above;
           changed = true;
         }
         if (a.below && price <= a.below.price) {
           await sendAlertEmail(sym, name, 'below', a.below.price, price);
-          delete a.below;
+          if (SB) await SB.from('alerts').delete().eq('symbol', sym).eq('direction', 'below');
+          if (_alertsCache[sym]) delete _alertsCache[sym].below;
           changed = true;
         }
-        if (!Object.keys(a).length) delete alerts[sym];
+        if (_alertsCache[sym] && !Object.keys(_alertsCache[sym]).length) delete _alertsCache[sym];
       }
-      if (changed) {
-        saveAlerts(alerts);
-        renderAlertCard();
-      }
+      if (changed) { renderAlertCard(); renderDashboardAlerts(); }
     }
 
     // Utils
@@ -4421,6 +4507,113 @@
     async function removeWatchlistFromSupabase(symbol) {
       if (!SB) return;
       try { await SB.from('watchlist').delete().eq('symbol', symbol); } catch(e) {}
+    }
+
+    // ===== SUPABASE REALTIME ALERT SYNC =====
+    function subscribeAlerts() {
+      if (!SB) return;
+      SB.channel('alerts-realtime')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'alerts' }, async () => {
+          await loadAlerts();
+          renderAlertCard();
+          renderDashboardAlerts();
+          updateAlertStats();
+        })
+        .subscribe();
+    }
+
+    // ===== DASHBOARD EXTRAS =====
+    function updateDashboardExtras() {
+      renderTopMovers();
+      renderPfSnapshot();
+      updateAlertStats();
+    }
+
+    function renderTopMovers() {
+      const wdq = S.wl.filter(s => s._quote);
+      const container = document.getElementById('dashWatchlist');
+      const existing = document.getElementById('dashMovers');
+      if (!wdq.length || !container) { if (existing) existing.remove(); return; }
+      const sorted = [...wdq].sort((a, b) => Math.abs(b._quote.dp) - Math.abs(a._quote.dp));
+      const top = sorted.slice(0, 5);
+      const html = `<div class="dash-movers">${top.map(s => {
+        const d = s._quote.dp >= 0 ? 'up' : 'down';
+        const pct = (s._quote.dp >= 0 ? '+' : '') + s._quote.dp.toFixed(2) + '%';
+        return `<div class="mover-pill ${d}" onclick="loadStock('${esc(s.symbol)}')"><span class="mover-sym">${esc(s.symbol)}</span><span class="mover-pct">${pct}</span></div>`;
+      }).join('')}</div>`;
+      if (!existing) {
+        const div = document.createElement('div');
+        div.id = 'dashMovers'; div.innerHTML = html;
+        container.appendChild(div);
+      } else { existing.innerHTML = html; }
+    }
+
+    function renderPfSnapshot() {
+      const section = document.getElementById('dashPfSnapshotSection');
+      const snap = document.getElementById('dashPfSnapshot');
+      if (!section || !snap) return;
+      if (!PF.unlocked || !PF.positions || !PF.positions.length) { section.style.display = 'none'; return; }
+      section.style.display = 'block';
+      const rate = PF.usdThb || 33.5;
+      let costUsd = 0, valUsd = 0;
+      PF.positions.forEach(pos => {
+        const wl = S.wl.find(w => w.symbol === pos.symbol);
+        const curPrice = (S.sym === pos.symbol && S.quote?.c) ? S.quote.c : wl?._quote?.c;
+        if (!curPrice) return;
+        const isThai = pos.symbol.endsWith('.BK');
+        const invAmt = pos.invested_amount ?? (pos.shares * pos.avg_cost);
+        const invUsd = (pos.invested_currency === 'THB') ? invAmt / rate : invAmt;
+        const valU = isThai ? (curPrice * pos.shares) / rate : curPrice * pos.shares;
+        costUsd += invUsd; valUsd += valU;
+      });
+      if (!costUsd) { section.style.display = 'none'; return; }
+      const pl = valUsd - costUsd;
+      const pct = costUsd > 0 ? (pl / costUsd) * 100 : 0;
+      const dir = pl >= 0 ? 'up' : 'down';
+      const sign = pl >= 0 ? '+' : '';
+      snap.innerHTML = `<div class="pf-snapshot-strip" onclick="openPortfolioPage()" style="cursor:pointer;">
+        <div class="pf-snap-card">
+          <div class="pf-snap-lbl">Total Invested</div>
+          <div class="pf-snap-val">$${fmtNum(costUsd)}</div>
+          <div class="pf-snap-sub">฿${Math.round(costUsd * rate).toLocaleString()}</div>
+        </div>
+        <div class="pf-snap-card">
+          <div class="pf-snap-lbl">Market Value</div>
+          <div class="pf-snap-val ${dir}">$${fmtNum(valUsd)}</div>
+          <div class="pf-snap-sub">฿${Math.round(valUsd * rate).toLocaleString()}</div>
+        </div>
+        <div class="pf-snap-card">
+          <div class="pf-snap-lbl">Unrealized P&amp;L</div>
+          <div class="pf-snap-val ${dir}">${sign}$${fmtNum(Math.abs(pl))}</div>
+          <div class="pf-snap-sub ${dir}">${sign}${pct.toFixed(2)}%</div>
+        </div>
+      </div>`;
+    }
+
+    function updateAlertStats() {
+      const alerts = loadAlertsSync();
+      const total = Object.values(alerts).flatMap(a => Object.keys(a)).length;
+      const existing = document.getElementById('dashAlertStats');
+      if (!total) { if (existing) existing.remove(); return; }
+      let near = 0;
+      Object.entries(alerts).forEach(([sym, a]) => {
+        const wl = S.wl.find(w => w.symbol === sym);
+        const cur = (S.sym === sym && S.quote?.c) ? S.quote.c : wl?._quote?.c;
+        if (!cur) return;
+        if (a.above && Math.abs(cur - a.above.price) / a.above.price < 0.02) near++;
+        if (a.below && Math.abs(cur - a.below.price) / a.below.price < 0.02) near++;
+      });
+      const statsHtml = `<div class="dash-alert-stats">
+        <div class="alert-stat-badge">🔔 ${total} active alert${total > 1 ? 's' : ''}</div>
+        ${near ? `<div class="alert-stat-badge alert-near-badge">⚡ ${near} near trigger!</div>` : ''}
+      </div>`;
+      const container = document.getElementById('dashAlertsList');
+      if (!container) return;
+      if (!existing) {
+        const div = document.createElement('div');
+        div.id = 'dashAlertStats'; div.innerHTML = statsHtml;
+        container.parentElement.insertBefore(div, container);
+      } else { existing.innerHTML = statsHtml; }
     }
   </script>
 </body>
