@@ -140,6 +140,17 @@ export default async function handler(req, res) {
       marketCap: meta.marketCap     || 0,
       marketState: computedMarketState, // computed from timestamps
       isThai,
+      // Extended Metrics & Fundamentals from Yahoo meta
+      v: meta.regularMarketVolume ?? null,
+      avgVolume: meta.averageDailyVolume3Month ?? meta.averageDailyVolume10Day ?? null,
+      fiftyTwoWeekHigh: meta.fiftyTwoWeekHigh ?? null,
+      fiftyTwoWeekLow: meta.fiftyTwoWeekLow ?? null,
+      trailingPE: meta.trailingPE ?? null,
+      epsTrailingTwelveMonths: meta.epsTrailingTwelveMonths ?? null,
+      beta: meta.beta ?? null,
+      dividendYield: meta.dividendYield ?? null,
+      priceToBook: meta.priceToBook ?? null,
+      forwardPE: meta.forwardPE ?? null,
       // Pre-market
       preMarketPrice,
       preMarketChange,

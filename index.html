@@ -526,7 +526,7 @@
     /* Summary — horizontal scroll on mobile */
     .summary-strip {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(5, 1fr);
       gap: 10px;
       margin-bottom: 20px;
     }
@@ -2416,7 +2416,117 @@
     }
     @media (max-width: 768px) {
       .pf-snapshot-strip { grid-template-columns: 1fr 1fr; }
+      .summary-strip { grid-template-columns: repeat(2, 1fr); }
     }
+
+    /* ===== STOCK 2-COLUMN LAYOUT ===== */
+    .stock-two-col { display: grid; grid-template-columns: 1fr; gap: 12px; }
+    .stock-col-left { min-width: 0; }
+    .stock-col-right { display: flex; flex-direction: column; gap: 12px; }
+    @media (min-width: 900px) {
+      .stock-two-col { grid-template-columns: 1fr 300px; align-items: start; }
+    }
+
+    /* ===== EXTENDED STATS 8 CARDS ===== */
+    .stats-grid-8 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px; }
+    .stat-card-sm { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius); padding: 10px 12px; transition: var(--transition); }
+    .stat-card-sm:hover { border-color: var(--border-primary); }
+    @media (max-width: 768px) { .stats-grid-8 { grid-template-columns: repeat(2, 1fr); } }
+
+    /* ===== TECHNICAL PANEL ===== */
+    .technical-panel { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; }
+    .tech-tabs { display: flex; gap: 6px; margin-bottom: 14px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 10px; flex-wrap: wrap; }
+    .tech-tab { padding: 5px 12px; border-radius: var(--radius-xs); font-size: 11px; font-weight: 600; color: var(--text-muted); background: transparent; transition: var(--transition); cursor: pointer; border: none; }
+    .tech-tab:hover { color: var(--text-secondary); background: var(--bg-elevated); }
+    .tech-tab.active { background: var(--accent-glow); color: var(--accent-light); }
+    .tech-section { display: none; }
+    .tech-section.active { display: block; animation: fadeIn 0.15s ease; }
+    /* Pivot */
+    .pivot-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+    @media (max-width: 700px) { .pivot-grid { grid-template-columns: repeat(4, 1fr); } }
+    .pivot-card { background: var(--bg-elevated); border-radius: var(--radius-xs); padding: 9px 6px; text-align: center; border: 1px solid var(--border-subtle); }
+    .pivot-card.resistance { border-color: rgba(239,68,68,0.35); }
+    .pivot-card.pivot-center { border-color: rgba(124,58,237,0.45); background: var(--accent-glow); }
+    .pivot-card.support { border-color: rgba(16,185,129,0.35); }
+    .pivot-lbl { font-size: 9px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px; letter-spacing: 0.5px; font-weight: 600; }
+    .pivot-val { font-family: var(--font-mono); font-size: 11px; font-weight: 700; }
+    .pivot-card.resistance .pivot-val { color: var(--red); }
+    .pivot-card.pivot-center .pivot-val { color: var(--accent-light); }
+    .pivot-card.support .pivot-val { color: var(--green); }
+    .pivot-near { font-size: 8px; color: var(--amber); margin-top: 2px; }
+    /* Fibonacci */
+    .fibo-bar-wrap { position: relative; height: 24px; background: var(--bg-elevated); border-radius: var(--radius-sm); margin: 22px 0 12px; border: 1px solid var(--border-subtle); }
+    .fibo-price-marker { position: absolute; top: -10px; bottom: -10px; width: 2px; background: var(--accent-light); border-radius: 2px; z-index: 2; box-shadow: 0 0 8px rgba(167,139,250,0.5); }
+    .fibo-price-marker::after { content: attr(data-label); position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%); font-size: 9px; color: var(--accent-light); font-family: var(--font-mono); white-space: nowrap; font-weight: 700; background: var(--bg-card); padding: 1px 4px; border-radius: 3px; }
+    .fibo-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; }
+    @media (max-width: 600px) { .fibo-grid { grid-template-columns: repeat(3, 1fr); } }
+    .fibo-item { background: var(--bg-elevated); border-radius: var(--radius-xs); padding: 7px 8px; border-left: 2px solid var(--border-subtle); }
+    .fibo-pct { font-size: 9px; color: var(--text-muted); font-weight: 600; }
+    .fibo-v { font-family: var(--font-mono); font-size: 11px; font-weight: 600; }
+    /* Moving Averages */
+    .ma-list { display: flex; flex-direction: column; gap: 8px; }
+    .ma-row { display: flex; align-items: center; gap: 10px; background: var(--bg-elevated); border-radius: var(--radius-xs); padding: 10px 14px; border: 1px solid var(--border-subtle); }
+    .ma-label { font-size: 11px; font-weight: 700; color: var(--text-secondary); width: 50px; flex-shrink: 0; }
+    .ma-val { font-family: var(--font-mono); font-size: 13px; font-weight: 600; flex: 1; }
+    .ma-badge { font-family: var(--font-mono); font-size: 10px; padding: 2px 8px; border-radius: var(--radius-pill); font-weight: 700; }
+    .ma-badge.above { background: var(--green-bg); color: var(--green); }
+    .ma-badge.below { background: var(--red-bg); color: var(--red); }
+    .ma-badge.na { background: var(--bg-card); color: var(--text-muted); font-family: var(--font-sans); }
+    /* RSI */
+    .rsi-wrap { display: flex; flex-direction: column; align-items: center; padding: 6px 0; }
+    .rsi-number { font-family: var(--font-mono); font-size: 42px; font-weight: 800; text-align: center; }
+    .rsi-signal { font-size: 12px; font-weight: 700; text-align: center; padding: 3px 16px; border-radius: var(--radius-pill); display: inline-block; margin-top: 6px; }
+    .rsi-signal.oversold { background: var(--green-bg); color: var(--green); }
+    .rsi-signal.neutral { background: var(--amber-bg); color: var(--amber); }
+    .rsi-signal.overbought { background: var(--red-bg); color: var(--red); }
+    .rsi-bar-track { width: 100%; max-width: 280px; height: 6px; background: linear-gradient(90deg, var(--green), var(--amber), var(--red)); border-radius: 3px; margin-top: 14px; position: relative; }
+    .rsi-bar-cursor { position: absolute; top: 50%; width: 12px; height: 12px; border-radius: 50%; background: white; border: 2px solid var(--bg-card); transform: translate(-50%, -50%); box-shadow: 0 0 6px rgba(0,0,0,0.5); transition: left 0.5s ease; }
+    .rsi-bar-labels { display: flex; justify-content: space-between; width: 100%; max-width: 280px; font-size: 9px; color: var(--text-muted); margin-top: 4px; }
+
+    /* ===== VALUATION METRICS ===== */
+    .val-card { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius); padding: 14px 16px; }
+    .val-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+    .val-item { background: var(--bg-elevated); border-radius: var(--radius-xs); padding: 10px 12px; border: 1px solid var(--border-subtle); transition: var(--transition); }
+    .val-item:hover { border-color: var(--border-primary); }
+    .val-lbl { font-size: 9px; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px; margin-bottom: 4px; font-weight: 600; }
+    .val-num { font-family: var(--font-mono); font-size: 15px; font-weight: 700; }
+    .val-sub { font-size: 9px; color: var(--text-muted); margin-top: 1px; }
+    .val-loading { padding: 16px; text-align: center; color: var(--text-muted); font-size: 11px; }
+
+    /* ===== COMPANY CARD ===== */
+    .company-card { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius); padding: 14px 16px; }
+    .company-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 10px; }
+    .company-item { background: var(--bg-elevated); border-radius: var(--radius-xs); padding: 8px 10px; }
+    .company-lbl { font-size: 9px; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px; margin-bottom: 3px; font-weight: 600; }
+    .company-val { font-size: 11px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .company-val a { color: var(--accent-light); text-decoration: none; }
+    .company-val a:hover { text-decoration: underline; }
+    .company-full { grid-column: 1 / -1; }
+    .company-desc { font-size: 11px; color: var(--text-secondary); line-height: 1.65; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border-subtle); display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden; }
+
+    /* ===== MARKET CLOCK (Dashboard) ===== */
+    .dash-clock-strip { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+    .clock-card { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius); padding: 12px 16px; flex: 1; min-width: 150px; display: flex; align-items: center; gap: 12px; transition: var(--transition); cursor: default; }
+    .clock-card:hover { border-color: var(--border-primary); }
+    .clock-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .clock-dot.open { background: var(--green); animation: dotBlink 1.5s infinite; }
+    .clock-dot.closed { background: var(--text-muted); }
+    .clock-dot.pre { background: var(--blue); animation: dotBlink 1.5s infinite; }
+    .clock-dot.after { background: var(--amber); animation: dotBlink 1.5s infinite; }
+    .clock-mkt-lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 2px; }
+    .clock-session-lbl { font-size: 13px; font-weight: 700; }
+    .clock-session-lbl.open { color: var(--green); }
+    .clock-session-lbl.closed { color: var(--text-muted); }
+    .clock-session-lbl.pre { color: var(--blue); }
+    .clock-session-lbl.after { color: var(--amber); }
+    .clock-countdown-txt { font-size: 10px; color: var(--text-muted); margin-top: 1px; font-family: var(--font-mono); }
+
+    /* ===== SENTIMENT CARD ===== */
+    .sentiment-emoji { font-size: 26px; flex-shrink: 0; }
+    .sentiment-track { height: 5px; background: linear-gradient(90deg, var(--red), var(--amber), var(--green)); border-radius: 3px; position: relative; margin-top: 6px; }
+    .sentiment-cursor { position: absolute; top: 50%; width: 10px; height: 10px; border-radius: 50%; background: white; border: 2px solid var(--bg-card); transform: translate(-50%,-50%); box-shadow: 0 0 4px rgba(0,0,0,0.5); transition: left 0.5s ease; }
+    .sentiment-label { font-size: 12px; font-weight: 700; }
+    .sentiment-sub { font-size: 10px; color: var(--text-muted); margin-top: 1px; }
   </style>
 </head>
 
@@ -2600,6 +2710,9 @@
             </button>
           </div>
 
+          <!-- Market Clock Strip -->
+          <div class="dash-clock-strip" id="marketClockStrip"></div>
+
           <div class="summary-strip">
             <div class="summary-card">
               <div class="summary-icon si-accent"><svg viewBox="0 0 24 24">
@@ -2627,6 +2740,8 @@
                 <div class="summary-num" id="summaryLosers">—</div>
                 <div class="summary-lbl">Losers</div>
               </div>
+            </div>
+            <div class="summary-card" id="sentimentCard" style="display:none;">
             </div>
             <div class="summary-card">
               <div class="summary-icon si-amber"><svg viewBox="0 0 24 24">
@@ -2740,100 +2855,232 @@
               </div>
             </div>
             
-            <div class="chart-wrap">
-              <div class="chart-header">
-                <div class="chart-info-tag" id="chartInfoTag">1D • Area Chart</div>
-                <div class="chart-tabs">
-                  <button class="chart-tab active" id="chartTab1D" onclick="setChartRange('1D')">1D</button>
-                  <button class="chart-tab" id="chartTab1W" onclick="setChartRange('1W')">1W</button>
-                  <button class="chart-tab" id="chartTab1M" onclick="setChartRange('1M')">1M</button>
-                  <button class="chart-tab" id="chartTab1Y" onclick="setChartRange('1Y')">1Y</button>
-                </div>
-              </div>
-              <div class="chart-container" id="stockChartContainer">
-                <div class="chart-loading" id="chartLoading" style="display:none">
-                  <div class="pf-spinner" style="width:20px;height:20px;"></div>
-                  <span>Loading chart...</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="stats-grid">
-              <div class="stat-card">
-                <div class="stat-label">Open</div>
-                <div class="stat-value" id="statOpen">—</div>
-              </div>
-              <div class="stat-card">
-                <div class="stat-label">High</div>
-                <div class="stat-value" id="statHigh">—</div>
-              </div>
-              <div class="stat-card">
-                <div class="stat-label">Low</div>
-                <div class="stat-value" id="statLow">—</div>
-              </div>
-              <div class="stat-card">
-                <div class="stat-label">Prev Close</div>
-                <div class="stat-value" id="statPrevClose">—</div>
-              </div>
-            </div>
-            <div class="extra-info-grid">
-              <div class="info-card">
-                <div class="info-label">Industry</div>
-                <div class="info-value" id="infoIndustry">—</div>
-              </div>
-              <div class="info-card">
-                <div class="info-label">Country</div>
-                <div class="info-value" id="infoCountry">—</div>
-              </div>
-              <div class="info-card">
-                <div class="info-label">Market Cap</div>
-                <div class="info-value mono" id="infoMarketCap">—</div>
-              </div>
-            </div>
-
-            <!-- Price Alert Card -->
-            <div class="alert-card" id="alertCard">
-              <div class="alert-card-header">
-                <div class="alert-card-icon"><svg viewBox="0 0 24 24">
-                    <path
-                      d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z" />
-                  </svg></div>
-                <span class="alert-card-title" id="alertCardTitle">Price Alerts</span>
-                <span class="alert-active-tag" id="alertActiveTag" style="display:none">Active</span>
-              </div>
-              <div class="alert-rows">
-                <div class="alert-row">
-                  <div style="display:flex;align-items:center;gap:8px;width:100%;">
-                    <span class="alert-dir-badge above">ABOVE</span>
-                    <div class="alert-input-wrap" style="flex:1;"><input type="number" class="alert-input" id="alertAboveInput"
-                        placeholder="0.00" step="0.01" min="0" /></div>
-                    <button class="alert-btn-set" onclick="setAlert('above')"><span
-                        id="alertAboveBtnTxt">Set</span></button>
-                    <button class="alert-btn-clear" id="alertAboveClear" onclick="clearAlert('above')" title="Clear"
-                      style="display:none">×</button>
+            <div class="stock-two-col">
+              <!-- Left Column: Chart, Extended Stats, Technical Analysis -->
+              <div class="stock-col-left">
+                <div class="chart-wrap">
+                  <div class="chart-header">
+                    <div class="chart-info-tag" id="chartInfoTag">1D • Area Chart</div>
+                    <div class="chart-tabs">
+                      <button class="chart-tab active" id="chartTab1D" onclick="setChartRange('1D')">1D</button>
+                      <button class="chart-tab" id="chartTab1W" onclick="setChartRange('1W')">1W</button>
+                      <button class="chart-tab" id="chartTab1M" onclick="setChartRange('1M')">1M</button>
+                      <button class="chart-tab" id="chartTab1Y" onclick="setChartRange('1Y')">1Y</button>
+                    </div>
                   </div>
-                  <div class="alert-quick-fills" id="alertAboveQuick"></div>
-                </div>
-                <div class="alert-row">
-                  <div style="display:flex;align-items:center;gap:8px;width:100%;">
-                    <span class="alert-dir-badge below">BELOW</span>
-                    <div class="alert-input-wrap" style="flex:1;"><input type="number" class="alert-input" id="alertBelowInput"
-                        placeholder="0.00" step="0.01" min="0" /></div>
-                    <button class="alert-btn-set" onclick="setAlert('below')"><span
-                        id="alertBelowBtnTxt">Set</span></button>
-                    <button class="alert-btn-clear" id="alertBelowClear" onclick="clearAlert('below')" title="Clear"
-                      style="display:none">×</button>
+                  <div class="chart-container" id="stockChartContainer">
+                    <div class="chart-loading" id="chartLoading" style="display:none">
+                      <div class="pf-spinner" style="width:20px;height:20px;"></div>
+                      <span>Loading chart...</span>
+                    </div>
                   </div>
-                  <div class="alert-quick-fills" id="alertBelowQuick"></div>
+                </div>
+
+                <!-- Extended 8 Stats -->
+                <div class="stats-grid-8">
+                  <div class="stat-card-sm">
+                    <div class="stat-label">Open</div>
+                    <div class="stat-value" id="statOpen">—</div>
+                  </div>
+                  <div class="stat-card-sm">
+                    <div class="stat-label">High</div>
+                    <div class="stat-value" id="statHigh">—</div>
+                  </div>
+                  <div class="stat-card-sm">
+                    <div class="stat-label">Low</div>
+                    <div class="stat-value" id="statLow">—</div>
+                  </div>
+                  <div class="stat-card-sm">
+                    <div class="stat-label">Prev Close</div>
+                    <div class="stat-value" id="statPrevClose">—</div>
+                  </div>
+                  <div class="stat-card-sm">
+                    <div class="stat-label">Volume</div>
+                    <div class="stat-value" id="statVolume">—</div>
+                  </div>
+                  <div class="stat-card-sm">
+                    <div class="stat-label">Avg Volume</div>
+                    <div class="stat-value" id="statAvgVolume">—</div>
+                  </div>
+                  <div class="stat-card-sm">
+                    <div class="stat-label">52W High</div>
+                    <div class="stat-value" id="stat52High" style="color:var(--green)">—</div>
+                  </div>
+                  <div class="stat-card-sm">
+                    <div class="stat-label">52W Low</div>
+                    <div class="stat-value" id="stat52Low" style="color:var(--red)">—</div>
+                  </div>
+                </div>
+
+                <!-- Technical Analysis Panel (Pivot, FIBO, MA, RSI) -->
+                <div class="technical-panel" id="techPanel">
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                    <div class="section-title" style="margin-bottom:0;"><svg viewBox="0 0 24 24"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg>Technical Indicators</div>
+                    <span id="techTimeframeTag" style="font-size:10px;color:var(--text-muted);font-family:var(--font-mono);">Daily / Classic</span>
+                  </div>
+                  <div class="tech-tabs">
+                    <button class="tech-tab active" onclick="switchTechTab('pivot', this)">Pivot S/R</button>
+                    <button class="tech-tab" onclick="switchTechTab('fibo', this)">Fibonacci</button>
+                    <button class="tech-tab" onclick="switchTechTab('ma', this)">Moving Averages</button>
+                    <button class="tech-tab" onclick="switchTechTab('rsi', this)">RSI (14)</button>
+                  </div>
+                  
+                  <!-- Tab 1: Pivot S/R -->
+                  <div class="tech-section active" id="techSecPivot">
+                    <div class="pivot-grid" id="pivotGrid">
+                      <!-- Rendered by JS -->
+                    </div>
+                  </div>
+
+                  <!-- Tab 2: Fibonacci -->
+                  <div class="tech-section" id="techSecFibo">
+                    <div class="fibo-bar-wrap" id="fiboBarWrap">
+                      <div class="fibo-price-marker" id="fiboPriceMarker" data-label=""></div>
+                    </div>
+                    <div class="fibo-grid" id="fiboGrid">
+                      <!-- Rendered by JS -->
+                    </div>
+                  </div>
+
+                  <!-- Tab 3: Moving Averages -->
+                  <div class="tech-section" id="techSecMa">
+                    <div class="ma-list" id="maList">
+                      <!-- Rendered by JS -->
+                    </div>
+                  </div>
+
+                  <!-- Tab 4: RSI -->
+                  <div class="tech-section" id="techSecRsi">
+                    <div class="rsi-wrap">
+                      <div class="rsi-number" id="rsiNumber">—</div>
+                      <div class="rsi-signal neutral" id="rsiSignal">Neutral</div>
+                      <div class="rsi-bar-track">
+                        <div class="rsi-bar-cursor" id="rsiCursor" style="left:50%"></div>
+                      </div>
+                      <div class="rsi-bar-labels">
+                        <span>0 Oversold</span>
+                        <span>30</span>
+                        <span>50</span>
+                        <span>70</span>
+                        <span>100 Overbought</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
-              <div class="alert-email-note" id="alertEmailNote">
-                <svg viewBox="0 0 24 24">
-                  <path
-                    d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z" />
-                </svg>
-                <span id="alertEmailNoteText">Alerts will be sent to — <a onclick="openSettings()">Set email in
-                    Settings</a></span>
+
+              <!-- Right Column: Valuation, Company Info, Alerts -->
+              <div class="stock-col-right">
+                <!-- Valuation & Key Metrics -->
+                <div class="val-card" id="valuationCard">
+                  <div class="section-title" style="margin-bottom:0;"><svg viewBox="0 0 24 24"><path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/></svg>Key Valuation</div>
+                  <div class="val-grid">
+                    <div class="val-item">
+                      <div class="val-lbl">P/E (TTM)</div>
+                      <div class="val-num" id="valPE">—</div>
+                      <div class="val-sub" id="valPEsub">Trailing</div>
+                    </div>
+                    <div class="val-item">
+                      <div class="val-lbl">Forward P/E</div>
+                      <div class="val-num" id="valFwdPE">—</div>
+                      <div class="val-sub">Estimated</div>
+                    </div>
+                    <div class="val-item">
+                      <div class="val-lbl">EPS (TTM)</div>
+                      <div class="val-num" id="valEPS">—</div>
+                      <div class="val-sub">Per Share</div>
+                    </div>
+                    <div class="val-item">
+                      <div class="val-lbl">Beta</div>
+                      <div class="val-num" id="valBeta">—</div>
+                      <div class="val-sub">Volatility</div>
+                    </div>
+                    <div class="val-item">
+                      <div class="val-lbl">Dividend Yield</div>
+                      <div class="val-num" id="valDivYield">—</div>
+                      <div class="val-sub">Annual</div>
+                    </div>
+                    <div class="val-item">
+                      <div class="val-lbl">P/B Ratio</div>
+                      <div class="val-num" id="valPB">—</div>
+                      <div class="val-sub">Book Value</div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Company Details Card -->
+                <div class="company-card" id="companyCard">
+                  <div class="section-title" style="margin-bottom:0;"><svg viewBox="0 0 24 24"><path d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10zm-2-8h-2v2h2v-2zm0 4h-2v2h2v-2z"/></svg>Company Profile</div>
+                  <div class="company-grid">
+                    <div class="company-item">
+                      <div class="company-lbl">Industry</div>
+                      <div class="company-val" id="infoIndustry">—</div>
+                    </div>
+                    <div class="company-item">
+                      <div class="company-lbl">Country</div>
+                      <div class="company-val" id="infoCountry">—</div>
+                    </div>
+                    <div class="company-item">
+                      <div class="company-lbl">Market Cap</div>
+                      <div class="company-val" id="infoMarketCap">—</div>
+                    </div>
+                    <div class="company-item">
+                      <div class="company-lbl">Website</div>
+                      <div class="company-val" id="infoWebsite">—</div>
+                    </div>
+                    <div class="company-item company-full">
+                      <div class="company-lbl">IPO Date</div>
+                      <div class="company-val" id="infoIpoDate">—</div>
+                    </div>
+                  </div>
+                  <div class="company-desc" id="infoDescription" style="display:none;"></div>
+                </div>
+
+                <!-- Price Alert Card -->
+                <div class="alert-card" id="alertCard">
+                  <div class="alert-card-header">
+                    <div class="alert-card-icon"><svg viewBox="0 0 24 24">
+                        <path
+                          d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z" />
+                      </svg></div>
+                    <span class="alert-card-title" id="alertCardTitle">Price Alerts</span>
+                    <span class="alert-active-tag" id="alertActiveTag" style="display:none">Active</span>
+                  </div>
+                  <div class="alert-rows">
+                    <div class="alert-row">
+                      <div style="display:flex;align-items:center;gap:8px;width:100%;">
+                        <span class="alert-dir-badge above">ABOVE</span>
+                        <div class="alert-input-wrap" style="flex:1;"><input type="number" class="alert-input" id="alertAboveInput"
+                            placeholder="0.00" step="0.01" min="0" /></div>
+                        <button class="alert-btn-set" onclick="setAlert('above')"><span
+                            id="alertAboveBtnTxt">Set</span></button>
+                        <button class="alert-btn-clear" id="alertAboveClear" onclick="clearAlert('above')" title="Clear"
+                          style="display:none">×</button>
+                      </div>
+                      <div class="alert-quick-fills" id="alertAboveQuick"></div>
+                    </div>
+                    <div class="alert-row">
+                      <div style="display:flex;align-items:center;gap:8px;width:100%;">
+                        <span class="alert-dir-badge below">BELOW</span>
+                        <div class="alert-input-wrap" style="flex:1;"><input type="number" class="alert-input" id="alertBelowInput"
+                            placeholder="0.00" step="0.01" min="0" /></div>
+                        <button class="alert-btn-set" onclick="setAlert('below')"><span
+                            id="alertBelowBtnTxt">Set</span></button>
+                        <button class="alert-btn-clear" id="alertBelowClear" onclick="clearAlert('below')" title="Clear"
+                          style="display:none">×</button>
+                      </div>
+                      <div class="alert-quick-fills" id="alertBelowQuick"></div>
+                    </div>
+                  </div>
+                  <div class="alert-email-note" id="alertEmailNote">
+                    <svg viewBox="0 0 24 24">
+                      <path
+                        d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z" />
+                    </svg>
+                    <span id="alertEmailNoteText">Alerts will be sent to — <a onclick="openSettings()">Set email in
+                        Settings</a></span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -3083,7 +3330,8 @@
     document.addEventListener('DOMContentLoaded', () => { initEmailJS(); initSupabase(); initApp(); setupEvents(); applyLanguage(); });
 
     function initApp() {
-      updateMarketStatus(); setInterval(updateMarketStatus, 60000);
+      updateMarketStatus(); setInterval(updateMarketStatus, 30000);
+      updateMarketClock(); setInterval(updateMarketClock, 10000);
       renderWishlist(); renderSectors(); updateDashboard();
       updateWishlistPrices().then(updateDashboard);
       loadSectorData(); startAutoRefresh(); updateLastRefresh();
@@ -3199,8 +3447,19 @@
                 dp: prevClose ? (change / prevClose) * 100 : 0,
                 h: meta.regularMarketDayHigh ?? curPrice,
                 l: meta.regularMarketDayLow ?? curPrice,
-                o: meta.regularMarketPrice ?? curPrice,
+                o: meta.regularMarketOpen ?? curPrice,
                 pc: prevClose,
+                v: meta.regularMarketVolume ?? null,
+                avgVolume: meta.averageDailyVolume3Month ?? meta.averageDailyVolume10Day ?? null,
+                fiftyTwoWeekHigh: meta.fiftyTwoWeekHigh ?? null,
+                fiftyTwoWeekLow: meta.fiftyTwoWeekLow ?? null,
+                trailingPE: meta.trailingPE ?? null,
+                epsTrailingTwelveMonths: meta.epsTrailingTwelveMonths ?? null,
+                beta: meta.beta ?? null,
+                dividendYield: meta.dividendYield ?? null,
+                priceToBook: meta.priceToBook ?? null,
+                forwardPE: meta.forwardPE ?? null,
+                marketCap: meta.marketCap || 0,
                 isThai: true
               };
             }
@@ -3223,6 +3482,182 @@
       }
 
       return null;
+    }
+
+    function fmtVol(v) {
+      if (v == null || isNaN(v) || v <= 0) return '—';
+      if (v >= 1e9) return (v / 1e9).toFixed(2) + 'B';
+      if (v >= 1e6) return (v / 1e6).toFixed(2) + 'M';
+      if (v >= 1e3) return (v / 1e3).toFixed(1) + 'K';
+      return Number(v).toLocaleString();
+    }
+
+    function switchTechTab(tab, btn) {
+      document.querySelectorAll('.tech-tab').forEach(b => b.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+      document.querySelectorAll('.tech-section').forEach(s => s.classList.remove('active'));
+      const secMap = { pivot: 'techSecPivot', fibo: 'techSecFibo', ma: 'techSecMa', rsi: 'techSecRsi' };
+      const sec = document.getElementById(secMap[tab]);
+      if (sec) sec.classList.add('active');
+    }
+
+    function renderValuation(q) {
+      const isTh = q.isThai;
+      const cs = isTh ? '฿' : '$';
+      document.getElementById('valPE').textContent = q.trailingPE ? q.trailingPE.toFixed(2) + 'x' : '—';
+      document.getElementById('valFwdPE').textContent = q.forwardPE ? q.forwardPE.toFixed(2) + 'x' : '—';
+      document.getElementById('valEPS').textContent = q.epsTrailingTwelveMonths != null ? cs + fmtNum(q.epsTrailingTwelveMonths) : '—';
+      document.getElementById('valBeta').textContent = q.beta != null ? q.beta.toFixed(2) : '—';
+      document.getElementById('valDivYield').textContent = q.dividendYield != null ? (q.dividendYield > 1 ? q.dividendYield.toFixed(2) : (q.dividendYield * 100).toFixed(2)) + '%' : '—';
+      document.getElementById('valPB').textContent = q.priceToBook != null ? q.priceToBook.toFixed(2) + 'x' : '—';
+    }
+
+    async function calcAndRenderTechnicals(q) {
+      if (!q || !q.c) return;
+      const cs = getCurSym(S.sym, q);
+      const high = q.h || q.c;
+      const low = q.l || q.c;
+      const close = q.c;
+
+      // 1. Classic Pivot Points
+      const P = (high + low + close) / 3;
+      const diffHL = high - low;
+      const R1 = (2 * P) - low;
+      const R2 = P + diffHL;
+      const R3 = high + 2 * (P - low);
+      const S1 = (2 * P) - high;
+      const S2 = P - diffHL;
+      const S3 = low - 2 * (high - P);
+
+      const levels = [
+        { key: 'S3', label: 'Support 3', val: S3, type: 'support' },
+        { key: 'S2', label: 'Support 2', val: S2, type: 'support' },
+        { key: 'S1', label: 'Support 1', val: S1, type: 'support' },
+        { key: 'P',  label: 'Pivot Point', val: P, type: 'pivot-center' },
+        { key: 'R1', label: 'Resist 1', val: R1, type: 'resistance' },
+        { key: 'R2', label: 'Resist 2', val: R2, type: 'resistance' },
+        { key: 'R3', label: 'Resist 3', val: R3, type: 'resistance' },
+      ];
+
+      const pivotGrid = document.getElementById('pivotGrid');
+      if (pivotGrid) {
+        pivotGrid.innerHTML = levels.map(l => {
+          const isNear = Math.abs(close - l.val) / l.val < 0.0075;
+          return `<div class="pivot-card ${l.type}">
+            <div class="pivot-lbl">${l.key}</div>
+            <div class="pivot-val">${cs}${fmtNum(l.val)}</div>
+            ${isNear ? '<div class="pivot-near">⚡ Near</div>' : ''}
+          </div>`;
+        }).join('');
+      }
+
+      // 2. Fibonacci Retracement
+      const rangeHigh = q.fiftyTwoWeekHigh || high;
+      const rangeLow = q.fiftyTwoWeekLow || low;
+      const rangeDiff = rangeHigh - rangeLow;
+      if (rangeDiff > 0) {
+        const fibLevels = [
+          { pct: '0% (Low)', val: rangeLow },
+          { pct: '23.6%', val: rangeLow + rangeDiff * 0.236 },
+          { pct: '38.2%', val: rangeLow + rangeDiff * 0.382 },
+          { pct: '50.0%', val: rangeLow + rangeDiff * 0.500 },
+          { pct: '61.8%', val: rangeLow + rangeDiff * 0.618 },
+          { pct: '78.6%', val: rangeLow + rangeDiff * 0.786 },
+          { pct: '100% (High)', val: rangeHigh },
+        ];
+
+        const marker = document.getElementById('fiboPriceMarker');
+        if (marker) {
+          const pctPos = Math.max(0, Math.min(100, ((close - rangeLow) / rangeDiff) * 100));
+          marker.style.left = `${pctPos}%`;
+          marker.setAttribute('data-label', `${cs}${fmtNum(close)} (${pctPos.toFixed(1)}%)`);
+        }
+
+        const fiboGrid = document.getElementById('fiboGrid');
+        if (fiboGrid) {
+          fiboGrid.innerHTML = fibLevels.map(f => `
+            <div class="fibo-item">
+              <div class="fibo-pct">${f.pct}</div>
+              <div class="fibo-v">${cs}${fmtNum(f.val)}</div>
+            </div>`).join('');
+        }
+      }
+
+      // 3. Moving Averages & RSI from 1M / daily chart
+      try {
+        const dailyCandles = await fetchChartCandles(S.sym, '1d', '1mo');
+        if (dailyCandles && dailyCandles.length >= 5) {
+          const closes = dailyCandles.map(c => c.close).filter(c => c != null && !isNaN(c));
+          
+          // MA20
+          let ma20 = null, ma50 = null;
+          if (closes.length >= 20) {
+            ma20 = closes.slice(-20).reduce((a,b)=>a+b, 0) / 20;
+          } else if (closes.length >= 10) {
+            ma20 = closes.slice(-10).reduce((a,b)=>a+b, 0) / 10;
+          }
+
+          if (closes.length >= 50) {
+            ma50 = closes.slice(-50).reduce((a,b)=>a+b, 0) / 50;
+          }
+
+          const maList = document.getElementById('maList');
+          if (maList) {
+            const renderMaRow = (name, val) => {
+              if (val == null) return `<div class="ma-row"><span class="ma-label">${name}</span><span class="ma-val">—</span><span class="ma-badge na">N/A</span></div>`;
+              const diffPct = ((close - val) / val) * 100;
+              const isAbove = diffPct >= 0;
+              const badgeCls = isAbove ? 'above' : 'below';
+              const sign = isAbove ? '+' : '';
+              return `<div class="ma-row">
+                <span class="ma-label">${name}</span>
+                <span class="ma-val">${cs}${fmtNum(val)}</span>
+                <span class="ma-badge ${badgeCls}">${isAbove ? 'Above' : 'Below'} (${sign}${diffPct.toFixed(2)}%)</span>
+              </div>`;
+            };
+            maList.innerHTML = renderMaRow(closes.length >= 20 ? 'MA 20' : 'MA 10', ma20) + renderMaRow('MA 50', ma50);
+          }
+
+          // RSI 14
+          if (closes.length >= 14) {
+            let gains = 0, losses = 0;
+            for (let i = closes.length - 14; i < closes.length; i++) {
+              const diff = closes[i] - closes[i - 1];
+              if (diff >= 0) gains += diff;
+              else losses += Math.abs(diff);
+            }
+            const avgGain = gains / 14;
+            const avgLoss = losses / 14;
+            let rsi = 50;
+            if (avgLoss === 0) {
+              rsi = 100;
+            } else {
+              const rs = avgGain / avgLoss;
+              rsi = 100 - (100 / (1 + rs));
+            }
+
+            const rsiNumEl = document.getElementById('rsiNumber');
+            const rsiSigEl = document.getElementById('rsiSignal');
+            const rsiCurEl = document.getElementById('rsiCursor');
+            if (rsiNumEl) rsiNumEl.textContent = rsi.toFixed(1);
+            if (rsiCurEl) rsiCurEl.style.left = `${Math.max(2, Math.min(98, rsi))}%`;
+            if (rsiSigEl) {
+              if (rsi < 30) {
+                rsiSigEl.className = 'rsi-signal oversold';
+                rsiSigEl.textContent = `Oversold (${rsi.toFixed(1)}) — Bullish Reversal Area`;
+              } else if (rsi > 70) {
+                rsiSigEl.className = 'rsi-signal overbought';
+                rsiSigEl.textContent = `Overbought (${rsi.toFixed(1)}) — Pullback Risk`;
+              } else {
+                rsiSigEl.className = 'rsi-signal neutral';
+                rsiSigEl.textContent = `Neutral (${rsi.toFixed(1)})`;
+              }
+            }
+          }
+        }
+      } catch(e) {
+        console.warn('Technical MA/RSI calculation error:', e);
+      }
     }
 
     // Search
@@ -3310,10 +3745,15 @@
             country: isThai ? 'Thailand' : (pr.status === 'fulfilled' ? pr.value?.country : 'USA'),
             marketCapitalization: qData.marketCap ? qData.marketCap / 1e6 : (pr.status === 'fulfilled' ? pr.value?.marketCapitalization : null),
             logo: pr.status === 'fulfilled' ? pr.value?.logo : null,
+            weburl: pr.status === 'fulfilled' ? pr.value?.weburl : null,
+            ipo: pr.status === 'fulfilled' ? pr.value?.ipo : null,
+            description: pr.status === 'fulfilled' ? pr.value?.description : null,
             isThai
           };
           S.profile = prof;
           renderProfile(prof);
+          renderValuation(qData);
+          calcAndRenderTechnicals(qData);
         } else {
           showToast('No quote for ' + sym, 'error');
           if (pr.status === 'fulfilled' && pr.value?.name) { S.profile = pr.value; renderProfile(pr.value); }
@@ -3332,6 +3772,21 @@
       document.getElementById('infoIndustry').textContent = p.finnhubIndustry || '—';
       document.getElementById('infoCountry').textContent = p.country || '—';
       document.getElementById('infoMarketCap').textContent = p.marketCapitalization ? fmtCap(p.marketCapitalization) : '—';
+      const webEl = document.getElementById('infoWebsite');
+      if (webEl) {
+        webEl.innerHTML = p.weburl ? `<a href="${p.weburl}" target="_blank" rel="noopener">${p.weburl.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '')} ↗</a>` : '—';
+      }
+      const ipoEl = document.getElementById('infoIpoDate');
+      if (ipoEl) ipoEl.textContent = p.ipo || '—';
+      const descEl = document.getElementById('infoDescription');
+      if (descEl) {
+        if (p.description) {
+          descEl.textContent = p.description;
+          descEl.style.display = '-webkit-box';
+        } else {
+          descEl.style.display = 'none';
+        }
+      }
       const lw = document.getElementById('stockLogo');
       lw.innerHTML = p.logo ? `<img src="${p.logo}" alt="${esc(p.name)}" onerror="this.parentElement.innerHTML='<svg viewBox=\\'0 0 24 24\\'><path d=\\'M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z\\'/></svg>'" />` : '<svg viewBox="0 0 24 24"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg>';
     }
@@ -3387,10 +3842,17 @@
       const sm = { regular: l.marketRealtime, 'post-market': l.marketAfter, 'pre-market': l.marketPre, closed: l.marketAtClose };
       document.getElementById('priceSessionLabel').textContent = sm[session] || l.marketAtClose;
 
+      // Stats 8
       document.getElementById('statOpen').textContent = q.o ? cs + fmtNum(q.o) : '—';
       document.getElementById('statHigh').textContent = q.h ? cs + fmtNum(q.h) : '—';
       document.getElementById('statLow').textContent = q.l ? cs + fmtNum(q.l) : '—';
       document.getElementById('statPrevClose').textContent = q.pc ? cs + fmtNum(q.pc) : '—';
+      document.getElementById('statVolume').textContent = fmtVol(q.v);
+      document.getElementById('statAvgVolume').textContent = fmtVol(q.avgVolume);
+      document.getElementById('stat52High').textContent = q.fiftyTwoWeekHigh ? cs + fmtNum(q.fiftyTwoWeekHigh) : '—';
+      document.getElementById('stat52Low').textContent = q.fiftyTwoWeekLow ? cs + fmtNum(q.fiftyTwoWeekLow) : '—';
+
+      renderValuation(q);
     }
 
     async function refreshCurrentQuote() { 
@@ -3624,6 +4086,82 @@
       }).join('');
     }
 
+    function updateMarketClock() {
+      const container = document.getElementById('marketClockStrip');
+      if (!container) return;
+
+      const sus = getUSSession();
+      const sset = getSETSession();
+
+      const usTimes = {
+        regular: { title: 'Open (Regular)', cls: 'open', desc: 'Closes 04:00 BKK (16:00 EST)' },
+        'pre-market': { title: 'Pre-Market Active', cls: 'pre', desc: 'Opens 21:30 BKK (09:30 EST)' },
+        'post-market': { title: 'After-Hours Active', cls: 'after', desc: 'Closes 08:00 BKK (20:00 EST)' },
+        closed: { title: 'Market Closed', cls: 'closed', desc: 'Trading 21:30-04:00 BKK' }
+      };
+      const usInfo = usTimes[sus] || usTimes.closed;
+
+      const setTimes = {
+        regular: { title: 'Open (Trading)', cls: 'open', desc: 'Day Session Active' },
+        'pre-market': { title: 'Pre-Open Call', cls: 'pre', desc: 'Matching Orders' },
+        closed: { title: 'Market Closed', cls: 'closed', desc: 'Trading 10:00-12:30, 14:30-16:30' }
+      };
+      const setInfo = setTimes[sset] || setTimes.closed;
+
+      const usTimeStr = new Date().toLocaleTimeString('en-US', { timeZone: 'America/New_York', hour: '2-digit', minute: '2-digit' }) + ' EST';
+      const setTimeStr = new Date().toLocaleTimeString('th-TH', { timeZone: 'Asia/Bangkok', hour: '2-digit', minute: '2-digit' }) + ' ICT';
+
+      container.innerHTML = `
+        <div class="clock-card">
+          <div class="clock-dot ${usInfo.cls}"></div>
+          <div>
+            <div class="clock-mkt-lbl">🇺🇸 US Market (NYSE/NASDAQ) • ${usTimeStr}</div>
+            <div class="clock-session-lbl ${usInfo.cls}">${usInfo.title}</div>
+            <div class="clock-countdown-txt">${usInfo.desc}</div>
+          </div>
+        </div>
+        <div class="clock-card">
+          <div class="clock-dot ${setInfo.cls}"></div>
+          <div>
+            <div class="clock-mkt-lbl">🇹🇭 SET Market (Thailand) • ${setTimeStr}</div>
+            <div class="clock-session-lbl ${setInfo.cls}">${setInfo.title}</div>
+            <div class="clock-countdown-txt">${setInfo.desc}</div>
+          </div>
+        </div>`;
+    }
+
+    function updateSentiment(ga, lo, total, wl) {
+      const card = document.getElementById('sentimentCard');
+      if (!card) return;
+      if (!total) { card.style.display = 'none'; return; }
+      card.style.display = 'flex';
+
+      const ratio = total > 0 ? (ga / total) : 0.5;
+      const validQuotes = wl.filter(s => s._quote && typeof s._quote.dp === 'number');
+      const avgDp = validQuotes.length ? (validQuotes.reduce((acc, s) => acc + s._quote.dp, 0) / validQuotes.length) : 0;
+      
+      let score = Math.round((ratio * 70) + Math.max(-15, Math.min(15, avgDp * 5)) + 15);
+      score = Math.max(5, Math.min(95, score));
+
+      let emoji = '😐', label = 'Neutral', color = 'var(--amber)';
+      if (score >= 75) { emoji = '🚀'; label = 'Extreme Greed'; color = 'var(--green)'; }
+      else if (score >= 58) { emoji = '📈'; label = 'Bullish / Greed'; color = 'var(--green)'; }
+      else if (score <= 25) { emoji = '💥'; label = 'Extreme Fear'; color = 'var(--red)'; }
+      else if (score <= 42) { emoji = '📉'; label = 'Bearish / Fear'; color = 'var(--red)'; }
+
+      card.innerHTML = `
+        <div class="sentiment-emoji">${emoji}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div class="sentiment-label" style="color:${color}">${label} (${score})</div>
+          </div>
+          <div class="sentiment-track">
+            <div class="sentiment-cursor" style="left:${score}%"></div>
+          </div>
+          <div class="sentiment-sub">${ga} Up • ${lo} Down (${avgDp >= 0 ? '+' : ''}${avgDp.toFixed(2)}% Avg)</div>
+        </div>`;
+    }
+
     // Dashboard
     function updateDashboard() {
       const wd = S.wl.filter(s => s._quote), ga = wd.filter(s => s._quote.dp >= 0).length, lo = wd.filter(s => s._quote.dp < 0).length;
@@ -3633,6 +4171,9 @@
       document.getElementById('summaryLosers').textContent = lo;
       document.getElementById('summaryBest').textContent = best ? best.symbol + ' ' + (best._quote.dp >= 0 ? '+' : '') + best._quote.dp.toFixed(2) + '%' : '—';
 
+      updateSentiment(ga, lo, wd.length, wd);
+      updateMarketClock();
+
       const t = I18N[S.lang] || I18N.en;
       const c = document.getElementById('dashWatchlist');
       if (!S.wl.length) { c.innerHTML = `<div class="dash-empty"><svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg><span>${t.emptyWatchlist}</span></div>`; return; }
@@ -3640,7 +4181,14 @@
       // Desktop table
       const rows = S.wl.map(s => {
         const q = s._quote, cs = getCurSym(s.symbol, q), p = q ? cs + fmtNum(q.c) : '—', pct = q ? q.dp : null, d = pct === null ? 'flat' : pct >= 0 ? 'up' : 'down', pt = pct !== null ? (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%' : '—', ct = q ? (q.d >= 0 ? '+' : '-') + cs + Math.abs(q.d).toFixed(2) : '—';
-        return `<tr onclick="loadStock('${esc(s.symbol)}')"><td><div class="wl-sym">${esc(s.symbol)} ${s.symbol.endsWith('.BK') ? '<span class="search-tag-th">SET</span>' : ''}</div><div class="wl-name">${esc(s.name || '')}</div></td><td><div class="wl-price">${p}</div></td><td><div class="wl-chg ${d}">${ct}</div></td><td><span class="pct-badge ${d}">${pt}</span></td></tr>`;
+        const vol = q && q.v ? fmtVol(q.v) : '—';
+        return `<tr onclick="loadStock('${esc(s.symbol)}')">
+          <td><div class="wl-sym">${esc(s.symbol)} ${s.symbol.endsWith('.BK') ? '<span class="search-tag-th">SET</span>' : ''}</div><div class="wl-name">${esc(s.name || '')}</div></td>
+          <td><div class="wl-price">${p}</div></td>
+          <td><div class="wl-chg ${d}">${ct}</div></td>
+          <td><span class="pct-badge ${d}">${pt}</span></td>
+          <td class="r" style="font-family:var(--font-mono);font-size:11px;color:var(--text-secondary)">${vol}</td>
+        </tr>`;
       }).join('');
 
       // Mobile cards
@@ -3649,7 +4197,7 @@
         return `<div class="wl-card-item" onclick="loadStock('${esc(s.symbol)}')"><div class="wl-card-left"><div class="wl-sym">${esc(s.symbol)} ${s.symbol.endsWith('.BK') ? '<span class="search-tag-th">SET</span>' : ''}</div><div class="wl-name">${esc(s.name || '')}</div></div><div class="wl-card-right"><div class="wl-price">${p}</div><div class="wl-chg ${d}">${pt}</div></div></div>`;
       }).join('');
 
-      c.innerHTML = `<div class="table-wrap"><table class="wl-table"><thead><tr><th>${t.tblSymbol}</th><th>${t.tblPrice}</th><th>${t.tblChange}</th><th>%</th></tr></thead><tbody>${rows}</tbody></table></div><div class="wl-cards">${cards}</div>`;
+      c.innerHTML = `<div class="table-wrap"><table class="wl-table"><thead><tr><th>${t.tblSymbol}</th><th>${t.tblPrice}</th><th>${t.tblChange}</th><th>%</th><th class="r">Volume</th></tr></thead><tbody>${rows}</tbody></table></div><div class="wl-cards">${cards}</div>`;
       renderDashboardAlerts();
       updateDashboardExtras();
     }
