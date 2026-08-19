@@ -2017,7 +2017,10 @@
     .pin-input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-glow); }
     .pin-input.error { border-color: var(--red); animation: shake 0.4s ease; }
     .pin-error { font-size: 12px; color: var(--red); min-height: 18px; margin-bottom: 12px; }
-    .pin-submit { width: 100%; height: 44px; background: linear-gradient(135deg,#7c3aed,#6d28d9); color: white; border-radius: var(--radius-sm); font-size: 14px; font-weight: 600; transition: var(--transition); }
+    .pin-actions { display: flex; gap: 10px; width: 100%; margin-top: 4px; }
+    .pin-cancel-btn { flex: 1; height: 44px; background: var(--bg-elevated); border: 1px solid var(--border-subtle); color: var(--text-secondary); border-radius: var(--radius-sm); font-size: 13px; font-weight: 600; cursor: pointer; transition: var(--transition); display: flex; align-items: center; justify-content: center; }
+    .pin-cancel-btn:hover { background: var(--bg-card-hover); border-color: var(--border-primary); color: var(--text-primary); }
+    .pin-submit { flex: 1.5; height: 44px; background: linear-gradient(135deg,#7c3aed,#6d28d9); color: white; border-radius: var(--radius-sm); font-size: 14px; font-weight: 600; transition: var(--transition); cursor: pointer; border: none; }
     .pin-submit:hover { opacity: 0.9; transform: translateY(-1px); }
     @keyframes shake { 0%,100%{transform:translateX(0)} 20%,60%{transform:translateX(-6px)} 40%,80%{transform:translateX(6px)} }
 
@@ -2579,16 +2582,23 @@
   </div>
 
   <!-- PIN Overlay -->
-  <div class="pin-overlay" id="pinOverlay">
+  <div class="pin-overlay" id="pinOverlay" onclick="if(event.target===this)closePinModal()">
     <div class="pin-box">
       <div class="pin-logo"><svg viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg></div>
-      <div class="pin-title">Portfolio Access</div>
-      <div class="pin-subtitle">Enter PIN to view your portfolio</div>
+      <div class="pin-title" id="pinTitleTxt">Portfolio Access</div>
+      <div class="pin-subtitle" id="pinSubTxt">Enter PIN to view your portfolio</div>
       <div class="pin-input-wrap">
         <input type="password" class="pin-input" id="pinInput" maxlength="6" placeholder="••••••" autocomplete="off" inputmode="numeric" />
       </div>
       <div class="pin-error" id="pinError"></div>
-      <button class="pin-submit" onclick="verifyPin()">Unlock Portfolio</button>
+      <div class="pin-actions">
+        <button type="button" class="pin-cancel-btn" onclick="closePinModal()">
+          <span class="i18n-lbl" id="pinCancelTxt">Back</span>
+        </button>
+        <button type="button" class="pin-submit" onclick="verifyPin()">
+          <span class="i18n-lbl" id="pinSubmitTxt">Unlock Portfolio</span>
+        </button>
+      </div>
     </div>
   </div>
 
@@ -2896,35 +2906,35 @@
                 <!-- Extended 8 Stats -->
                 <div class="stats-grid-8">
                   <div class="stat-card-sm">
-                    <div class="stat-label">Open</div>
+                    <div class="stat-label" id="lblStatOpen">Open</div>
                     <div class="stat-value" id="statOpen">—</div>
                   </div>
                   <div class="stat-card-sm">
-                    <div class="stat-label">High</div>
+                    <div class="stat-label" id="lblStatHigh">High</div>
                     <div class="stat-value" id="statHigh">—</div>
                   </div>
                   <div class="stat-card-sm">
-                    <div class="stat-label">Low</div>
+                    <div class="stat-label" id="lblStatLow">Low</div>
                     <div class="stat-value" id="statLow">—</div>
                   </div>
                   <div class="stat-card-sm">
-                    <div class="stat-label">Prev Close</div>
+                    <div class="stat-label" id="lblStatPrev">Prev Close</div>
                     <div class="stat-value" id="statPrevClose">—</div>
                   </div>
                   <div class="stat-card-sm">
-                    <div class="stat-label">Volume</div>
+                    <div class="stat-label" id="lblStatVol">Volume</div>
                     <div class="stat-value" id="statVolume">—</div>
                   </div>
                   <div class="stat-card-sm">
-                    <div class="stat-label">Avg Volume</div>
+                    <div class="stat-label" id="lblStatAvgVol">Avg Volume</div>
                     <div class="stat-value" id="statAvgVolume">—</div>
                   </div>
                   <div class="stat-card-sm">
-                    <div class="stat-label">52W High</div>
+                    <div class="stat-label" id="lblStat52H">52W High</div>
                     <div class="stat-value" id="stat52High" style="color:var(--green)">—</div>
                   </div>
                   <div class="stat-card-sm">
-                    <div class="stat-label">52W Low</div>
+                    <div class="stat-label" id="lblStat52L">52W Low</div>
                     <div class="stat-value" id="stat52Low" style="color:var(--red)">—</div>
                   </div>
                 </div>
@@ -2932,14 +2942,14 @@
                 <!-- Technical Analysis Panel (Pivot, FIBO, MA, RSI) -->
                 <div class="technical-panel" id="techPanel">
                   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-                    <div class="section-title" style="margin-bottom:0;"><svg viewBox="0 0 24 24"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg>Technical Indicators</div>
+                    <div class="section-title" style="margin-bottom:0;"><svg viewBox="0 0 24 24"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg><span id="techTitleTxt">Technical Indicators</span></div>
                     <span id="techTimeframeTag" style="font-size:10px;color:var(--text-muted);font-family:var(--font-mono);">Daily / Classic</span>
                   </div>
                   <div class="tech-tabs">
-                    <button class="tech-tab active" onclick="switchTechTab('pivot', this)">Pivot S/R</button>
-                    <button class="tech-tab" onclick="switchTechTab('fibo', this)">Fibonacci</button>
-                    <button class="tech-tab" onclick="switchTechTab('ma', this)">Moving Averages</button>
-                    <button class="tech-tab" onclick="switchTechTab('rsi', this)">RSI (14)</button>
+                    <button class="tech-tab active" id="techTabPivotBtn" onclick="switchTechTab('pivot', this)">Pivot S/R</button>
+                    <button class="tech-tab" id="techTabFiboBtn" onclick="switchTechTab('fibo', this)">Fibonacci</button>
+                    <button class="tech-tab" id="techTabMaBtn" onclick="switchTechTab('ma', this)">Moving Averages</button>
+                    <button class="tech-tab" id="techTabRsiBtn" onclick="switchTechTab('rsi', this)">RSI (14)</button>
                   </div>
                   
                   <!-- Tab 1: Pivot S/R -->
@@ -2974,7 +2984,7 @@
                       <div class="rsi-bar-track">
                         <div class="rsi-bar-cursor" id="rsiCursor" style="left:50%"></div>
                       </div>
-                      <div class="rsi-bar-labels">
+                      <div class="rsi-bar-labels" id="rsiBarLabels">
                         <span>0 Oversold</span>
                         <span>30</span>
                         <span>50</span>
@@ -2990,63 +3000,63 @@
               <div class="stock-col-right">
                 <!-- Valuation & Key Metrics -->
                 <div class="val-card" id="valuationCard">
-                  <div class="section-title" style="margin-bottom:0;"><svg viewBox="0 0 24 24"><path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/></svg>Key Valuation</div>
+                  <div class="section-title" style="margin-bottom:0;"><svg viewBox="0 0 24 24"><path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/></svg><span id="valCardTitleTxt">Key Valuation</span></div>
                   <div class="val-grid">
                     <div class="val-item">
-                      <div class="val-lbl">P/E (TTM)</div>
+                      <div class="val-lbl" id="lblValPE">P/E (TTM)</div>
                       <div class="val-num" id="valPE">—</div>
-                      <div class="val-sub" id="valPEsub">Trailing</div>
+                      <div class="val-sub" id="subValPE">Trailing</div>
                     </div>
                     <div class="val-item">
-                      <div class="val-lbl">Forward P/E</div>
+                      <div class="val-lbl" id="lblValFwdPE">Forward P/E</div>
                       <div class="val-num" id="valFwdPE">—</div>
-                      <div class="val-sub">Estimated</div>
+                      <div class="val-sub" id="subValFwdPE">Estimated</div>
                     </div>
                     <div class="val-item">
-                      <div class="val-lbl">EPS (TTM)</div>
+                      <div class="val-lbl" id="lblValEPS">EPS (TTM)</div>
                       <div class="val-num" id="valEPS">—</div>
-                      <div class="val-sub">Per Share</div>
+                      <div class="val-sub" id="subValEPS">Per Share</div>
                     </div>
                     <div class="val-item">
-                      <div class="val-lbl">Beta</div>
+                      <div class="val-lbl" id="lblValBeta">Beta</div>
                       <div class="val-num" id="valBeta">—</div>
-                      <div class="val-sub">Volatility</div>
+                      <div class="val-sub" id="subValBeta">Volatility</div>
                     </div>
                     <div class="val-item">
-                      <div class="val-lbl">Dividend Yield</div>
+                      <div class="val-lbl" id="lblValDivYield">Dividend Yield</div>
                       <div class="val-num" id="valDivYield">—</div>
-                      <div class="val-sub">Annual</div>
+                      <div class="val-sub" id="subValDivYield">Annual</div>
                     </div>
                     <div class="val-item">
-                      <div class="val-lbl">P/B Ratio</div>
+                      <div class="val-lbl" id="lblValPB">P/B Ratio</div>
                       <div class="val-num" id="valPB">—</div>
-                      <div class="val-sub">Book Value</div>
+                      <div class="val-sub" id="subValPB">Book Value</div>
                     </div>
                   </div>
                 </div>
 
                 <!-- Company Details Card -->
                 <div class="company-card" id="companyCard">
-                  <div class="section-title" style="margin-bottom:0;"><svg viewBox="0 0 24 24"><path d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10zm-2-8h-2v2h2v-2zm0 4h-2v2h2v-2z"/></svg>Company Profile</div>
+                  <div class="section-title" style="margin-bottom:0;"><svg viewBox="0 0 24 24"><path d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10zm-2-8h-2v2h2v-2zm0 4h-2v2h2v-2z"/></svg><span id="companyCardTitleTxt">Company Profile</span></div>
                   <div class="company-grid">
                     <div class="company-item">
-                      <div class="company-lbl">Industry</div>
+                      <div class="company-lbl" id="lblCompIndustry">Industry</div>
                       <div class="company-val" id="infoIndustry">—</div>
                     </div>
                     <div class="company-item">
-                      <div class="company-lbl">Country</div>
+                      <div class="company-lbl" id="lblCompCountry">Country</div>
                       <div class="company-val" id="infoCountry">—</div>
                     </div>
                     <div class="company-item">
-                      <div class="company-lbl">Market Cap</div>
+                      <div class="company-lbl" id="lblCompMktCap">Market Cap</div>
                       <div class="company-val" id="infoMarketCap">—</div>
                     </div>
                     <div class="company-item">
-                      <div class="company-lbl">Website</div>
+                      <div class="company-lbl" id="lblCompWeb">Website</div>
                       <div class="company-val" id="infoWebsite">—</div>
                     </div>
                     <div class="company-item company-full">
-                      <div class="company-lbl">IPO Date</div>
+                      <div class="company-lbl" id="lblCompIpo">IPO Date</div>
                       <div class="company-val" id="infoIpoDate">—</div>
                     </div>
                   </div>
@@ -3214,11 +3224,22 @@
         trackStocks: 'Track Your Stocks', trackStocksDesc: 'Search for a stock symbol to view real-time prices.',
         add: 'Add', addCurrent: 'Add Current',
         statOpen: 'Open', statHigh: 'High', statLow: 'Low', statPrev: 'Prev Close',
-        infoIndustry: 'Industry', infoCountry: 'Country', infoMarketCap: 'Market Cap',
+        statVolume: 'Volume', statAvgVolume: 'Avg Volume', stat52High: '52W High', stat52Low: '52W Low',
+        // Technicals
+        techTitle: 'Technical Indicators', techDailyClassic: 'Daily / Classic',
+        techTabPivot: 'Pivot S/R', techTabFibo: 'Fibonacci', techTabMa: 'Moving Averages', techTabRsi: 'RSI (14)',
+        // Key Valuation
+        valTitle: 'Key Valuation', valPE: 'P/E (TTM)', valFwdPE: 'Forward P/E', valEPS: 'EPS (TTM)',
+        valBeta: 'Beta', valDivYield: 'Dividend Yield', valPB: 'P/B Ratio',
+        valSubTrailing: 'Trailing', valSubEst: 'Estimated', valSubPerShare: 'Per Share',
+        valSubVol: 'Volatility', valSubAnnual: 'Annual', valSubBook: 'Book Value',
+        // Company
+        companyTitle: 'Company Profile', infoIndustry: 'Industry', infoCountry: 'Country', infoMarketCap: 'Market Cap',
+        infoWebsite: 'Website', infoIpoDate: 'IPO Date',
         emptyWatchlist: 'Empty watchlist — search to add stocks', emptyWatchlistSidebar: 'Empty watchlist',
         settingsTitle: 'Settings', settingsDesc: 'Set your alert email to receive price notifications.', settingsEmailLabel: 'Alert Email',
         cancel: 'Cancel', save: 'Save',
-        tblSymbol: 'Symbol', tblPrice: 'Price', tblChange: 'Change',
+        tblSymbol: 'Symbol', tblPrice: 'Price', tblChange: 'Change', tblVolume: 'Volume', tblAction: 'Action',
         gMorning: 'Good Morning ☀️', gAfternoon: 'Good Afternoon 🌤', gEvening: 'Good Evening 🌙',
         alertTitle: 'Price Alerts', alertSet: 'Set', alertSetEmail: 'Alerts will be sent to',
         alertNoEmail: 'Set email in Settings',
@@ -3229,7 +3250,7 @@
         pfTotalCost: 'Total Cost', pfMktVal: 'Market Value', pfPL: 'Unrealized P&L', pfReturn: 'Return',
         pfSymbol: 'Symbol', pfShares: 'Shares', pfAvgCost: 'Avg Cost', pfPrice: 'Price',
         pfCostBasis: 'Cost Basis', pfMktValue: 'Mkt Value',
-        pfModalTitle: 'Add Position', pfLblSymbol: 'Stock Symbol', pfLblPrice: 'Price When Purchased (USD / Share)',
+        pfModalTitle: 'Add Position', pfLblSymbol: 'Stock Symbol', pfLblPrice: 'Price When Purchased (USD / Share)',
         pfLblAmount: 'Amount Invested', pfLblDate: 'Purchase Date',
         pfCancel: 'Cancel', pfSubmit: 'Add Position',
         pfCalcShares: (shares) => `≈ ${shares} shares will be purchased`,
@@ -3239,6 +3260,11 @@
         pfPositions: (n) => `${n} position${n !== 1 ? 's' : ''}`,
         pfNoPortfolioCreate: 'Create',
         pfNewLabel: 'New Portfolio',
+        pinTitle: 'Portfolio Access',
+        pinSubtitle: 'Enter PIN to view your portfolio',
+        pinUnlock: 'Unlock Portfolio',
+        pinCancel: 'Back',
+        pinIncorrect: 'Incorrect PIN. Please try again.',
       },
       th: {
         dashboard: 'แดชบอร์ด', stock: 'หุ้น', watchlist: 'รายการเฝ้าดู', settings: 'ตั้งค่า', searchPlaceholder: 'ค้นหาหุ้น...',
@@ -3247,12 +3273,23 @@
         refresh: 'รีเฟรช', gainers: 'บวก', losers: 'ลบ', best: 'ดีที่สุด', sectors: 'อุตสาหกรรม',
         trackStocks: 'ติดตามหุ้นของคุณ', trackStocksDesc: 'ค้นหาสัญลักษณ์หุ้นเพื่อดูราคาแบบเรียลไทม์',
         add: 'เพิ่ม', addCurrent: 'เพิ่มปัจจุบัน',
-        statOpen: 'เปิด', statHigh: 'สูงสุด', statLow: 'ต่ำสุด', statPrev: 'ปิดก่อนหน้า',
-        infoIndustry: 'กลุ่มอุตสาหกรรม', infoCountry: 'ประเทศ', infoMarketCap: 'มูลค่าตลาด',
+        statOpen: 'ราคาเปิด', statHigh: 'ราคาสูงสุด', statLow: 'ราคาต่ำสุด', statPrev: 'ปิดวันก่อน',
+        statVolume: 'ปริมาณซื้อขาย', statAvgVolume: 'ปริมาณเฉลี่ย', stat52High: 'สูงสุด 52 สัปดาห์', stat52Low: 'ต่ำสุด 52 สัปดาห์',
+        // Technicals
+        techTitle: 'เครื่องมือวิเคราะห์ทางเทคนิค', techDailyClassic: 'รายวัน / คลาสสิก',
+        techTabPivot: 'แนวรับ-แนวต้าน', techTabFibo: 'ฟีโบนัชชี (Fibo)', techTabMa: 'เส้นค่าเฉลี่ย (MA)', techTabRsi: 'ดัชนี RSI (14)',
+        // Key Valuation
+        valTitle: 'การประเมินมูลค่าหุ้น', valPE: 'P/E (ย้อนหลัง)', valFwdPE: 'Forward P/E', valEPS: 'กำไรต่อหุ้น (EPS)',
+        valBeta: 'ความผันผวน (Beta)', valDivYield: 'อัตราปันผลตอบแทน', valPB: 'อัตราส่วน P/B',
+        valSubTrailing: '12 เดือนย้อนหลัง', valSubEst: 'ประมาณการกำไร', valSubPerShare: 'ต่อหุ้น',
+        valSubVol: 'เทียบตลาด', valSubAnnual: 'รายปี', valSubBook: 'มูลค่าทางบัญชี',
+        // Company
+        companyTitle: 'ข้อมูลบริษัท', infoIndustry: 'กลุ่มอุตสาหกรรม', infoCountry: 'ประเทศ', infoMarketCap: 'มูลค่าตลาด',
+        infoWebsite: 'เว็บไซต์', infoIpoDate: 'วันที่เข้าตลาด (IPO)',
         emptyWatchlist: 'ไม่มีรายการ — ค้นหาเพื่อเพิ่มหุ้น', emptyWatchlistSidebar: 'ไม่มีรายการเฝ้าดู',
         settingsTitle: 'การตั้งค่า', settingsDesc: 'ตั้งค่าอีเมลสำหรับรับการแจ้งเตือนราคาหุ้น', settingsEmailLabel: 'อีเมลแจ้งเตือน',
         cancel: 'ยกเลิก', save: 'บันทึก',
-        tblSymbol: 'สัญลักษณ์', tblPrice: 'ราคา', tblChange: 'เปลี่ยนแปลง',
+        tblSymbol: 'สัญลักษณ์', tblPrice: 'ราคา', tblChange: 'เปลี่ยนแปลง', tblVolume: 'ปริมาณ', tblAction: 'จัดการ',
         gMorning: 'สวัสดีตอนเช้า ☀️', gAfternoon: 'สวัสดีตอนบ่าย 🌤', gEvening: 'สวัสดีตอนเย็น 🌙',
         alertTitle: 'แจ้งเตือนราคา', alertSet: 'ตั้งค่า', alertSetEmail: 'แจ้งเตือนจะส่งไปที่',
         alertNoEmail: 'ตั้งค่าอีเมลในการตั้งค่า',
@@ -3274,6 +3311,11 @@
         pfPositions: (n) => `${n} รายการ`,
         pfNoPortfolioCreate: 'สร้าง',
         pfNewLabel: 'พอร์ตใหม่',
+        pinTitle: 'เข้าสู่พอร์ตโฟลิโอ',
+        pinSubtitle: 'กรอกรหัส PIN เพื่อดูพอร์ตของคุณ',
+        pinUnlock: 'ปลดล็อกพอร์ต',
+        pinCancel: 'ย้อนกลับ',
+        pinIncorrect: 'รหัส PIN ไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง',
       }
     };
 
@@ -3305,10 +3347,42 @@
       if (titles.length > 2) titles[2].lastChild.nodeValue = t.sectors;
       document.querySelector('#welcomeState h2').textContent = t.trackStocks;
       document.querySelector('#welcomeState p').textContent = t.trackStocksDesc;
-      const statLabels = document.querySelectorAll('.stat-label');
-      if (statLabels.length >= 4) { statLabels[0].textContent = t.statOpen; statLabels[1].textContent = t.statHigh; statLabels[2].textContent = t.statLow; statLabels[3].textContent = t.statPrev; }
-      const infoLabels = document.querySelectorAll('.info-label');
-      if (infoLabels.length >= 3) { infoLabels[0].textContent = t.infoIndustry; infoLabels[1].textContent = t.infoCountry; infoLabels[2].textContent = t.infoMarketCap; }
+      
+      // 8 Stats
+      setLbl('#lblStatOpen', t.statOpen);
+      setLbl('#lblStatHigh', t.statHigh);
+      setLbl('#lblStatLow', t.statLow);
+      setLbl('#lblStatPrev', t.statPrev);
+      setLbl('#lblStatVol', t.statVolume);
+      setLbl('#lblStatAvgVol', t.statAvgVolume);
+      setLbl('#lblStat52H', t.stat52High);
+      setLbl('#lblStat52L', t.stat52Low);
+
+      // Technicals Panel
+      setLbl('#techTitleTxt', t.techTitle);
+      setLbl('#techTimeframeTag', t.techDailyClassic);
+      setLbl('#techTabPivotBtn', t.techTabPivot);
+      setLbl('#techTabFiboBtn', t.techTabFibo);
+      setLbl('#techTabMaBtn', t.techTabMa);
+      setLbl('#techTabRsiBtn', t.techTabRsi);
+
+      // Key Valuation
+      setLbl('#valCardTitleTxt', t.valTitle);
+      setLbl('#lblValPE', t.valPE); setLbl('#subValPE', t.valSubTrailing);
+      setLbl('#lblValFwdPE', t.valFwdPE); setLbl('#subValFwdPE', t.valSubEst);
+      setLbl('#lblValEPS', t.valEPS); setLbl('#subValEPS', t.valSubPerShare);
+      setLbl('#lblValBeta', t.valBeta); setLbl('#subValBeta', t.valSubVol);
+      setLbl('#lblValDivYield', t.valDivYield); setLbl('#subValDivYield', t.valSubAnnual);
+      setLbl('#lblValPB', t.valPB); setLbl('#subValPB', t.valSubBook);
+
+      // Company Info
+      setLbl('#companyCardTitleTxt', t.companyTitle);
+      setLbl('#lblCompIndustry', t.infoIndustry);
+      setLbl('#lblCompCountry', t.infoCountry);
+      setLbl('#lblCompMktCap', t.infoMarketCap);
+      setLbl('#lblCompWeb', t.infoWebsite);
+      setLbl('#lblCompIpo', t.infoIpoDate);
+
       document.querySelector('.wishlist-title').lastChild.nodeValue = t.watchlist;
       setLbl('.btn-add-wishlist .i18n-lbl', t.addCurrent);
       document.getElementById('settingsTitle').textContent = t.settingsTitle;
@@ -3318,12 +3392,14 @@
       setLbl('.btn-primary .i18n-lbl', t.save);
       setLbl('#dashRefreshBtn .i18n-lbl', t.refresh);
       if (document.querySelector('.mobile-wl-header .wishlist-title')) document.querySelector('.mobile-wl-header .wishlist-title').lastChild.nodeValue = t.watchlist;
+      
       // Alert card
       setLbl('#alertCardTitle', t.alertTitle);
       setLbl('#alertAboveBtnTxt', t.alertSet);
       setLbl('#alertBelowBtnTxt', t.alertSet);
       renderAlertEmailNote();
       renderDashboardAlerts();
+      
       // Portfolio modal labels
       const posModalTitleEl = document.getElementById('posModalTitleText'); if (posModalTitleEl) posModalTitleEl.textContent = t.pfModalTitle;
       const posLblSym = document.getElementById('posLabelSymbol'); if (posLblSym) posLblSym.textContent = t.pfLblSymbol;
@@ -3336,12 +3412,22 @@
       const pfTitle = document.getElementById('pfPageTitle'); if (pfTitle) pfTitle.textContent = t.pfTitle;
       const pfAddBtn = document.querySelector('#pfAddPositionBtn span'); if (pfAddBtn) pfAddBtn.textContent = t.pfAddPos;
 
+      // PIN Overlay labels
+      setLbl('#pinTitleTxt', t.pinTitle);
+      setLbl('#pinSubTxt', t.pinSubtitle);
+      setLbl('#pinSubmitTxt', t.pinUnlock);
+      setLbl('#pinCancelTxt', t.pinCancel);
+
       updateGreeting();
       updateMarketStatus();
+      updateMarketClock();
       updateWishlistButton();
       updateDashboard();
       renderWishlist();
-      if (S.quote) renderQuote(S.quote);
+      if (S.quote) {
+        renderQuote(S.quote);
+        calcAndRenderTechnicals(S.quote);
+      }
     }
 
     document.addEventListener('DOMContentLoaded', () => { initEmailJS(); initSupabase(); initApp(); setupEvents(); applyLanguage(); });
@@ -3484,7 +3570,48 @@
         } catch(e) {}
       }
 
-      // 3. Fallback to Finnhub for US stocks
+      // 3. Client fallback for US stocks (Yahoo Finance Chart Proxy)
+      try {
+        const yUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(s)}?interval=1d&range=1d`;
+        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(yUrl)}`;
+        const res = await fetch(proxyUrl);
+        if (res.ok) {
+          const data = await res.json();
+          const meta = data?.chart?.result?.[0]?.meta;
+          if (meta && meta.regularMarketPrice) {
+            const curPrice = meta.regularMarketPrice ?? meta.chartPreviousClose ?? 0;
+            const prevClose = meta.chartPreviousClose ?? meta.previousClose ?? curPrice;
+            const change = curPrice - prevClose;
+            return {
+              symbol: meta.symbol || s,
+              name: meta.longName || meta.shortName || s,
+              currency: meta.currency || 'USD',
+              exchange: meta.exchangeName || 'US',
+              c: curPrice,
+              d: change,
+              dp: prevClose ? (change / prevClose) * 100 : 0,
+              h: meta.regularMarketDayHigh ?? curPrice,
+              l: meta.regularMarketDayLow ?? curPrice,
+              o: meta.regularMarketOpen ?? curPrice,
+              pc: prevClose,
+              v: meta.regularMarketVolume ?? null,
+              avgVolume: meta.averageDailyVolume3Month ?? meta.averageDailyVolume10Day ?? null,
+              fiftyTwoWeekHigh: meta.fiftyTwoWeekHigh ?? null,
+              fiftyTwoWeekLow: meta.fiftyTwoWeekLow ?? null,
+              trailingPE: meta.trailingPE ?? null,
+              epsTrailingTwelveMonths: meta.epsTrailingTwelveMonths ?? null,
+              beta: meta.beta ?? null,
+              dividendYield: meta.dividendYield ?? null,
+              priceToBook: meta.priceToBook ?? null,
+              forwardPE: meta.forwardPE ?? null,
+              marketCap: meta.marketCap || 0,
+              isThai: false
+            };
+          }
+        }
+      } catch(e) {}
+
+      // 4. Fallback to Finnhub for US stocks
       try {
         const q = await api('/quote', { symbol: s });
         if (q && q.c) {
@@ -3493,7 +3620,7 @@
         }
       } catch(e) {}
 
-      // 4. Try with .BK if no dot
+      // 5. Try with .BK if no dot
       if (!s.includes('.')) {
         return fetchQ(`${s}.BK`);
       }
@@ -3545,15 +3672,16 @@
       const S1 = (2 * P) - high;
       const S2 = P - diffHL;
       const S3 = low - 2 * (high - P);
+      const isTh = S.lang === 'th';
 
       const levels = [
-        { key: 'S3', label: 'Support 3', val: S3, type: 'support' },
-        { key: 'S2', label: 'Support 2', val: S2, type: 'support' },
-        { key: 'S1', label: 'Support 1', val: S1, type: 'support' },
-        { key: 'P',  label: 'Pivot Point', val: P, type: 'pivot-center' },
-        { key: 'R1', label: 'Resist 1', val: R1, type: 'resistance' },
-        { key: 'R2', label: 'Resist 2', val: R2, type: 'resistance' },
-        { key: 'R3', label: 'Resist 3', val: R3, type: 'resistance' },
+        { key: isTh ? 'แนวรับ 3 (S3)' : 'Support 3', val: S3, type: 'support' },
+        { key: isTh ? 'แนวรับ 2 (S2)' : 'Support 2', val: S2, type: 'support' },
+        { key: isTh ? 'แนวรับ 1 (S1)' : 'Support 1', val: S1, type: 'support' },
+        { key: isTh ? 'จุดหมุน (P)' : 'Pivot Point', val: P, type: 'pivot-center' },
+        { key: isTh ? 'แนวต้าน 1 (R1)' : 'Resist 1', val: R1, type: 'resistance' },
+        { key: isTh ? 'แนวต้าน 2 (R2)' : 'Resist 2', val: R2, type: 'resistance' },
+        { key: isTh ? 'แนวต้าน 3 (R3)' : 'Resist 3', val: R3, type: 'resistance' },
       ];
 
       const pivotGrid = document.getElementById('pivotGrid');
@@ -3563,7 +3691,7 @@
           return `<div class="pivot-card ${l.type}">
             <div class="pivot-lbl">${l.key}</div>
             <div class="pivot-val">${cs}${fmtNum(l.val)}</div>
-            ${isNear ? '<div class="pivot-near">⚡ Near</div>' : ''}
+            ${isNear ? `<div class="pivot-near">${isTh ? '⚡ ใกล้ระดับ' : '⚡ Near'}</div>` : ''}
           </div>`;
         }).join('');
       }
@@ -3574,13 +3702,13 @@
       const rangeDiff = rangeHigh - rangeLow;
       if (rangeDiff > 0) {
         const fibLevels = [
-          { pct: '0% (Low)', val: rangeLow },
+          { pct: isTh ? '0% (จุดต่ำสุด)' : '0% (Low)', val: rangeLow },
           { pct: '23.6%', val: rangeLow + rangeDiff * 0.236 },
           { pct: '38.2%', val: rangeLow + rangeDiff * 0.382 },
           { pct: '50.0%', val: rangeLow + rangeDiff * 0.500 },
           { pct: '61.8%', val: rangeLow + rangeDiff * 0.618 },
           { pct: '78.6%', val: rangeLow + rangeDiff * 0.786 },
-          { pct: '100% (High)', val: rangeHigh },
+          { pct: isTh ? '100% (จุดสูงสุด)' : '100% (High)', val: rangeHigh },
         ];
 
         const marker = document.getElementById('fiboPriceMarker');
@@ -3606,7 +3734,6 @@
         if (dailyCandles && dailyCandles.length >= 5) {
           const closes = dailyCandles.map(c => c.close).filter(c => c != null && !isNaN(c));
           
-          // MA20
           let ma20 = null, ma50 = null;
           if (closes.length >= 20) {
             ma20 = closes.slice(-20).reduce((a,b)=>a+b, 0) / 20;
@@ -3626,13 +3753,14 @@
               const isAbove = diffPct >= 0;
               const badgeCls = isAbove ? 'above' : 'below';
               const sign = isAbove ? '+' : '';
+              const statusTxt = isTh ? (isAbove ? 'อยู่เหนือเส้น' : 'อยู่ใต้เส้น') : (isAbove ? 'Above' : 'Below');
               return `<div class="ma-row">
                 <span class="ma-label">${name}</span>
                 <span class="ma-val">${cs}${fmtNum(val)}</span>
-                <span class="ma-badge ${badgeCls}">${isAbove ? 'Above' : 'Below'} (${sign}${diffPct.toFixed(2)}%)</span>
+                <span class="ma-badge ${badgeCls}">${statusTxt} (${sign}${diffPct.toFixed(2)}%)</span>
               </div>`;
             };
-            maList.innerHTML = renderMaRow(closes.length >= 20 ? 'MA 20' : 'MA 10', ma20) + renderMaRow('MA 50', ma50);
+            maList.innerHTML = renderMaRow(closes.length >= 20 ? (isTh ? 'SMA 20 (ระยะสั้น)' : 'MA 20') : (isTh ? 'SMA 10' : 'MA 10'), ma20) + renderMaRow(isTh ? 'SMA 50 (ระยะกลาง)' : 'MA 50', ma50);
           }
 
           // RSI 14
@@ -3656,18 +3784,27 @@
             const rsiNumEl = document.getElementById('rsiNumber');
             const rsiSigEl = document.getElementById('rsiSignal');
             const rsiCurEl = document.getElementById('rsiCursor');
+            const rsiBarLabelsEl = document.getElementById('rsiBarLabels');
+            if (rsiBarLabelsEl) {
+              rsiBarLabelsEl.innerHTML = `
+                <span>0 ${isTh ? 'ขายมากเกิน' : 'Oversold'}</span>
+                <span>30</span>
+                <span>50</span>
+                <span>70</span>
+                <span>100 ${isTh ? 'ซื้อมากเกิน' : 'Overbought'}</span>`;
+            }
             if (rsiNumEl) rsiNumEl.textContent = rsi.toFixed(1);
             if (rsiCurEl) rsiCurEl.style.left = `${Math.max(2, Math.min(98, rsi))}%`;
             if (rsiSigEl) {
               if (rsi < 30) {
                 rsiSigEl.className = 'rsi-signal oversold';
-                rsiSigEl.textContent = `Oversold (${rsi.toFixed(1)}) — Bullish Reversal Area`;
+                rsiSigEl.textContent = isTh ? `ขายมากเกินไป (${rsi.toFixed(1)}) — โอกาสกลับตัวขึ้น (Bullish)` : `Oversold (${rsi.toFixed(1)}) — Bullish Reversal Area`;
               } else if (rsi > 70) {
                 rsiSigEl.className = 'rsi-signal overbought';
-                rsiSigEl.textContent = `Overbought (${rsi.toFixed(1)}) — Pullback Risk`;
+                rsiSigEl.textContent = isTh ? `ซื้อมากเกินไป (${rsi.toFixed(1)}) — ระวังการย่อตัว (Pullback)` : `Overbought (${rsi.toFixed(1)}) — Pullback Risk`;
               } else {
                 rsiSigEl.className = 'rsi-signal neutral';
-                rsiSigEl.textContent = `Neutral (${rsi.toFixed(1)})`;
+                rsiSigEl.textContent = isTh ? `สภาวะเป็นกลาง (${rsi.toFixed(1)})` : `Neutral (${rsi.toFixed(1)})`;
               }
             }
           }
@@ -3756,13 +3893,19 @@
           if (mr.status === 'fulfilled' && mr.value?.metric) {
             const m = mr.value.metric;
             if (qData.trailingPE == null && (m.peTTM || m.peNormalizedAnnual || m.peExclExtraTTM)) qData.trailingPE = m.peTTM || m.peNormalizedAnnual || m.peExclExtraTTM;
-            if (qData.forwardPE == null && m.forwardPE) qData.forwardPE = m.forwardPE;
+            if (qData.forwardPE == null && (m.forwardPE || m.peNormalizedAnnual)) qData.forwardPE = m.forwardPE || m.peNormalizedAnnual;
             if (qData.epsTrailingTwelveMonths == null && (m.epsTTM || m.epsNormalizedAnnual)) qData.epsTrailingTwelveMonths = m.epsTTM || m.epsNormalizedAnnual;
             if (qData.beta == null && m.beta) qData.beta = m.beta;
-            if (qData.dividendYield == null && m.dividendYieldIndicatedAnnual) qData.dividendYield = m.dividendYieldIndicatedAnnual;
+            if (qData.dividendYield == null && (m.dividendYieldIndicatedAnnual || m.dividendYield5Y)) qData.dividendYield = m.dividendYieldIndicatedAnnual || m.dividendYield5Y;
             if (qData.priceToBook == null && (m.pbTTM || m.pbAnnual || m.pbQuarterly)) qData.priceToBook = m.pbTTM || m.pbAnnual || m.pbQuarterly;
             if (qData.fiftyTwoWeekHigh == null && m['52WeekHigh']) qData.fiftyTwoWeekHigh = m['52WeekHigh'];
             if (qData.fiftyTwoWeekLow == null && m['52WeekLow']) qData.fiftyTwoWeekLow = m['52WeekLow'];
+            if (qData.avgVolume == null && (m['3MonthAverageTradingVolume'] || m['10DayAverageTradingVolume'])) {
+              qData.avgVolume = (m['3MonthAverageTradingVolume'] || m['10DayAverageTradingVolume']) * 1e6;
+            }
+            if (qData.v == null && m['10DayAverageTradingVolume']) {
+              qData.v = m['10DayAverageTradingVolume'] * 1e6;
+            }
           }
 
           renderQuote(qData);
@@ -4146,30 +4289,61 @@
       const closeBkk = dst ? '03:00' : '04:00';
       const postCloseBkk = dst ? '07:00' : '08:00';
       const preOpenBkk = dst ? '15:00' : '16:00';
+      const isTh = S.lang === 'th';
 
       const usTimes = {
-        regular: { title: 'Open (Regular)', cls: 'open', desc: `Closes ${closeBkk} BKK (16:00 ${usTz})` },
-        'pre-market': { title: 'Pre-Market Active', cls: 'pre', desc: `Opens ${openBkk} BKK (09:30 ${usTz})` },
-        'post-market': { title: 'After-Hours Active', cls: 'after', desc: `Closes ${postCloseBkk} BKK (20:00 ${usTz})` },
-        closed: { title: 'Market Closed', cls: 'closed', desc: `Trading ${openBkk} - ${closeBkk} BKK (${usTz})` }
+        regular: { 
+          title: isTh ? 'เปิดทำการปกติ' : 'Open (Regular)', 
+          cls: 'open', 
+          desc: isTh ? `ปิดเวลา ${closeBkk} น. (16:00 ${usTz})` : `Closes ${closeBkk} BKK (16:00 ${usTz})` 
+        },
+        'pre-market': { 
+          title: isTh ? 'ตลาดก่อนเปิด (Pre-Market)' : 'Pre-Market Active', 
+          cls: 'pre', 
+          desc: isTh ? `เปิดเวลา ${openBkk} น. (09:30 ${usTz})` : `Opens ${openBkk} BKK (09:30 ${usTz})` 
+        },
+        'post-market': { 
+          title: isTh ? 'ตลาดหลังปิด (After-Hours)' : 'After-Hours Active', 
+          cls: 'after', 
+          desc: isTh ? `ปิดเวลา ${postCloseBkk} น. (20:00 ${usTz})` : `Closes ${postCloseBkk} BKK (20:00 ${usTz})` 
+        },
+        closed: { 
+          title: isTh ? 'ตลาดปิดทำการ' : 'Market Closed', 
+          cls: 'closed', 
+          desc: isTh ? `เวลาทำการ ${openBkk} - ${closeBkk} น. (${usTz})` : `Trading ${openBkk} - ${closeBkk} BKK (${usTz})` 
+        }
       };
       const usInfo = usTimes[sus] || usTimes.closed;
 
       const setTimes = {
-        regular: { title: 'Open (Trading)', cls: 'open', desc: 'Day Session (10:00-12:30, 14:30-16:30)' },
-        'pre-market': { title: 'Pre-Open Call', cls: 'pre', desc: 'Matching Orders (09:30/14:00)' },
-        closed: { title: 'Market Closed', cls: 'closed', desc: 'Trading 10:00-12:30, 14:30-16:30 ICT' }
+        regular: { 
+          title: isTh ? 'เปิดทำการปกติ' : 'Open (Trading)', 
+          cls: 'open', 
+          desc: isTh ? 'รอบการซื้อขาย (10:00-12:30, 14:30-16:30)' : 'Day Session (10:00-12:30, 14:30-16:30)' 
+        },
+        'pre-market': { 
+          title: isTh ? 'ช่วงสุ่มเปิด (Pre-Open)' : 'Pre-Open Call', 
+          cls: 'pre', 
+          desc: isTh ? 'จับคู่คำสั่ง (09:30/14:00)' : 'Matching Orders (09:30/14:00)' 
+        },
+        closed: { 
+          title: isTh ? 'ตลาดปิดทำการ' : 'Market Closed', 
+          cls: 'closed', 
+          desc: isTh ? 'เวลาทำการ 10:00-12:30, 14:30-16:30 น.' : 'Trading 10:00-12:30, 14:30-16:30 ICT' 
+        }
       };
       const setInfo = setTimes[sset] || setTimes.closed;
 
       const usTimeStr = new Date().toLocaleTimeString('en-US', { timeZone: 'America/New_York', hour: '2-digit', minute: '2-digit' }) + ' ' + usTz;
       const setTimeStr = new Date().toLocaleTimeString('th-TH', { timeZone: 'Asia/Bangkok', hour: '2-digit', minute: '2-digit' }) + ' ICT';
+      const usMktLbl = isTh ? '🇺🇸 ตลาดหุ้นสหรัฐฯ (NYSE/NASDAQ)' : '🇺🇸 US Market (NYSE/NASDAQ)';
+      const setMktLbl = isTh ? '🇹🇭 ตลาดหุ้นไทย (SET)' : '🇹🇭 SET Market (Thailand)';
 
       container.innerHTML = `
         <div class="clock-card">
           <div class="clock-dot ${usInfo.cls}"></div>
           <div>
-            <div class="clock-mkt-lbl">🇺🇸 US Market (NYSE/NASDAQ) • ${usTimeStr}</div>
+            <div class="clock-mkt-lbl">${usMktLbl} • ${usTimeStr}</div>
             <div class="clock-session-lbl ${usInfo.cls}">${usInfo.title}</div>
             <div class="clock-countdown-txt">${usInfo.desc}</div>
           </div>
@@ -4177,7 +4351,7 @@
         <div class="clock-card">
           <div class="clock-dot ${setInfo.cls}"></div>
           <div>
-            <div class="clock-mkt-lbl">🇹🇭 SET Market (Thailand) • ${setTimeStr}</div>
+            <div class="clock-mkt-lbl">${setMktLbl} • ${setTimeStr}</div>
             <div class="clock-session-lbl ${setInfo.cls}">${setInfo.title}</div>
             <div class="clock-countdown-txt">${setInfo.desc}</div>
           </div>
@@ -4190,18 +4364,39 @@
       if (!total) { card.style.display = 'none'; return; }
       card.style.display = 'flex';
 
+      const isTh = S.lang === 'th';
       const ratio = total > 0 ? (ga / total) : 0.5;
-      const validQuotes = wl.filter(s => s._quote && typeof s._quote.dp === 'number');
+      const validQuotes = (wl || []).filter(s => s._quote && typeof s._quote.dp === 'number');
       const avgDp = validQuotes.length ? (validQuotes.reduce((acc, s) => acc + s._quote.dp, 0) / validQuotes.length) : 0;
       
       let score = Math.round((ratio * 70) + Math.max(-15, Math.min(15, avgDp * 5)) + 15);
       score = Math.max(5, Math.min(95, score));
 
-      let emoji = '😐', label = 'Neutral', color = 'var(--amber)';
-      if (score >= 75) { emoji = '🚀'; label = 'Extreme Greed'; color = 'var(--green)'; }
-      else if (score >= 58) { emoji = '📈'; label = 'Bullish / Greed'; color = 'var(--green)'; }
-      else if (score <= 25) { emoji = '💥'; label = 'Extreme Fear'; color = 'var(--red)'; }
-      else if (score <= 42) { emoji = '📉'; label = 'Bearish / Fear'; color = 'var(--red)'; }
+      let emoji = '😐', label = isTh ? 'สภาวะเป็นกลาง' : 'Neutral', color = 'var(--amber)';
+      if (score >= 75) { 
+        emoji = '🚀'; 
+        label = isTh ? 'โลภมากเป็นพิเศษ 🚀' : 'Extreme Greed'; 
+        color = 'var(--green)'; 
+      }
+      else if (score >= 58) { 
+        emoji = '📈'; 
+        label = isTh ? 'ตลาดขาขึ้น / ความโลภ 📈' : 'Bullish / Greed'; 
+        color = 'var(--green)'; 
+      }
+      else if (score <= 25) { 
+        emoji = '💥'; 
+        label = isTh ? 'กลัวมากเป็นพิเศษ 💥' : 'Extreme Fear'; 
+        color = 'var(--red)'; 
+      }
+      else if (score <= 42) { 
+        emoji = '📉'; 
+        label = isTh ? 'ตลาดขาลง / ความกลัว 📉' : 'Bearish / Fear'; 
+        color = 'var(--red)'; 
+      }
+
+      const subTxt = isTh 
+        ? `ขึ้น ${ga} • ลง ${lo} (เฉลี่ย ${avgDp >= 0 ? '+' : ''}${avgDp.toFixed(2)}%)`
+        : `${ga} Up • ${lo} Down (${avgDp >= 0 ? '+' : ''}${avgDp.toFixed(2)}% Avg)`;
 
       card.innerHTML = `
         <div class="sentiment-emoji">${emoji}</div>
@@ -4212,7 +4407,7 @@
           <div class="sentiment-track">
             <div class="sentiment-cursor" style="left:${score}%"></div>
           </div>
-          <div class="sentiment-sub">${ga} Up • ${lo} Down (${avgDp >= 0 ? '+' : ''}${avgDp.toFixed(2)}% Avg)</div>
+          <div class="sentiment-sub">${subTxt}</div>
         </div>`;
     }
 
@@ -4251,7 +4446,7 @@
         return `<div class="wl-card-item" onclick="loadStock('${esc(s.symbol)}')"><div class="wl-card-left"><div class="wl-sym">${esc(s.symbol)} ${s.symbol.endsWith('.BK') ? '<span class="search-tag-th">SET</span>' : ''}</div><div class="wl-name">${esc(s.name || '')}</div></div><div class="wl-card-right"><div class="wl-price">${p}</div><div class="wl-chg ${d}">${pt}</div></div></div>`;
       }).join('');
 
-      c.innerHTML = `<div class="table-wrap"><table class="wl-table"><thead><tr><th>${t.tblSymbol}</th><th>${t.tblPrice}</th><th>${t.tblChange}</th><th>%</th><th class="r">Volume</th></tr></thead><tbody>${rows}</tbody></table></div><div class="wl-cards">${cards}</div>`;
+      c.innerHTML = `<div class="table-wrap"><table class="wl-table"><thead><tr><th>${t.tblSymbol}</th><th>${t.tblPrice}</th><th>${t.tblChange}</th><th>%</th><th class="r">${t.tblVolume || 'Volume'}</th></tr></thead><tbody>${rows}</tbody></table></div><div class="wl-cards">${cards}</div>`;
       renderDashboardAlerts();
       updateDashboardExtras();
     }
@@ -4657,9 +4852,25 @@
       setTimeout(() => inp.focus(), 100);
     }
 
+    function closePinModal() {
+      const overlay = document.getElementById('pinOverlay');
+      if (overlay) overlay.classList.remove('active');
+      const inp = document.getElementById('pinInput');
+      if (inp) inp.value = '';
+      const err = document.getElementById('pinError');
+      if (err) err.textContent = '';
+      // Ensure nav highlight goes back to current active page
+      if (S.page === 'portfolio' && !PF.unlocked) {
+        switchPage('dashboard');
+      } else {
+        switchPage(S.page || 'dashboard');
+      }
+    }
+
     function verifyPin() {
       const inp = document.getElementById('pinInput');
       const val = inp.value.trim();
+      const t = I18N[S.lang] || I18N.en;
       if (val === PORTFOLIO_PIN) {
         document.getElementById('pinOverlay').classList.remove('active');
         PF.unlocked = true;
@@ -4667,13 +4878,19 @@
         pfEnterPage();
       } else {
         inp.classList.add('error');
-        document.getElementById('pinError').textContent = 'Incorrect PIN. Please try again.';
+        document.getElementById('pinError').textContent = t.pinIncorrect || 'Incorrect PIN. Please try again.';
         setTimeout(() => { inp.classList.remove('error'); inp.value = ''; inp.focus(); }, 1200);
       }
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-      document.getElementById('pinInput').addEventListener('keydown', e => { if (e.key === 'Enter') verifyPin(); });
+      const pinInput = document.getElementById('pinInput');
+      if (pinInput) {
+        pinInput.addEventListener('keydown', e => {
+          if (e.key === 'Enter') verifyPin();
+          if (e.key === 'Escape') closePinModal();
+        });
+      }
     });
 
     // --- Exchange Rate ---
