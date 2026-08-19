@@ -4,6 +4,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
   <title>StockPulse — Personal Stock Dashboard</title>
   <meta name="description"
     content="Personal stock dashboard with real-time prices, watchlist tracking, and sector overview." />
@@ -1869,12 +1872,27 @@
       display: flex;
       flex-direction: column;
       gap: 10px;
+      width: 100%;
     }
 
     .alert-row {
       display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 6px;
+      background: var(--bg-elevated);
+      border-radius: var(--radius-xs);
+      padding: 10px 12px;
+      border: 1px solid var(--border-subtle);
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .alert-row-inputs {
+      display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
+      width: 100%;
     }
 
     .alert-dir-badge {
@@ -3047,9 +3065,9 @@
                   </div>
                   <div class="alert-rows">
                     <div class="alert-row">
-                      <div style="display:flex;align-items:center;gap:8px;width:100%;">
+                      <div class="alert-row-inputs">
                         <span class="alert-dir-badge above">ABOVE</span>
-                        <div class="alert-input-wrap" style="flex:1;"><input type="number" class="alert-input" id="alertAboveInput"
+                        <div class="alert-input-wrap"><input type="number" class="alert-input" id="alertAboveInput"
                             placeholder="0.00" step="0.01" min="0" /></div>
                         <button class="alert-btn-set" onclick="setAlert('above')"><span
                             id="alertAboveBtnTxt">Set</span></button>
@@ -3059,9 +3077,9 @@
                       <div class="alert-quick-fills" id="alertAboveQuick"></div>
                     </div>
                     <div class="alert-row">
-                      <div style="display:flex;align-items:center;gap:8px;width:100%;">
+                      <div class="alert-row-inputs">
                         <span class="alert-dir-badge below">BELOW</span>
-                        <div class="alert-input-wrap" style="flex:1;"><input type="number" class="alert-input" id="alertBelowInput"
+                        <div class="alert-input-wrap"><input type="number" class="alert-input" id="alertBelowInput"
                             placeholder="0.00" step="0.01" min="0" /></div>
                         <button class="alert-btn-set" onclick="setAlert('below')"><span
                             id="alertBelowBtnTxt">Set</span></button>
