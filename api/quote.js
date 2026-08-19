@@ -48,6 +48,32 @@ export default async function handler(req, res) {
     return null;
   }
 
+  // Helper to fetch fundamentals from Yahoo Finance Quote API
+  async function fetchYahooQuote(sym) {
+    const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(sym)}`;
+    const headerSets = [
+      {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+        'Accept': 'application/json, text/plain, */*',
+        'Referer': 'https://finance.yahoo.com',
+      },
+      {
+        'User-Agent': 'python-requests/2.31.0',
+        'Accept': '*/*',
+      }
+    ];
+    for (const headers of headerSets) {
+      try {
+        const response = await fetch(url, { headers });
+        if (!response.ok) continue;
+        const data = await response.json();
+        const res = data?.quoteResponse?.result?.[0];
+        if (res) return res;
+      } catch {}
+    }
+    return null;
+  }
+
   try {
     // 1. Try symbol directly
     let yResult = await fetchYahoo(symbol);
@@ -63,6 +89,8 @@ export default async function handler(req, res) {
     if (!yResult) {
       return res.status(404).json({ error: `Stock not found: ${symbol}` });
     }
+
+    const yQuote = await fetchYahooQuote(symbol).catch(() => null);
 
     const meta = yResult.meta;
     const curPrice = meta.regularMarketPrice ?? meta.chartPreviousClose ?? 0;
@@ -137,20 +165,20 @@ export default async function handler(req, res) {
       o:  meta.regularMarketOpen    ?? curPrice,
       pc: prevClose,
       t:  meta.regularMarketTime    || Math.floor(Date.now() / 1000),
-      marketCap: meta.marketCap     || 0,
+      marketCap: yQuote?.marketCap || meta.marketCap || 0,
       marketState: computedMarketState, // computed from timestamps
       isThai,
-      // Extended Metrics & Fundamentals from Yahoo meta
-      v: meta.regularMarketVolume ?? null,
-      avgVolume: meta.averageDailyVolume3Month ?? meta.averageDailyVolume10Day ?? null,
-      fiftyTwoWeekHigh: meta.fiftyTwoWeekHigh ?? null,
-      fiftyTwoWeekLow: meta.fiftyTwoWeekLow ?? null,
-      trailingPE: meta.trailingPE ?? null,
-      epsTrailingTwelveMonths: meta.epsTrailingTwelveMonths ?? null,
-      beta: meta.beta ?? null,
-      dividendYield: meta.dividendYield ?? null,
-      priceToBook: meta.priceToBook ?? null,
-      forwardPE: meta.forwardPE ?? null,
+      // Extended Metrics & Fundamentals from Yahoo Quote + Meta
+      v: yQuote?.regularMarketVolume ?? meta.regularMarketVolume ?? null,
+      avgVolume: yQuote?.averageDailyVolume3Month ?? yQuote?.averageDailyVolume10Day ?? meta.averageDailyVolume3Month ?? meta.averageDailyVolume10Day ?? null,
+      fiftyTwoWeekHigh: yQuote?.fiftyTwoWeekHigh ?? meta.fiftyTwoWeekHigh ?? null,
+      fiftyTwoWeekLow: yQuote?.fiftyTwoWeekLow ?? meta.fiftyTwoWeekLow ?? null,
+      trailingPE: yQuote?.trailingPE ?? meta.trailingPE ?? null,
+      epsTrailingTwelveMonths: yQuote?.epsTrailingTwelveMonths ?? meta.epsTrailingTwelveMonths ?? null,
+      beta: yQuote?.beta ?? meta.beta ?? null,
+      dividendYield: yQuote?.trailingAnnualDividendYield ?? yQuote?.dividendYield ?? meta.dividendYield ?? null,
+      priceToBook: yQuote?.priceToBook ?? meta.priceToBook ?? null,
+      forwardPE: yQuote?.forwardPE ?? meta.forwardPE ?? null,
       // Pre-market
       preMarketPrice,
       preMarketChange,

@@ -1826,7 +1826,6 @@
       border: 1px solid var(--border-primary);
       border-radius: var(--radius);
       padding: 18px 20px;
-      margin-top: 16px;
     }
 
     .alert-card-header {
@@ -2404,16 +2403,16 @@
     @keyframes alertpulse { 0%,100%{opacity:1} 50%{opacity:0.55} }
 
     /* === Alert Card — Compact Layout + Quick Fills === */
-    .alert-quick-fills { display: none; }
+    .alert-quick-fills { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px; }
     .alert-qf-btn { font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: var(--radius-pill); background: var(--bg-card); border: 1px solid var(--border-subtle); color: var(--text-muted); cursor: pointer; transition: var(--transition); }
     .alert-qf-btn:hover { border-color: var(--amber); color: var(--amber); }
-    @media (min-width: 769px) {
-      .alert-card { padding: 14px 16px; }
-      .alert-card-header { margin-bottom: 6px; }
-      .alert-rows { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-      .alert-row { background: var(--bg-elevated); border-radius: var(--radius-xs); padding: 8px 10px; border: 1px solid var(--border-subtle); flex-direction: column; align-items: flex-start; gap: 6px; }
-      .alert-quick-fills { display: flex; gap: 4px; flex-wrap: wrap; }
-    }
+
+    .alert-card { padding: 14px 16px; width: 100%; box-sizing: border-box; overflow: hidden; }
+    .alert-card-header { margin-bottom: 8px; }
+    .alert-rows { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+    .alert-row { background: var(--bg-elevated); border-radius: var(--radius-xs); padding: 8px 10px; border: 1px solid var(--border-subtle); display: flex; flex-direction: column; align-items: stretch; gap: 6px; width: 100%; box-sizing: border-box; overflow: hidden; }
+    .alert-row > div:first-child { display: flex; align-items: center; gap: 6px; width: 100%; }
+
     @media (max-width: 768px) {
       .pf-snapshot-strip { grid-template-columns: 1fr 1fr; }
       .summary-strip { grid-template-columns: repeat(2, 1fr); }
@@ -2422,9 +2421,9 @@
     /* ===== STOCK 2-COLUMN LAYOUT ===== */
     .stock-two-col { display: grid; grid-template-columns: 1fr; gap: 12px; }
     .stock-col-left { min-width: 0; }
-    .stock-col-right { display: flex; flex-direction: column; gap: 12px; }
+    .stock-col-right { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
     @media (min-width: 900px) {
-      .stock-two-col { grid-template-columns: 1fr 300px; align-items: start; }
+      .stock-two-col { grid-template-columns: 1fr 340px; align-items: start; gap: 16px; }
     }
 
     /* ===== EXTENDED STATS 8 CARDS ===== */
@@ -3409,7 +3408,7 @@
     // API
     const API = 'https://finnhub.io/api/v1';
     async function api(ep, p = {}) { p.token = S.apiKey; const r = await fetch(API + ep + '?' + new URLSearchParams(p)); if (r.status === 401) throw new Error('Invalid API key'); if (r.status === 429) throw new Error('Rate limited'); if (!r.ok) throw new Error('API error'); return r.json(); }
-    const fetchP = s => api('/stock/profile2', { symbol: s }), fetchS = q => api('/search', { q });
+    const fetchP = s => api('/stock/profile2', { symbol: s }), fetchS = q => api('/search', { q }), fetchM = s => api('/stock/metric', { symbol: s, metric: 'all' });
 
     async function fetchQ(s) {
       if (!s) return null;
@@ -3504,12 +3503,12 @@
     function renderValuation(q) {
       const isTh = q.isThai;
       const cs = isTh ? '฿' : '$';
-      document.getElementById('valPE').textContent = q.trailingPE ? q.trailingPE.toFixed(2) + 'x' : '—';
-      document.getElementById('valFwdPE').textContent = q.forwardPE ? q.forwardPE.toFixed(2) + 'x' : '—';
-      document.getElementById('valEPS').textContent = q.epsTrailingTwelveMonths != null ? cs + fmtNum(q.epsTrailingTwelveMonths) : '—';
-      document.getElementById('valBeta').textContent = q.beta != null ? q.beta.toFixed(2) : '—';
-      document.getElementById('valDivYield').textContent = q.dividendYield != null ? (q.dividendYield > 1 ? q.dividendYield.toFixed(2) : (q.dividendYield * 100).toFixed(2)) + '%' : '—';
-      document.getElementById('valPB').textContent = q.priceToBook != null ? q.priceToBook.toFixed(2) + 'x' : '—';
+      document.getElementById('valPE').textContent = (q.trailingPE != null && !isNaN(q.trailingPE) && q.trailingPE > 0) ? Number(q.trailingPE).toFixed(2) + 'x' : '—';
+      document.getElementById('valFwdPE').textContent = (q.forwardPE != null && !isNaN(q.forwardPE) && q.forwardPE > 0) ? Number(q.forwardPE).toFixed(2) + 'x' : '—';
+      document.getElementById('valEPS').textContent = (q.epsTrailingTwelveMonths != null && !isNaN(q.epsTrailingTwelveMonths)) ? cs + Number(q.epsTrailingTwelveMonths).toFixed(2) : '—';
+      document.getElementById('valBeta').textContent = (q.beta != null && !isNaN(q.beta)) ? Number(q.beta).toFixed(2) : '—';
+      document.getElementById('valDivYield').textContent = (q.dividendYield != null && !isNaN(q.dividendYield) && q.dividendYield > 0) ? (q.dividendYield > 1 ? Number(q.dividendYield).toFixed(2) : (Number(q.dividendYield) * 100).toFixed(2)) + '%' : '—';
+      document.getElementById('valPB').textContent = (q.priceToBook != null && !isNaN(q.priceToBook) && q.priceToBook > 0) ? Number(q.priceToBook).toFixed(2) + 'x' : '—';
     }
 
     async function calcAndRenderTechnicals(q) {
@@ -3726,7 +3725,7 @@
       switchPage('stock'); updateWishlistButton(); renderWishlist();
       renderAlertCard();
       try {
-        const [qr, pr] = await Promise.allSettled([fetchQ(sym), fetchP(sym)]);
+        const [qr, pr, mr] = await Promise.allSettled([fetchQ(sym), fetchP(sym), fetchM(sym)]);
         if (qr.status === 'fulfilled' && qr.value?.c) {
           const qData = qr.value;
           S.quote = qData;
@@ -3734,6 +3733,20 @@
             S.sym = qData.symbol;
             document.getElementById('stockTabLabel').textContent = S.sym;
           }
+
+          // Fill any missing fundamental metrics from Finnhub metric API
+          if (mr.status === 'fulfilled' && mr.value?.metric) {
+            const m = mr.value.metric;
+            if (qData.trailingPE == null && (m.peTTM || m.peNormalizedAnnual || m.peExclExtraTTM)) qData.trailingPE = m.peTTM || m.peNormalizedAnnual || m.peExclExtraTTM;
+            if (qData.forwardPE == null && m.forwardPE) qData.forwardPE = m.forwardPE;
+            if (qData.epsTrailingTwelveMonths == null && (m.epsTTM || m.epsNormalizedAnnual)) qData.epsTrailingTwelveMonths = m.epsTTM || m.epsNormalizedAnnual;
+            if (qData.beta == null && m.beta) qData.beta = m.beta;
+            if (qData.dividendYield == null && m.dividendYieldIndicatedAnnual) qData.dividendYield = m.dividendYieldIndicatedAnnual;
+            if (qData.priceToBook == null && (m.pbTTM || m.pbAnnual || m.pbQuarterly)) qData.priceToBook = m.pbTTM || m.pbAnnual || m.pbQuarterly;
+            if (qData.fiftyTwoWeekHigh == null && m['52WeekHigh']) qData.fiftyTwoWeekHigh = m['52WeekHigh'];
+            if (qData.fiftyTwoWeekLow == null && m['52WeekLow']) qData.fiftyTwoWeekLow = m['52WeekLow'];
+          }
+
           renderQuote(qData);
           setChartRange('1D'); // Load chart data
           const isThai = qData.isThai || S.sym.endsWith('.BK') || qData.currency === 'THB';
@@ -4086,29 +4099,52 @@
       }).join('');
     }
 
+    function isUSDST() {
+      // In US, DST starts 2nd Sunday of March (02:00 EST / 07:00 UTC) and ends 1st Sunday of November (02:00 EDT / 06:00 UTC)
+      const now = new Date();
+      const year = now.getUTCFullYear();
+      const marchFirst = new Date(Date.UTC(year, 2, 1));
+      const marchFirstDay = marchFirst.getUTCDay();
+      const secondSundayMarch = 1 + (marchFirstDay === 0 ? 7 : (7 - marchFirstDay) + 7);
+      const dstStart = new Date(Date.UTC(year, 2, secondSundayMarch, 7, 0, 0));
+
+      const novFirst = new Date(Date.UTC(year, 10, 1));
+      const novFirstDay = novFirst.getUTCDay();
+      const firstSundayNov = 1 + (novFirstDay === 0 ? 0 : (7 - novFirstDay));
+      const dstEnd = new Date(Date.UTC(year, 10, firstSundayNov, 6, 0, 0));
+
+      return now >= dstStart && now < dstEnd;
+    }
+
     function updateMarketClock() {
       const container = document.getElementById('marketClockStrip');
       if (!container) return;
 
       const sus = getUSSession();
       const sset = getSETSession();
+      const dst = isUSDST();
+      const usTz = dst ? 'EDT' : 'EST';
+      const openBkk = dst ? '20:30' : '21:30';
+      const closeBkk = dst ? '03:00' : '04:00';
+      const postCloseBkk = dst ? '07:00' : '08:00';
+      const preOpenBkk = dst ? '15:00' : '16:00';
 
       const usTimes = {
-        regular: { title: 'Open (Regular)', cls: 'open', desc: 'Closes 04:00 BKK (16:00 EST)' },
-        'pre-market': { title: 'Pre-Market Active', cls: 'pre', desc: 'Opens 21:30 BKK (09:30 EST)' },
-        'post-market': { title: 'After-Hours Active', cls: 'after', desc: 'Closes 08:00 BKK (20:00 EST)' },
-        closed: { title: 'Market Closed', cls: 'closed', desc: 'Trading 21:30-04:00 BKK' }
+        regular: { title: 'Open (Regular)', cls: 'open', desc: `Closes ${closeBkk} BKK (16:00 ${usTz})` },
+        'pre-market': { title: 'Pre-Market Active', cls: 'pre', desc: `Opens ${openBkk} BKK (09:30 ${usTz})` },
+        'post-market': { title: 'After-Hours Active', cls: 'after', desc: `Closes ${postCloseBkk} BKK (20:00 ${usTz})` },
+        closed: { title: 'Market Closed', cls: 'closed', desc: `Trading ${openBkk} - ${closeBkk} BKK (${usTz})` }
       };
       const usInfo = usTimes[sus] || usTimes.closed;
 
       const setTimes = {
-        regular: { title: 'Open (Trading)', cls: 'open', desc: 'Day Session Active' },
-        'pre-market': { title: 'Pre-Open Call', cls: 'pre', desc: 'Matching Orders' },
-        closed: { title: 'Market Closed', cls: 'closed', desc: 'Trading 10:00-12:30, 14:30-16:30' }
+        regular: { title: 'Open (Trading)', cls: 'open', desc: 'Day Session (10:00-12:30, 14:30-16:30)' },
+        'pre-market': { title: 'Pre-Open Call', cls: 'pre', desc: 'Matching Orders (09:30/14:00)' },
+        closed: { title: 'Market Closed', cls: 'closed', desc: 'Trading 10:00-12:30, 14:30-16:30 ICT' }
       };
       const setInfo = setTimes[sset] || setTimes.closed;
 
-      const usTimeStr = new Date().toLocaleTimeString('en-US', { timeZone: 'America/New_York', hour: '2-digit', minute: '2-digit' }) + ' EST';
+      const usTimeStr = new Date().toLocaleTimeString('en-US', { timeZone: 'America/New_York', hour: '2-digit', minute: '2-digit' }) + ' ' + usTz;
       const setTimeStr = new Date().toLocaleTimeString('th-TH', { timeZone: 'Asia/Bangkok', hour: '2-digit', minute: '2-digit' }) + ' ICT';
 
       container.innerHTML = `
@@ -4203,7 +4239,21 @@
     }
 
     // Market status
-    function getUSSession() { const n = new Date(), uH = n.getUTCHours(), uM = n.getUTCMinutes(), d = n.getUTCDay(), t = uH * 60 + uM, dst = n.getUTCMonth() >= 2 && n.getUTCMonth() <= 10, o = dst ? -4 : -5, et = ((t + o * 60) % 1440 + 1440) % 1440; let ed = d; if (t + o * 60 < 0) ed = (d - 1 + 7) % 7; if (t + o * 60 >= 1440) ed = (d + 1) % 7; if (ed === 0 || ed === 6) return 'closed'; if (et >= 240 && et < 570) return 'pre-market'; if (et >= 570 && et < 960) return 'regular'; if (et >= 960 && et < 1200) return 'post-market'; return 'closed'; }
+    function getUSSession() {
+      const n = new Date(), uH = n.getUTCHours(), uM = n.getUTCMinutes(), d = n.getUTCDay(), t = uH * 60 + uM;
+      const dst = isUSDST();
+      const o = dst ? -4 : -5;
+      const et = ((t + o * 60) % 1440 + 1440) % 1440;
+      let ed = d;
+      if (t + o * 60 < 0) ed = (d - 1 + 7) % 7;
+      if (t + o * 60 >= 1440) ed = (d + 1) % 7;
+      if (ed === 0 || ed === 6) return 'closed';
+      if (et >= 240 && et < 570) return 'pre-market';
+      if (et >= 570 && et < 960) return 'regular';
+      if (et >= 960 && et < 1200) return 'post-market';
+      return 'closed';
+    }
+
     function getSETSession() { const n = new Date(), uH = n.getUTCHours(), uM = n.getUTCMinutes(), d = n.getUTCDay(), t = uH * 60 + uM; let ed = d; if (ed === 0 || ed === 6) return 'closed'; const et = (t + 7 * 60) % 1440; if (et >= 570 && et < 600) return 'pre-market'; if (et >= 600 && et < 750) return 'regular'; if (et >= 840 && et < 870) return 'pre-market'; if (et >= 870 && et < 990) return 'regular'; return 'closed'; }
     
     function updateMarketStatus() { 
