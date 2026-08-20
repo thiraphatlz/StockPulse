@@ -422,12 +422,14 @@
       animation: dotBlink 1.5s infinite;
     }
 
-    .market-badge.after-hours {
+    .market-badge.after-hours,
+    .market-badge.intermission {
       background: var(--amber-bg);
       color: var(--amber);
     }
 
-    .market-badge.after-hours .dot {
+    .market-badge.after-hours .dot,
+    .market-badge.intermission .dot {
       background: var(--amber);
       animation: dotBlink 1.5s infinite;
     }
@@ -2120,15 +2122,18 @@
       .pos-form-full { grid-column: 1; }
     }
 
-    .alerts-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
-    .alert-grid-item { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius); padding: 12px 14px; display: flex; align-items: center; gap: 10px; cursor: pointer; transition: var(--transition); }
+    .alerts-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px; }
+    .alert-grid-item { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius); padding: 12px 14px; display: flex; align-items: center; justify-content: space-between; gap: 12px; cursor: pointer; transition: var(--transition); }
     .alert-grid-item:hover { border-color: var(--border-primary); background: var(--bg-card-hover); }
     .alert-item-left { flex: 1; min-width: 0; }
-    .alert-item-sym { font-weight: 700; font-size: 13px; }
-    .alert-item-name { font-size: 11px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .alert-item-mid { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; flex-shrink: 0; }
-    .alert-item-cur { font-size: 10px; font-family: var(--font-mono); color: var(--text-muted); }
-    .alert-item-del { width: 26px; height: 26px; border-radius: 50%; background: var(--bg-elevated); border: 1px solid var(--border-subtle); color: var(--text-muted); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: var(--transition); flex-shrink: 0; }
+    .alert-item-sym { font-weight: 800; font-size: 14px; letter-spacing: -0.2px; }
+    .alert-item-name { font-size: 11px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 2px; }
+    .alert-item-mid { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
+    .alert-pill-badge { font-size: 11px; font-weight: 700; font-family: var(--font-mono); padding: 4px 10px; border-radius: var(--radius-pill); display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; line-height: 1.2; }
+    .alert-pill-badge.above { background: var(--green-bg); color: var(--green); border: 1px solid rgba(16, 185, 129, 0.25); }
+    .alert-pill-badge.below { background: var(--red-bg); color: var(--red); border: 1px solid rgba(239, 68, 68, 0.25); }
+    .alert-item-cur { font-size: 10.5px; font-family: var(--font-mono); color: var(--text-muted); }
+    .alert-item-del { width: 28px; height: 28px; border-radius: 50%; background: var(--bg-elevated); border: 1px solid var(--border-subtle); color: var(--text-muted); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: var(--transition); flex-shrink: 0; }
     .alert-item-del:hover { border-color: var(--red); color: var(--red); background: var(--red-bg); }
     .alert-item-del svg { width: 12px; height: 12px; fill: currentColor; }
 
@@ -2160,6 +2165,48 @@
 
     .alert-email-note a:hover {
       text-decoration: underline;
+    }
+
+    /* Toggle Switch */
+    .toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 42px;
+      height: 22px;
+      flex-shrink: 0;
+    }
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-primary);
+      transition: .25s ease;
+      border-radius: var(--radius-pill);
+    }
+    .toggle-slider:before {
+      position: absolute;
+      content: "";
+      height: 14px;
+      width: 14px;
+      left: 3px;
+      bottom: 3px;
+      background-color: var(--text-muted);
+      transition: .25s ease;
+      border-radius: 50%;
+    }
+    .toggle-switch input:checked + .toggle-slider {
+      background-color: var(--accent);
+      border-color: var(--accent);
+    }
+    .toggle-switch input:checked + .toggle-slider:before {
+      transform: translateX(20px);
+      background-color: #ffffff;
     }
 
     /* Animations */
@@ -2532,13 +2579,13 @@
     .clock-dot.open { background: var(--green); animation: dotBlink 1.5s infinite; }
     .clock-dot.closed { background: var(--text-muted); }
     .clock-dot.pre { background: var(--blue); animation: dotBlink 1.5s infinite; }
-    .clock-dot.after { background: var(--amber); animation: dotBlink 1.5s infinite; }
+    .clock-dot.after, .clock-dot.intermission { background: var(--amber); animation: dotBlink 1.5s infinite; }
     .clock-mkt-lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 2px; }
     .clock-session-lbl { font-size: 13px; font-weight: 700; }
     .clock-session-lbl.open { color: var(--green); }
     .clock-session-lbl.closed { color: var(--text-muted); }
     .clock-session-lbl.pre { color: var(--blue); }
-    .clock-session-lbl.after { color: var(--amber); }
+    .clock-session-lbl.after, .clock-session-lbl.intermission { color: var(--amber); }
     .clock-countdown-txt { font-size: 10px; color: var(--text-muted); margin-top: 1px; font-family: var(--font-mono); }
 
     /* ===== SENTIMENT CARD ===== */
@@ -2568,6 +2615,16 @@
         <input type="email" class="modal-input" id="settingsEmail" placeholder="your@email.com" />
         <div class="modal-error" id="settingsError">Please enter a valid email address.</div>
       </div>
+      <div class="settings-toggle-row" style="display:flex; align-items:center; justify-content:space-between; padding:12px 14px; background:var(--bg-elevated); border:1px solid var(--border-subtle); border-radius:var(--radius); margin-bottom:16px;">
+        <div style="padding-right:12px;">
+          <div style="font-weight:700; font-size:13px; color:var(--text-primary);" id="settingsPremarketTitle">Pre-Market Briefing (20:15 น.)</div>
+          <div style="font-size:11px; color:var(--text-muted); margin-top:2px;" id="settingsPremarketDesc">ส่งอีเมลสรุป Sector Flow & Top 3 หุ้นเด่นก่อนเปิดตลาด</div>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="settingsPremarketToggle" onchange="togglePremarketAlert(this.checked)" checked />
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
       <div class="modal-actions" style="display:flex; flex-direction:column; gap:8px;">
         <div style="display:flex; gap:8px; width:100%;">
           <button class="btn-secondary" onclick="closeSettings()"><span class="i18n-lbl" data-en="Cancel">Cancel</span></button>
@@ -2575,7 +2632,11 @@
         </div>
         <button type="button" class="btn-secondary" onclick="testAlertEmail()" style="width:100%; border-color:var(--accent); color:var(--accent-light); gap:6px;">
           <svg viewBox="0 0 24 24" style="width:14px; height:14px; fill:currentColor;"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
-          <span class="i18n-lbl" data-en="Test Email">Test Email (ส่งอีเมลทดสอบ)</span>
+          <span class="i18n-lbl" data-en="Test Email">Test Price Alert Email (ทดสอบส่งอีเมลแจ้งเตือนราคา)</span>
+        </button>
+        <button type="button" class="btn-secondary" onclick="sendPreMarketBriefingEmail(true)" style="width:100%; border-color:var(--green); color:var(--green); gap:6px; background:rgba(16,185,129,0.06);">
+          <svg viewBox="0 0 24 24" style="width:14px; height:14px; fill:currentColor;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+          <span class="i18n-lbl" data-en="Send Pre-Market Briefing">Send Pre-Market Briefing (ส่งรายงาน Sector Flow ตอนนี้)</span>
         </button>
       </div>
     </div>
@@ -3212,13 +3273,14 @@
       searchTO: null, refreshTimer: null, cdTimer: null, cd: 30,
       page: 'dashboard', sectors: {},
       lang: localStorage.getItem('stockpulse_lang') || 'en',
-      alertEmail: localStorage.getItem('stockpulse_alert_email') || ''
+      alertEmail: localStorage.getItem('stockpulse_alert_email') || '',
+      premarketAlert: localStorage.getItem('stockpulse_premarket_alert') !== 'false'
     };
 
     const I18N = {
       en: {
         dashboard: 'Dashboard', stock: 'Stock', watchlist: 'Watchlist', settings: 'Settings', searchPlaceholder: 'Search stocks...',
-        marketClosed: 'Closed', marketOpen: 'Open', marketPre: 'Pre-Market', marketAfter: 'After Hours',
+        marketClosed: 'Closed', marketOpen: 'Open', marketPre: 'Pre-Market', marketAfter: 'After Hours', marketIntermission: 'Lunch Break',
         marketRealtime: 'Real-time', marketAtClose: 'At Close', atClose: 'At close:',
         refresh: 'Refresh', gainers: 'Gainers', losers: 'Losers', best: 'Best', sectors: 'Sectors',
         trackStocks: 'Track Your Stocks', trackStocksDesc: 'Search for a stock symbol to view real-time prices.',
@@ -3238,6 +3300,7 @@
         infoWebsite: 'Website', infoIpoDate: 'IPO Date',
         emptyWatchlist: 'Empty watchlist — search to add stocks', emptyWatchlistSidebar: 'Empty watchlist',
         settingsTitle: 'Settings', settingsDesc: 'Set your alert email to receive price notifications.', settingsEmailLabel: 'Alert Email',
+        settingsPremarketTitle: 'Pre-Market Briefing Alert (20:15)', settingsPremarketDesc: 'Daily email summary of Sector Flow & Top 3 Movers at 20:15 BKK',
         cancel: 'Cancel', save: 'Save',
         tblSymbol: 'Symbol', tblPrice: 'Price', tblChange: 'Change', tblVolume: 'Volume', tblAction: 'Action',
         gMorning: 'Good Morning ☀️', gAfternoon: 'Good Afternoon 🌤', gEvening: 'Good Evening 🌙',
@@ -3268,7 +3331,7 @@
       },
       th: {
         dashboard: 'แดชบอร์ด', stock: 'หุ้น', watchlist: 'รายการเฝ้าดู', settings: 'ตั้งค่า', searchPlaceholder: 'ค้นหาหุ้น...',
-        marketClosed: 'ปิดทำการ', marketOpen: 'เปิดทำการ', marketPre: 'ก่อนตลาดเปิด', marketAfter: 'หลังตลาดปิด',
+        marketClosed: 'ปิดทำการ', marketOpen: 'เปิดทำการ', marketPre: 'ก่อนตลาดเปิด', marketAfter: 'หลังตลาดปิด', marketIntermission: 'พักเที่ยง',
         marketRealtime: 'เรียลไทม์', marketAtClose: 'ราคาปิด', atClose: 'ราคาปิด:',
         refresh: 'รีเฟรช', gainers: 'บวก', losers: 'ลบ', best: 'ดีที่สุด', sectors: 'อุตสาหกรรม',
         trackStocks: 'ติดตามหุ้นของคุณ', trackStocksDesc: 'ค้นหาสัญลักษณ์หุ้นเพื่อดูราคาแบบเรียลไทม์',
@@ -3288,6 +3351,7 @@
         infoWebsite: 'เว็บไซต์', infoIpoDate: 'วันที่เข้าตลาด (IPO)',
         emptyWatchlist: 'ไม่มีรายการ — ค้นหาเพื่อเพิ่มหุ้น', emptyWatchlistSidebar: 'ไม่มีรายการเฝ้าดู',
         settingsTitle: 'การตั้งค่า', settingsDesc: 'ตั้งค่าอีเมลสำหรับรับการแจ้งเตือนราคาหุ้น', settingsEmailLabel: 'อีเมลแจ้งเตือน',
+        settingsPremarketTitle: 'แจ้งเตือน Pre-Market (20:15 น.)', settingsPremarketDesc: 'ส่งอีเมลสรุป Sector Flow & Top 3 หุ้นเด่นก่อนเปิดตลาด',
         cancel: 'ยกเลิก', save: 'บันทึก',
         tblSymbol: 'สัญลักษณ์', tblPrice: 'ราคา', tblChange: 'เปลี่ยนแปลง', tblVolume: 'ปริมาณ', tblAction: 'จัดการ',
         gMorning: 'สวัสดีตอนเช้า ☀️', gAfternoon: 'สวัสดีตอนบ่าย 🌤', gEvening: 'สวัสดีตอนเย็น 🌙',
@@ -3388,6 +3452,8 @@
       document.getElementById('settingsTitle').textContent = t.settingsTitle;
       document.getElementById('settingsDesc').textContent = t.settingsDesc;
       document.getElementById('settingsEmailLabel').textContent = t.settingsEmailLabel;
+      setLbl('#settingsPremarketTitle', t.settingsPremarketTitle);
+      setLbl('#settingsPremarketDesc', t.settingsPremarketDesc);
       setLbl('.btn-secondary .i18n-lbl', t.cancel);
       setLbl('.btn-primary .i18n-lbl', t.save);
       setLbl('#dashRefreshBtn .i18n-lbl', t.refresh);
@@ -3444,6 +3510,7 @@
       ]);
 
       startAutoRefresh(); updateLastRefresh();
+      checkAndSendDailyPreMarketBriefing();
       // Load alerts from Supabase then subscribe for real-time cross-device sync
       loadAlerts().then(() => { renderDashboardAlerts(); updateAlertStats(); });
       subscribeAlerts();
@@ -3458,6 +3525,7 @@
         try {
           await updateWishlistPrices();
           await checkAlerts();
+          checkAndSendDailyPreMarketBriefing();
           if (S.sym && S.page === 'stock') await refreshCurrentQuote();
           await loadSectorData(); updateDashboard(); updateLastRefresh();
         } catch (e) { console.error(e); }
@@ -4373,14 +4441,24 @@
 
       const setTimes = {
         regular: { 
-          title: isTh ? 'เปิดทำการปกติ' : 'Open (Trading)', 
+          title: isTh ? 'เปิดทำการซื้อขายปกติ' : 'Open (Trading Session)', 
           cls: 'open', 
-          desc: isTh ? 'รอบการซื้อขาย (10:00-12:30, 14:30-16:30)' : 'Day Session (10:00-12:30, 14:30-16:30)' 
+          desc: isTh ? 'รอบการซื้อขาย (เช้า 10:00-12:30 / บ่าย 14:30-16:30)' : 'Day Session (10:00-12:30, 14:30-16:30)' 
+        },
+        intermission: {
+          title: isTh ? 'พักการซื้อขาย (Intermission)' : 'Lunch Break (Intermission)',
+          cls: 'intermission',
+          desc: isTh ? 'พักเที่ยง • รอเปิดรอบบ่าย Pre-Open 14:00 น. (ซื้อขาย 14:30)' : 'Lunch Break • Pre-Open resumes 14:00 (Trading 14:30)'
         },
         'pre-market': { 
-          title: isTh ? 'ช่วงสุ่มเปิด (Pre-Open)' : 'Pre-Open Call', 
+          title: isTh ? 'ช่วงสุ่มเปิดตลาด (Pre-Open)' : 'Pre-Open Call', 
           cls: 'pre', 
-          desc: isTh ? 'จับคู่คำสั่ง (09:30/14:00)' : 'Matching Orders (09:30/14:00)' 
+          desc: isTh ? 'จับคู่คำสั่งเปิดตลาด (รอบเช้า 09:30 / รอบบ่าย 14:00)' : 'Matching Orders (09:30/14:00)' 
+        },
+        'post-market': {
+          title: isTh ? 'ช่วงสุ่มปิดตลาด (Pre-Close)' : 'Pre-Close Call',
+          cls: 'after',
+          desc: isTh ? 'สุ่มคำนวณราคาปิดตลาด (16:30 - 16:40 น.)' : 'Closing Call (16:30 - 16:40 ICT)'
         },
         closed: { 
           title: isTh ? 'ตลาดปิดทำการ' : 'Market Closed', 
@@ -4509,21 +4587,48 @@
 
     // Market status
     function getUSSession() {
-      const n = new Date(), uH = n.getUTCHours(), uM = n.getUTCMinutes(), d = n.getUTCDay(), t = uH * 60 + uM;
+      const now = new Date();
       const dst = isUSDST();
-      const o = dst ? -4 : -5;
-      const et = ((t + o * 60) % 1440 + 1440) % 1440;
-      let ed = d;
-      if (t + o * 60 < 0) ed = (d - 1 + 7) % 7;
-      if (t + o * 60 >= 1440) ed = (d + 1) % 7;
-      if (ed === 0 || ed === 6) return 'closed';
-      if (et >= 240 && et < 570) return 'pre-market';
-      if (et >= 570 && et < 960) return 'regular';
-      if (et >= 960 && et < 1200) return 'post-market';
+      const offsetHours = dst ? -4 : -5;
+      const utcMs = now.getTime() + (now.getTimezoneOffset() * 60000);
+      const usTime = new Date(utcMs + (offsetHours * 3600000));
+      const day = usTime.getDay();
+      if (day === 0 || day === 6) return 'closed';
+
+      const t = usTime.getHours() * 60 + usTime.getMinutes();
+      // Pre-market: 04:00 - 09:30 (240 - 570 min)
+      if (t >= 240 && t < 570) return 'pre-market';
+      // Regular: 09:30 - 16:00 (570 - 960 min)
+      if (t >= 570 && t < 960) return 'regular';
+      // Post-market: 16:00 - 20:00 (960 - 1200 min)
+      if (t >= 960 && t < 1200) return 'post-market';
       return 'closed';
     }
 
-    function getSETSession() { const n = new Date(), uH = n.getUTCHours(), uM = n.getUTCMinutes(), d = n.getUTCDay(), t = uH * 60 + uM; let ed = d; if (ed === 0 || ed === 6) return 'closed'; const et = (t + 7 * 60) % 1440; if (et >= 570 && et < 600) return 'pre-market'; if (et >= 600 && et < 750) return 'regular'; if (et >= 840 && et < 870) return 'pre-market'; if (et >= 870 && et < 990) return 'regular'; return 'closed'; }
+    function getSETSession() {
+      const now = new Date();
+      const utcMs = now.getTime() + (now.getTimezoneOffset() * 60000);
+      const bkk = new Date(utcMs + (7 * 3600000));
+      const day = bkk.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
+      if (day === 0 || day === 6) return 'closed';
+
+      const t = bkk.getHours() * 60 + bkk.getMinutes();
+
+      // SET Schedule (ICT):
+      // 09:30 - 10:00 (570 - 600): Pre-Open 1
+      if (t >= 570 && t < 600) return 'pre-market';
+      // 10:00 - 12:30 (600 - 750): Morning Trading Session
+      if (t >= 600 && t < 750) return 'regular';
+      // 12:30 - 14:00 (750 - 840): Intermission / Lunch Break (พักการซื้อขายช่วงเที่ยง)
+      if (t >= 750 && t < 840) return 'intermission';
+      // 14:00 - 14:30 (840 - 870): Pre-Open 2
+      if (t >= 840 && t < 870) return 'pre-market';
+      // 14:30 - 16:30 (870 - 990): Afternoon Trading Session
+      if (t >= 870 && t < 990) return 'regular';
+      // 16:30 - 16:40 (990 - 1000): Pre-Close
+      if (t >= 990 && t < 1000) return 'post-market';
+      return 'closed';
+    }
     
     function updateMarketStatus() { 
       const sus = getUSSession();
@@ -4537,7 +4642,13 @@
       bSET.className = 'market-badge';
       
       const l = I18N[S.lang] || I18N.en; 
-      const m = { regular: ['open', l.marketOpen], 'pre-market': ['pre-market', l.marketPre], 'post-market': ['after-hours', l.marketAfter], closed: ['closed', l.marketClosed] }; 
+      const m = { 
+        regular: ['open', l.marketOpen], 
+        'pre-market': ['pre-market', l.marketPre], 
+        'post-market': ['after-hours', l.marketAfter], 
+        intermission: ['intermission', l.marketIntermission || 'Lunch Break'],
+        closed: ['closed', l.marketClosed] 
+      }; 
       
       const [clUS, lbUS] = m[sus] || m.closed; 
       bUS.classList.add(clUS); 
@@ -4582,6 +4693,8 @@
       inp.value = S.alertEmail || '';
       document.getElementById('settingsError').classList.remove('visible');
       inp.classList.remove('error');
+      const toggle = document.getElementById('settingsPremarketToggle');
+      if (toggle) toggle.checked = S.premarketAlert;
       document.getElementById('settingsModal').classList.add('active');
     }
     function closeSettings() {
@@ -4601,9 +4714,20 @@
       }
       S.alertEmail = email;
       localStorage.setItem('stockpulse_alert_email', email);
+      const toggle = document.getElementById('settingsPremarketToggle');
+      if (toggle) {
+        S.premarketAlert = toggle.checked;
+        localStorage.setItem('stockpulse_premarket_alert', toggle.checked ? 'true' : 'false');
+      }
       closeSettings();
       renderAlertEmailNote();
-      showToast('Email saved!', 'success');
+      showToast('Settings saved!', 'success');
+    }
+
+    function togglePremarketAlert(enabled) {
+      S.premarketAlert = enabled;
+      localStorage.setItem('stockpulse_premarket_alert', enabled ? 'true' : 'false');
+      showToast(enabled ? 'Pre-Market Alert enabled (20:15 น.)' : 'Pre-Market Alert disabled', 'success');
     }
 
     // Events
@@ -4621,7 +4745,8 @@
     // ===== EMAILJS =====
     const EMAILJS_PUBLIC_KEY = '8EBack4zwyOa1x49O';   // ← Public Key จาก EmailJS
     const EMAILJS_SERVICE_ID = 'service_u55ha9b';   // ← Service ID
-    const EMAILJS_TEMPLATE_ID = 'template_k98tnwo';  // ← Template ID
+    const EMAILJS_TEMPLATE_ID = 'template_k98tnwo';  // ← Price Alert Template ID
+    const EMAILJS_PREMARKET_TEMPLATE_ID = 'template_2mgjigz'; // ← Pre-Market Briefing Template ID
 
     function initEmailJS() {
       if (typeof emailjs !== 'undefined' && EMAILJS_PUBLIC_KEY && EMAILJS_PUBLIC_KEY !== 'YOUR_PUBLIC_KEY') {
@@ -4671,6 +4796,206 @@
       localStorage.setItem('stockpulse_alert_email', email);
       renderAlertEmailNote();
       await sendAlertEmail('TEST', 'Test Stock (Apple Inc.)', 'risen above', 100.00, 105.50);
+    }
+
+    // ===== PRE-MARKET SECTOR FLOW & TOP MOVERS REPORT =====
+    async function generatePreMarketReport() {
+      // 1. Fetch Sector ETF Quotes in parallel
+      const sectorResults = await Promise.allSettled(SECTORS.map(async s => {
+        const q = await fetchQ(s.etf);
+        return { ...s, quote: q };
+      }));
+
+      const validSectors = sectorResults
+        .filter(r => r.status === 'fulfilled' && r.value.quote && r.value.quote.c)
+        .map(r => ({
+          id: r.value.id,
+          name: r.value.name,
+          etf: r.value.etf,
+          price: r.value.quote.c,
+          dp: r.value.quote.dp || 0,
+          tickers: r.value.tickers || []
+        }))
+        .sort((a, b) => b.dp - a.dp);
+
+      if (!validSectors.length) return null;
+
+      const leadingSector = validSectors[0];
+      const laggingSector = validSectors[validSectors.length - 1];
+
+      // 2. Fetch constituent stock prices for all sectors (top 3 gainers/losers each)
+      const sectorDetails = await Promise.allSettled(validSectors.map(async sec => {
+        const tickerResults = await Promise.allSettled(sec.tickers.map(async sym => {
+          const q = await fetchQ(sym);
+          return { symbol: sym, quote: q };
+        }));
+
+        const rankedTickers = tickerResults
+          .filter(r => r.status === 'fulfilled' && r.value.quote && r.value.quote.c)
+          .map(r => ({
+            symbol: r.value.symbol,
+            price: r.value.quote.c,
+            dp: r.value.quote.dp || 0
+          }))
+          .sort((a, b) => b.dp - a.dp);
+
+        const gainers = rankedTickers.filter(t => t.dp > 0).slice(0, 3);
+        const losers = [...rankedTickers].reverse().filter(t => t.dp < 0).slice(0, 3);
+
+        return {
+          ...sec,
+          topGainers: gainers,
+          topLosers: losers,
+          allRanked: rankedTickers
+        };
+      }));
+
+      const detailedSectors = sectorDetails.filter(r => r.status === 'fulfilled').map(r => r.value);
+
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) + ' น. ICT';
+      const dateStr = now.toLocaleDateString('th-TH', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' });
+
+      // Plain Text Summary
+      let textSummary = `🚀 [StockPulse] Pre-Market US Sector Flow Intelligence (${dateStr} • ${timeStr})\n\n`;
+      textSummary += `🏆 #1 Sector ที่เงินไหลเข้ามากที่สุด: ${leadingSector.name} (${leadingSector.etf}) ${(leadingSector.dp >= 0 ? '+' : '')}${leadingSector.dp.toFixed(2)}%\n`;
+      textSummary += `🔻 Sector ที่ปรับตัวลงมากที่สุด: ${laggingSector.name} (${laggingSector.etf}) ${(laggingSector.dp >= 0 ? '+' : '')}${laggingSector.dp.toFixed(2)}%\n\n`;
+      textSummary += `📊 สรุปการจัดอันดับ Sector Flow ทั้งหมด:\n`;
+      detailedSectors.forEach((s, idx) => {
+        const sign = s.dp >= 0 ? '+' : '';
+        textSummary += `${idx + 1}. ${s.name} (${s.etf}): ${sign}${s.dp.toFixed(2)}% | ราคา $${s.price.toFixed(2)}\n`;
+      });
+
+      textSummary += `\n🔥 Top 3 หุ้นเด่น (บวก/ลบ) ราย Sector:\n`;
+      detailedSectors.forEach(s => {
+        textSummary += `\n[ ${s.name} - ${s.etf} (${s.dp >= 0 ? '+' : ''}${s.dp.toFixed(2)}%) ]\n`;
+        if (s.topGainers.length) {
+          textSummary += `  🟢 Top Gainers: ` + s.topGainers.map(t => `${t.symbol} +${t.dp.toFixed(2)}% ($${t.price.toFixed(2)})`).join(', ') + '\n';
+        }
+        if (s.topLosers.length) {
+          textSummary += `  🔴 Top Losers: ` + s.topLosers.map(t => `${t.symbol} ${t.dp.toFixed(2)}% ($${t.price.toFixed(2)})`).join(', ') + '\n';
+        }
+      });
+
+      // HTML Email Table
+      let sectorTableRows = detailedSectors.map((s, idx) => {
+        const isUp = s.dp >= 0;
+        const color = isUp ? '#10b981' : '#ef4444';
+        const sign = isUp ? '+' : '';
+        return `
+          <tr style="border-bottom: 1px solid #2a2a3a;">
+            <td style="padding: 8px 12px; font-weight: bold; color: #eaeaf0;">${idx + 1}. ${s.name} <span style="color:#9898b0; font-size:11px;">(${s.etf})</span></td>
+            <td style="padding: 8px 12px; font-family: monospace; text-align: right; color: #eaeaf0;">$${s.price.toFixed(2)}</td>
+            <td style="padding: 8px 12px; font-family: monospace; font-weight: bold; text-align: right; color: ${color};">${sign}${s.dp.toFixed(2)}%</td>
+          </tr>`;
+      }).join('');
+
+      let topMoversHtml = detailedSectors.map(s => {
+        const isUp = s.dp >= 0;
+        const secColor = isUp ? '#10b981' : '#ef4444';
+        
+        let gainerBadges = s.topGainers.map(t => `
+          <span style="display:inline-block; background:rgba(16,185,129,0.12); color:#10b981; border:1px solid rgba(16,185,129,0.3); border-radius:4px; padding:3px 8px; margin:2px; font-size:11px; font-family:monospace;">
+            <strong>${t.symbol}</strong> +${t.dp.toFixed(2)}% <span style="color:#9898b0;">($${t.price.toFixed(2)})</span>
+          </span>`).join('') || '<span style="color:#5a5a72; font-size:11px;">ไม่มีหุ้นบวก</span>';
+
+        let loserBadges = s.topLosers.map(t => `
+          <span style="display:inline-block; background:rgba(239,68,68,0.12); color:#ef4444; border:1px solid rgba(239,68,68,0.3); border-radius:4px; padding:3px 8px; margin:2px; font-size:11px; font-family:monospace;">
+            <strong>${t.symbol}</strong> ${t.dp.toFixed(2)}% <span style="color:#9898b0;">($${t.price.toFixed(2)})</span>
+          </span>`).join('') || '<span style="color:#5a5a72; font-size:11px;">ไม่มีหุ้นลบ</span>';
+
+        return `
+          <div style="background:#16161f; border:1px solid #2a2a3a; border-radius:8px; padding:12px; margin-bottom:10px;">
+            <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+              <span style="font-weight:bold; font-size:13px; color:#eaeaf0;">${s.name} (${s.etf})</span>
+              <span style="font-weight:bold; font-family:monospace; color:${secColor};">${s.dp >= 0 ? '+' : ''}${s.dp.toFixed(2)}%</span>
+            </div>
+            <div style="margin-bottom:6px;">
+              <div style="font-size:10px; color:#9898b0; text-transform:uppercase; margin-bottom:2px;">🟢 Top Gainers (บวกมากสุด)</div>
+              <div>${gainerBadges}</div>
+            </div>
+            <div>
+              <div style="font-size:10px; color:#9898b0; text-transform:uppercase; margin-bottom:2px;">🔴 Top Losers (ลบมากสุด)</div>
+              <div>${loserBadges}</div>
+            </div>
+          </div>`;
+      }).join('');
+
+      return {
+        leadingSector,
+        laggingSector,
+        detailedSectors,
+        textSummary,
+        sectorTableRows,
+        topMoversHtml,
+        dateStr,
+        timeStr
+      };
+    }
+
+    async function sendPreMarketBriefingEmail(isManual = false) {
+      const email = S.alertEmail;
+      if (!email) {
+        showToast('⚠️ No alert email set (Go to Settings)', 'error');
+        if (isManual) openSettings();
+        return;
+      }
+
+      showToast('📊 Gathering Pre-Market Sector Flow...', 'success');
+      try {
+        const report = await generatePreMarketReport();
+        if (!report) {
+          showToast('Failed to gather sector data', 'error');
+          return;
+        }
+
+        const params = {
+          to_email: email,
+          report_date: report.dateStr + ' • ' + report.timeStr,
+          leading_sector: `${report.leadingSector.name} (${report.leadingSector.etf})`,
+          leading_sector_chg: (report.leadingSector.dp >= 0 ? '+' : '') + report.leadingSector.dp.toFixed(2) + '%',
+          lagging_sector: `${report.laggingSector.name} (${report.laggingSector.etf})`,
+          lagging_sector_chg: (report.laggingSector.dp >= 0 ? '+' : '') + report.laggingSector.dp.toFixed(2) + '%',
+          sector_table_rows: report.sectorTableRows,
+          top_movers_html: report.topMoversHtml,
+          full_report_text: report.textSummary,
+          timestamp: report.timeStr
+        };
+
+        if (typeof emailjs !== 'undefined' && EMAILJS_PUBLIC_KEY && EMAILJS_PUBLIC_KEY !== 'YOUR_PUBLIC_KEY') {
+          await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_PREMARKET_TEMPLATE_ID, params);
+          showToast(`🚀 Pre-Market Briefing sent to ${email}!`, 'success');
+        } else {
+          console.log('[Pre-Market Briefing Report]:', params);
+          showToast('🚀 Pre-Market Briefing generated! (EmailJS logged)', 'success');
+        }
+      } catch (err) {
+        console.error('Pre-Market Briefing Error:', err);
+        showToast('Error sending briefing: ' + (err.text || err.message), 'error');
+      }
+    }
+
+    function checkAndSendDailyPreMarketBriefing() {
+      if (!S.premarketAlert) return;
+      const now = new Date();
+      const utcMs = now.getTime() + (now.getTimezoneOffset() * 60000);
+      const bkk = new Date(utcMs + (7 * 3600000));
+      const day = bkk.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
+      if (day === 0 || day === 6) return; // Mon-Fri only
+
+      const hours = bkk.getHours();
+      const mins = bkk.getMinutes();
+
+      // Trigger at 20:15 BKK
+      if (hours === 20 && mins >= 15 && mins <= 25) {
+        const todayStr = bkk.toISOString().slice(0, 10);
+        const lastSent = localStorage.getItem('stockpulse_premarket_sent_date');
+        if (lastSent !== todayStr && S.alertEmail) {
+          localStorage.setItem('stockpulse_premarket_sent_date', todayStr);
+          console.log('[Auto Scheduler] Triggering 20:15 Pre-Market Sector Flow Briefing...');
+          sendPreMarketBriefingEmail(false);
+        }
+      }
     }
 
     // ===== PRICE ALERTS — Supabase-backed (cross-device real-time sync) =====
@@ -4785,7 +5110,8 @@
       container.innerHTML = `<div class="alerts-grid">` + entries.map(item => {
         const isAbove = item.dir === 'above';
         const badgeClass = isAbove ? 'above' : 'below';
-        const dirText = isAbove ? '▲ ABOVE' : '▼ BELOW';
+        const arrow = isAbove ? '▲' : '▼';
+        const label = isAbove ? 'ABOVE' : 'BELOW';
         const wlEntry = S.wl.find(w => w.symbol === item.sym);
         const currPrice = (S.sym === item.sym && S.quote?.c) ? S.quote.c : (wlEntry?._quote?.c || null);
         const cs = getCurSym(item.sym, wlEntry?._quote);
@@ -4798,7 +5124,7 @@
               <div class="alert-item-name">${esc(item.name)}</div>
             </div>
             <div class="alert-item-mid">
-              <span class="alert-dir-badge ${badgeClass}">${dirText} ${cs}${fmtNum(item.price)}</span>
+              <span class="alert-pill-badge ${badgeClass}">${arrow} ${label} ${cs}${fmtNum(item.price)}</span>
               <div class="alert-item-cur">Cur: ${currPriceText}</div>
             </div>
             <button class="alert-item-del" onclick="event.stopPropagation(); removeAlertItem('${esc(item.sym)}', '${item.dir}')" title="Delete Alert">
