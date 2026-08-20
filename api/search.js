@@ -20,25 +20,43 @@ export default async function handler(req, res) {
   const query = q.trim();
 
   try {
-    const url = `https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(query)}&quotesCount=10&newsCount=0`;
-    const response = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'application/json'
-      }
-    });
+    const urls = [
+      `https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(query)}&quotesCount=8&newsCount=0`
+    ];
 
-    if (!response.ok) {
-      return res.status(500).json({ error: 'Search upstream error', result: [] });
+    // If query does not contain dot, also query with .BK to discover Thai stocks reliably
+    if (!query.includes('.') && query.length <= 8) {
+      urls.push(`https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(query + '.BK')}&quotesCount=5&newsCount=0`);
     }
 
-    const data = await response.json();
-    const rawQuotes = data.quotes || [];
+    const responses = await Promise.allSettled(
+      urls.map(url =>
+        fetch(url, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'application/json'
+          }
+        }).then(r => (r.ok ? r.json() : { quotes: [] }))
+      )
+    );
+
+    const rawQuotes = [];
+    const seen = new Set();
+
+    for (const res of responses) {
+      if (res.status === 'fulfilled' && Array.isArray(res.value?.quotes)) {
+        for (const q of res.value.quotes) {
+          if (!seen.has(q.symbol)) {
+            seen.add(q.symbol);
+            rawQuotes.push(q);
+          }
+        }
+      }
+    }
 
     // Filter and map to friendly format
     const results = rawQuotes
       .filter(item => {
-        // Exclude unwanted instrument types like option, future if needed, or keep equity/etf/index/mutualfund
         return ['EQUITY', 'ETF', 'INDEX', 'MUTUALFUND', 'CURRENCY'].includes(item.quoteType);
       })
       .map(item => {
@@ -53,9 +71,24 @@ export default async function handler(req, res) {
         };
       });
 
+    // Prioritize exact or SET matches when searching
+    results.sort((a, b) => {
+      const qUpper = query.toUpperCase();
+      const aExact = a.symbol.toUpperCase() === qUpper || a.symbol.toUpperCase() === qUpper + '.BK';
+      const bExact = b.symbol.toUpperCase() === qUpper || b.symbol.toUpperCase() === qUpper + '.BK';
+      if (aExact && !bExact) return -1;
+      if (!aExact && bExact) return 1;
+
+      const aThai = a.isThai;
+      const bThai = b.isThai;
+      if (aThai && !bThai) return -1;
+      if (!aThai && bThai) return 1;
+      return 0;
+    });
+
     // Cache on Vercel CDN for 60 seconds
     res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=120');
-    return res.status(200).json({ result: results });
+    return res.status(200).json({ result: results.slice(0, 10) });
   } catch (error) {
     console.error('API Search error:', error);
     return res.status(500).json({ error: 'Failed to search stocks', result: [] });
