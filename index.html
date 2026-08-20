@@ -4005,12 +4005,13 @@
         <div class="modal-error" id="settingsError">Please enter a valid email address.</div>
       </div>
       <div class="settings-toggle-row"
-        style="display:flex; align-items:center; justify-content:space-between; padding:12px 14px; background:var(--bg-elevated); border:1px solid var(--border-subtle); border-radius:var(--radius); margin-bottom:16px;">
+        style="display:flex; align-items:center; justify-content:space-between; padding:12px 14px; background:var(--bg-elevated); border:1px solid var(--border-subtle); border-radius:var(--radius); margin-bottom:12px;">
         <div style="padding-right:12px;">
           <div style="font-weight:700; font-size:13px; color:var(--text-primary);" id="settingsPremarketTitle">
             Pre-Market Briefing (20:15 น.)</div>
           <div style="font-size:11px; color:var(--text-muted); margin-top:2px;" id="settingsPremarketDesc">ส่งอีเมลสรุป
             Sector Flow & Top 3 หุ้นเด่นก่อนเปิดตลาด</div>
+          <div id="settingsPremarketStatus" style="font-size:11px; margin-top:4px; color:var(--accent-light);"></div>
         </div>
         <label class="toggle-switch">
           <input type="checkbox" id="settingsPremarketToggle" onchange="togglePremarketAlert(this.checked)" checked />
@@ -4710,7 +4711,7 @@
       searchTO: null, refreshTimer: null, cdTimer: null, cd: 30,
       page: 'dashboard', sectors: {},
       lang: localStorage.getItem('stockpulse_lang') || 'en',
-      alertEmail: localStorage.getItem('stockpulse_alert_email') || '',
+      alertEmail: localStorage.getItem('stockpulse_alert_email') || 'thiraphatlaohiao1@gmail.com',
       premarketAlert: localStorage.getItem('stockpulse_premarket_alert') !== 'false'
     };
 
@@ -4948,6 +4949,17 @@
 
       startAutoRefresh(); updateLastRefresh();
       checkAndSendDailyPreMarketBriefing();
+
+      // Listen for tab focus/visibility to immediately trigger pre-market briefing if due
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+          checkAndSendDailyPreMarketBriefing();
+        }
+      });
+      window.addEventListener('focus', () => {
+        checkAndSendDailyPreMarketBriefing();
+      });
+
       // Load alerts from Supabase then subscribe for real-time cross-device sync
       loadAlerts().then(() => { renderDashboardAlerts(); updateAlertStats(); });
       subscribeAlerts();
@@ -6247,6 +6259,7 @@
       inp.classList.remove('error');
       const toggle = document.getElementById('settingsPremarketToggle');
       if (toggle) toggle.checked = S.premarketAlert;
+      updateSettingsPremarketStatus();
       document.getElementById('settingsModal').classList.add('active');
     }
     function closeSettings() {
@@ -6274,12 +6287,17 @@
       closeSettings();
       renderAlertEmailNote();
       showToast('Settings saved!', 'success');
+      // Trigger check immediately in case it's currently pre-market time
+      checkAndSendDailyPreMarketBriefing();
     }
 
     function togglePremarketAlert(enabled) {
       S.premarketAlert = enabled;
       localStorage.setItem('stockpulse_premarket_alert', enabled ? 'true' : 'false');
-      showToast(enabled ? 'Pre-Market Alert enabled (20:15 น.)' : 'Pre-Market Alert disabled', 'success');
+      updateSettingsPremarketStatus();
+      const sched = getPreMarketScheduleInfo();
+      showToast(enabled ? `Pre-Market Alert enabled (${sched.timeLabel})` : 'Pre-Market Alert disabled', 'success');
+      if (enabled) checkAndSendDailyPreMarketBriefing();
     }
 
     // Events
@@ -6351,11 +6369,110 @@
     }
 
     // ===== PRE-MARKET SECTOR FLOW & TOP MOVERS REPORT =====
+    function getBkkDateKey(date = new Date()) {
+      try {
+        return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok' }).format(date);
+      } catch (e) {
+        return new Date().toISOString().slice(0, 10);
+      }
+    }
+
+    function getPreMarketScheduleInfo() {
+      const now = new Date();
+      const dst = isUSDST();
+      // Target time: 15 min before regular US market open
+      // DST (EDT): US open 20:30 BKK -> Pre-Market Briefing at 20:15 BKK
+      // Non-DST (EST): US open 21:30 BKK -> Pre-Market Briefing at 21:15 BKK
+      const targetHourBkk = dst ? 20 : 21;
+      const targetMinBkk = 15;
+      const openHourBkk = dst ? 20 : 21;
+      const openMinBkk = 30;
+
+      let bkkHour = 20, bkkMin = 15, isWeekday = true, dateKey = getBkkDateKey(now);
+      try {
+        const parts = new Intl.DateTimeFormat('en-US', {
+          timeZone: 'Asia/Bangkok',
+          hourCycle: 'h23',
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          weekday: 'short'
+        }).formatToParts(now);
+        const map = {};
+        parts.forEach(p => map[p.type] = p.value);
+        bkkHour = parseInt(map.hour, 10);
+        bkkMin = parseInt(map.minute, 10);
+        isWeekday = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'].includes(map.weekday);
+        dateKey = `${map.year}-${map.month}-${map.day}`;
+      } catch (e) {
+        const d = new Date();
+        bkkHour = d.getHours();
+        bkkMin = d.getMinutes();
+        isWeekday = d.getDay() >= 1 && d.getDay() <= 5;
+      }
+
+      const curTotalMin = bkkHour * 60 + bkkMin;
+      const targetTotalMin = targetHourBkk * 60 + targetMinBkk; // e.g. 20*60+15 = 1215
+      const openTotalMin = openHourBkk * 60 + openMinBkk; // e.g. 20*60+30 = 1230
+
+      // Active window: from target time (20:15) until market open (20:30) and up to +20 min after open (20:50)
+      const isEligibleTime = isWeekday && (curTotalMin >= targetTotalMin && curTotalMin <= (openTotalMin + 20));
+
+      return {
+        isWeekday,
+        bkkHour,
+        bkkMin,
+        dateKey,
+        targetHourBkk,
+        targetMinBkk,
+        timeLabel: `${targetHourBkk}:${targetMinBkk < 10 ? '0' : ''}${targetMinBkk} น.`,
+        isEligibleTime
+      };
+    }
+
+    function updateSettingsPremarketStatus() {
+      const el = document.getElementById('settingsPremarketStatus');
+      const titleEl = document.getElementById('settingsPremarketTitle');
+      const sched = getPreMarketScheduleInfo();
+      if (titleEl) {
+        titleEl.textContent = `Pre-Market Briefing (${sched.timeLabel})`;
+      }
+      if (!el) return;
+
+      const dateKey = getBkkDateKey();
+      const lastSent = localStorage.getItem('stockpulse_premarket_sent_date');
+      const lastTime = localStorage.getItem('stockpulse_premarket_sent_time');
+
+      if (!S.premarketAlert) {
+        el.innerHTML = `<span style="color:var(--text-muted);">⚪ ปิดการใช้งาน</span>`;
+      } else if (lastSent === dateKey) {
+        el.innerHTML = `<span style="color:var(--green);">🟢 ส่งแล้ววันนี้ (${lastTime || 'สำเร็จ'})</span> <a onclick="resetPreMarketBriefingSentToday()" style="color:var(--accent-light); cursor:pointer; text-decoration:underline; margin-left:6px;">รีเซ็ตเพื่อส่งใหม่</a>`;
+      } else if (sched.isEligibleTime) {
+        el.innerHTML = `<span style="color:var(--amber);">⚡ ถึงเวลาส่งแล้ว (กำลังดำเนินการ / คลิกส่งได้ทันที)</span>`;
+      } else {
+        el.innerHTML = `<span style="color:var(--text-secondary);">⏰ กำหนดส่งรอบถัดไป: วันทำการ เวลา ${sched.timeLabel}</span>`;
+      }
+    }
+
+    function resetPreMarketBriefingSentToday() {
+      localStorage.removeItem('stockpulse_premarket_sent_date');
+      localStorage.removeItem('stockpulse_premarket_sent_time');
+      updateSettingsPremarketStatus();
+      showToast('🔄 Reset pre-market status for today. Triggering send...', 'success');
+      sendPreMarketBriefingEmail(true);
+    }
+
     async function generatePreMarketReport() {
       // 1. Fetch Sector ETF Quotes in parallel
       const sectorResults = await Promise.allSettled(SECTORS.map(async s => {
-        const q = await fetchQ(s.etf);
-        return { ...s, quote: q };
+        try {
+          const q = await fetchQ(s.etf);
+          return { ...s, quote: q };
+        } catch (e) {
+          return { ...s, quote: null };
+        }
       }));
 
       const validSectors = sectorResults
@@ -6378,8 +6495,12 @@
       // 2. Fetch constituent stock prices for all sectors (top 3 gainers/losers each)
       const sectorDetails = await Promise.allSettled(validSectors.map(async sec => {
         const tickerResults = await Promise.allSettled(sec.tickers.map(async sym => {
-          const q = await fetchQ(sym);
-          return { symbol: sym, quote: q };
+          try {
+            const q = await fetchQ(sym);
+            return { symbol: sym, quote: q };
+          } catch (e) {
+            return { symbol: sym, quote: null };
+          }
         }));
 
         const rankedTickers = tickerResults
@@ -6485,20 +6606,29 @@
       };
     }
 
+    let _isSendingPreMarketBriefing = false;
+
     async function sendPreMarketBriefingEmail(isManual = false) {
       const email = S.alertEmail;
       if (!email) {
         showToast('⚠️ No alert email set (Go to Settings)', 'error');
         if (isManual) openSettings();
-        return;
+        return false;
       }
 
+      if (_isSendingPreMarketBriefing) {
+        showToast('Pre-Market Briefing is already being sent...', 'info');
+        return false;
+      }
+
+      _isSendingPreMarketBriefing = true;
       showToast('📊 Gathering Pre-Market Sector Flow...', 'success');
       try {
         const report = await generatePreMarketReport();
         if (!report) {
           showToast('Failed to gather sector data', 'error');
-          return;
+          _isSendingPreMarketBriefing = false;
+          return false;
         }
 
         const params = {
@@ -6516,38 +6646,48 @@
 
         if (typeof emailjs !== 'undefined' && EMAILJS_PUBLIC_KEY && EMAILJS_PUBLIC_KEY !== 'YOUR_PUBLIC_KEY') {
           await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_PREMARKET_TEMPLATE_ID, params);
+          const dateKey = getBkkDateKey();
+          localStorage.setItem('stockpulse_premarket_sent_date', dateKey);
+          localStorage.setItem('stockpulse_premarket_sent_time', report.timeStr);
+          updateSettingsPremarketStatus();
           showToast(`🚀 Pre-Market Briefing sent to ${email}!`, 'success');
         } else {
           console.log('[Pre-Market Briefing Report]:', params);
+          const dateKey = getBkkDateKey();
+          localStorage.setItem('stockpulse_premarket_sent_date', dateKey);
+          localStorage.setItem('stockpulse_premarket_sent_time', report.timeStr);
+          updateSettingsPremarketStatus();
           showToast('🚀 Pre-Market Briefing generated! (EmailJS logged)', 'success');
         }
+        _isSendingPreMarketBriefing = false;
+        return true;
       } catch (err) {
         console.error('Pre-Market Briefing Error:', err);
-        showToast('Error sending briefing: ' + (err.text || err.message), 'error');
+        showToast('Error sending briefing: ' + (err.text || err.message || 'Network error'), 'error');
+        _isSendingPreMarketBriefing = false;
+        return false;
       }
     }
 
-    function checkAndSendDailyPreMarketBriefing() {
+    async function checkAndSendDailyPreMarketBriefing() {
       if (!S.premarketAlert) return;
-      const now = new Date();
-      const utcMs = now.getTime() + (now.getTimezoneOffset() * 60000);
-      const bkk = new Date(utcMs + (7 * 3600000));
-      const day = bkk.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
-      if (day === 0 || day === 6) return; // Mon-Fri only
+      const sched = getPreMarketScheduleInfo();
+      if (!sched.isEligibleTime) return;
 
-      const hours = bkk.getHours();
-      const mins = bkk.getMinutes();
-
-      // Trigger at 20:15 BKK
-      if (hours === 20 && mins >= 15 && mins <= 25) {
-        const todayStr = bkk.toISOString().slice(0, 10);
-        const lastSent = localStorage.getItem('stockpulse_premarket_sent_date');
-        if (lastSent !== todayStr && S.alertEmail) {
-          localStorage.setItem('stockpulse_premarket_sent_date', todayStr);
-          console.log('[Auto Scheduler] Triggering 20:15 Pre-Market Sector Flow Briefing...');
-          sendPreMarketBriefingEmail(false);
-        }
+      const lastSent = localStorage.getItem('stockpulse_premarket_sent_date');
+      if (lastSent === sched.dateKey) {
+        return; // Already sent successfully today
       }
+
+      if (!S.alertEmail) {
+        console.warn(`[Auto Scheduler] Pre-Market Briefing reached (${sched.timeLabel}) but no Alert Email is set.`);
+        return;
+      }
+
+      if (_isSendingPreMarketBriefing) return;
+
+      console.log(`[Auto Scheduler] Triggering Pre-Market Briefing (${sched.timeLabel}) for ${sched.dateKey}...`);
+      await sendPreMarketBriefingEmail(false);
     }
 
     // ===== PRICE ALERTS — Supabase-backed (cross-device real-time sync) =====
