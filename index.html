@@ -5210,12 +5210,32 @@
     async function calcAndRenderTechnicals(q) {
       if (!q || !q.c) return;
       const cs = getCurSym(S.sym, q);
-      const high = q.h || q.c;
-      const low = q.l || q.c;
       const close = q.c;
 
-      // 1. Classic Pivot Points
-      const P = (high + low + close) / 3;
+      // 1. Classic Pivot Points (Daily Standard)
+      // Standard Formula uses Previous Trading Day's High, Low, and Close (Fixed throughout the session)
+      let high = q.prevHigh || q.h || q.pc || q.c;
+      let low = q.prevLow || q.l || q.pc || q.c;
+      let prevClose = q.pc || q.c;
+
+      // Fetch daily candles to get accurate Previous Trading Day High & Low
+      if (S.sym && (!q.prevHigh || !q.prevLow)) {
+        try {
+          const dailyCandles = await fetchChartCandles(S.sym, '1d', '5d');
+          if (dailyCandles && dailyCandles.length >= 2) {
+            const prevCandle = dailyCandles[dailyCandles.length - 2];
+            if (prevCandle && prevCandle.high && prevCandle.low && prevCandle.close) {
+              high = prevCandle.high;
+              low = prevCandle.low;
+              prevClose = prevCandle.close;
+              q.prevHigh = high;
+              q.prevLow = low;
+            }
+          }
+        } catch (e) { }
+      }
+
+      const P = (high + low + prevClose) / 3;
       const diffHL = high - low;
       const R1 = (2 * P) - low;
       const R2 = P + diffHL;
