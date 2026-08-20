@@ -1379,7 +1379,7 @@
       font-family: var(--font-mono);
     }
 
-    /* ===== WISHLIST SIDEBAR (Desktop) ===== */
+    /* ===== WISHLIST SIDEBAR (Desktop / Tablet) ===== */
     .wishlist-panel {
       width: 280px;
       min-width: 280px;
@@ -1387,8 +1387,24 @@
       background: var(--bg-secondary);
       display: flex;
       flex-direction: column;
-      height: calc(100vh - 56px);
+      height: 100%;
+      max-height: 100%;
       overflow: hidden;
+      transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+                  min-width 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+                  border-color 0.2s ease,
+                  opacity 0.2s ease;
+      position: relative;
+      z-index: 20;
+    }
+
+    .wishlist-panel.collapsed {
+      width: 0 !important;
+      min-width: 0 !important;
+      border-left-width: 0 !important;
+      border-left-color: transparent !important;
+      opacity: 0;
+      pointer-events: none;
     }
 
     .wishlist-header {
@@ -1397,6 +1413,40 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
+      flex-shrink: 0;
+    }
+
+    .wishlist-header-right {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-sidebar-collapse {
+      width: 22px;
+      height: 22px;
+      border-radius: 4px;
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: var(--transition);
+      padding: 0;
+    }
+
+    .btn-sidebar-collapse:hover {
+      background: var(--bg-elevated);
+      color: var(--text-primary);
+      border-color: var(--border-subtle);
+    }
+
+    .btn-sidebar-collapse svg {
+      width: 14px;
+      height: 14px;
+      fill: currentColor;
     }
 
     .wishlist-title {
@@ -1428,7 +1478,10 @@
     .wishlist-list {
       flex: 1;
       overflow-y: auto;
-      padding: 4px;
+      overflow-x: hidden;
+      padding: 6px 8px;
+      min-height: 0;
+      -webkit-overflow-scrolling: touch;
     }
 
     .wishlist-item {
@@ -1545,35 +1598,89 @@
     }
 
     .wishlist-footer {
-      padding: 10px;
+      padding: 10px 12px;
+      padding-bottom: max(12px, env(safe-area-inset-bottom));
       border-top: 1px solid var(--border-primary);
+      background: var(--bg-secondary);
+      flex-shrink: 0;
     }
 
     .btn-add-wishlist {
       width: 100%;
-      padding: 8px;
+      padding: 9px;
       border-radius: var(--radius-sm);
       background: var(--bg-card);
       border: 1px dashed var(--border-primary);
       color: var(--text-secondary);
       font-size: 11px;
-      font-weight: 500;
+      font-weight: 600;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 5px;
+      gap: 6px;
       transition: var(--transition);
+      cursor: pointer;
     }
 
     .btn-add-wishlist:hover {
       border-color: var(--accent);
       color: var(--accent-light);
+      background: var(--accent-glow);
       border-style: solid;
     }
 
     .btn-add-wishlist svg {
       width: 13px;
       height: 13px;
+      fill: currentColor;
+    }
+
+    /* Floating Watchlist Trigger (When Sidebar is Collapsed) */
+    .floating-wl-trigger {
+      position: fixed;
+      right: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-primary);
+      border-right: none;
+      border-radius: 8px 0 0 8px;
+      padding: 10px 8px;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      cursor: pointer;
+      box-shadow: -2px 4px 14px rgba(0, 0, 0, 0.45);
+      z-index: 80;
+      transition: all 0.2s ease;
+      color: var(--accent-light);
+    }
+
+    .floating-wl-trigger:hover {
+      background: var(--bg-card-hover);
+      padding-left: 11px;
+      color: #fff;
+    }
+
+    .floating-wl-trigger svg {
+      width: 16px;
+      height: 16px;
+      fill: currentColor;
+    }
+
+    .floating-wl-badge {
+      font-size: 9px;
+      font-weight: 700;
+      font-family: var(--font-mono);
+      background: var(--accent);
+      color: #fff;
+      padding: 1px 5px;
+      border-radius: 10px;
+    }
+
+    .sidebar-collapsed .floating-wl-trigger {
+      display: flex;
     }
 
     /* ===== MOBILE BOTTOM NAV ===== */
@@ -3074,8 +3181,16 @@
     /* Mobile */
     @media (max-width: 768px) {
 
-      /* Hide desktop sidebar, show bottom nav */
+      /* Hide desktop sidebar and triggers, show bottom nav */
       .wishlist-panel {
+        display: none !important;
+      }
+
+      .floating-wl-trigger {
+        display: none !important;
+      }
+
+      .desktop-wl-toggle {
         display: none !important;
       }
 
@@ -4632,6 +4747,11 @@
         </div>
         <button class="topbar-btn" id="langToggleBtn" onclick="toggleLanguage()" title="Switch Language"
           style="font-weight: 700; font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">EN</button>
+        <button class="topbar-btn desktop-wl-toggle" id="btnToggleSidebar" onclick="toggleDesktopSidebar()" title="Toggle Watchlist Sidebar">
+          <svg viewBox="0 0 24 24">
+            <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16h-5V5h5v14z"/>
+          </svg>
+        </button>
         <button class="topbar-btn" onclick="openSettings()" title="Settings"><svg viewBox="0 0 24 24">
             <path
               d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" />
@@ -5162,8 +5282,13 @@
         <div class="wishlist-header">
           <div class="wishlist-title"><svg viewBox="0 0 24 24">
               <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
-            </svg>Watchlist</div>
-          <span class="wishlist-count" id="wishlistCount">0</span>
+            </svg><span class="i18n-lbl" data-en="Watchlist">Watchlist</span></div>
+          <div class="wishlist-header-right">
+            <span class="wishlist-count" id="wishlistCount">0</span>
+            <button type="button" class="btn-sidebar-collapse" onclick="toggleDesktopSidebar(true)" title="Collapse Watchlist">
+              <svg viewBox="0 0 24 24"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
+            </button>
+          </div>
         </div>
         <div class="wishlist-list" id="wishlistList"></div>
         <div class="wishlist-footer">
@@ -5172,6 +5297,12 @@
             </svg><span class="i18n-lbl" data-en="Add Current">Add Current</span></button>
         </div>
       </aside>
+
+      <!-- Floating Watchlist Trigger (When Sidebar is Collapsed) -->
+      <button type="button" class="floating-wl-trigger" id="floatingWlTrigger" onclick="toggleDesktopSidebar(false)" title="Show Watchlist">
+        <svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+        <span class="floating-wl-badge" id="floatingWlBadge">0</span>
+      </button>
     </div>
   </div>
 
@@ -5542,6 +5673,12 @@
       // Load alerts from Supabase then subscribe for real-time cross-device sync
       loadAlerts().then(() => { renderDashboardAlerts(); updateAlertStats(); });
       subscribeAlerts();
+
+      // Initialize desktop sidebar collapse state
+      const savedCollapse = localStorage.getItem('stockpulse_sidebar_collapsed');
+      if (savedCollapse === '1' || (savedCollapse === null && window.innerWidth <= 1024)) {
+        toggleDesktopSidebar(true);
+      }
     }
 
     function startAutoRefresh() {
@@ -7355,6 +7492,26 @@
       tSET.textContent = lbSET;
     }
 
+    // Desktop Sidebar Collapse / Expand
+    function toggleDesktopSidebar(force) {
+      const sb = document.getElementById('desktopWishlist');
+      if (!sb) return;
+      const willCollapse = typeof force === 'boolean' ? force : !sb.classList.contains('collapsed');
+      sb.classList.toggle('collapsed', willCollapse);
+      document.body.classList.toggle('sidebar-collapsed', willCollapse);
+      localStorage.setItem('stockpulse_sidebar_collapsed', willCollapse ? '1' : '0');
+
+      const toggleBtn = document.getElementById('btnToggleSidebar');
+      if (toggleBtn) toggleBtn.classList.toggle('active', !willCollapse);
+
+      // Trigger chart resize if chart exists
+      setTimeout(() => {
+        if (stockChart && document.getElementById('stockChartContainer')) {
+          stockChart.applyOptions({ width: document.getElementById('stockChartContainer').clientWidth });
+        }
+      }, 300);
+    }
+
     // Wishlist
     function toggleWishlist() { if (!S.sym) return; const i = S.wl.findIndex(w => w.symbol === S.sym); if (i >= 0) { S.wl.splice(i, 1); removeWatchlistFromSupabase(S.sym); showToast(S.sym + ' removed', 'success'); } else { const name = S.profile ? S.profile.name : S.sym; S.wl.push({ symbol: S.sym, name: name }); addWatchlistToSupabase(S.sym, name); showToast(S.sym + ' added', 'success'); } saveWl(); renderWishlist(); updateWishlistButton(); updateWishlistPrices().then(updateDashboard); }
     function removeWl(sym, ev) { if (ev) ev.stopPropagation(); S.wl = S.wl.filter(w => w.symbol !== sym); removeWatchlistFromSupabase(sym); saveWl(); renderWishlist(); updateWishlistButton(); updateDashboard(); showToast(sym + ' removed', 'success'); }
@@ -7363,7 +7520,9 @@
 
     function renderWishlist() {
       const list = document.getElementById('wishlistList'), cnt = document.getElementById('wishlistCount');
-      cnt.textContent = S.wl.length;
+      if (cnt) cnt.textContent = S.wl.length;
+      const fBadge = document.getElementById('floatingWlBadge');
+      if (fBadge) fBadge.textContent = S.wl.length;
       const t = I18N[S.lang] || I18N.en;
       if (!S.wl.length) { list.innerHTML = `<div class="wishlist-empty"><svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg><p>${t.emptyWatchlistSidebar}</p></div>`; return; }
       list.innerHTML = S.wl.map(s => {
