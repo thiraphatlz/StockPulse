@@ -34,11 +34,12 @@ export default async function handler(req, res) {
       if (!d || d.s === 'no_data' || !Array.isArray(d.t) || !d.t.length) return null;
       return d.t
         .map((t, i) => ({
-          time:  t,
-          open:  d.o?.[i] ?? d.c[i],
-          high:  d.h?.[i] ?? d.c[i],
-          low:   d.l?.[i] ?? d.c[i],
-          close: d.c[i],
+          time:   t,
+          open:   d.o?.[i] ?? d.c[i],
+          high:   d.h?.[i] ?? d.c[i],
+          low:    d.l?.[i] ?? d.c[i],
+          close:  d.c[i],
+          volume: d.v?.[i] ?? 0,
         }))
         .filter(x => x.close != null);
     } catch (e) {
@@ -80,11 +81,12 @@ export default async function handler(req, res) {
             const close = q.close?.[i];
             if (close == null) return null;
             return {
-              time:  t,
-              open:  q.open?.[i]  ?? close,
-              high:  q.high?.[i]  ?? close,
-              low:   q.low?.[i]   ?? close,
+              time:   t,
+              open:   q.open?.[i]  ?? close,
+              high:   q.high?.[i]  ?? close,
+              low:    q.low?.[i]   ?? close,
               close,
+              volume: q.volume?.[i] ?? 0,
             };
           })
           .filter(Boolean);

@@ -1132,6 +1132,54 @@
       justify-content: space-between;
       align-items: center;
       margin-bottom: 12px;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .chart-header-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .chart-type-toggle {
+      display: flex;
+      gap: 2px;
+      background: var(--bg-input);
+      padding: 2px;
+      border-radius: var(--radius-xs);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .chart-type-btn {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      background: transparent;
+      border: none;
+      transition: var(--transition);
+      cursor: pointer;
+    }
+
+    .chart-type-btn svg {
+      width: 12px;
+      height: 12px;
+      fill: currentColor;
+    }
+
+    .chart-type-btn:hover {
+      color: var(--text-primary);
+    }
+
+    .chart-type-btn.active {
+      background: var(--bg-elevated);
+      color: var(--accent-light);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
     }
 
     .chart-info-tag {
@@ -1173,9 +1221,76 @@
       box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
     }
 
+    .chart-indicators-bar {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 6px 14px;
+      background: rgba(14, 14, 20, 0.6);
+      border-top: 1px solid var(--border-subtle);
+      border-bottom: 1px solid var(--border-subtle);
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    .chart-indicators-bar::-webkit-scrollbar {
+      display: none;
+    }
+
+    .chart-indicators-list {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: nowrap;
+    }
+
+    .indicator-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 9px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      font-family: var(--font-mono);
+      color: var(--text-muted);
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+      user-select: none;
+    }
+
+    .indicator-chip:hover {
+      color: var(--text-primary);
+      border-color: var(--border-primary);
+    }
+
+    .indicator-chip.active {
+      color: var(--text-primary);
+      background: var(--bg-elevated);
+      border-color: rgba(124, 58, 237, 0.5);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+    }
+
+    .indicator-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      display: inline-block;
+      opacity: 0.45;
+      transition: opacity 0.2s, box-shadow 0.2s;
+    }
+
+    .indicator-chip.active .indicator-dot {
+      opacity: 1;
+      box-shadow: 0 0 6px currentColor;
+    }
+
     .chart-container {
       width: 100%;
-      height: 300px;
+      height: 320px;
       position: relative;
       border-radius: var(--radius-sm);
       overflow: hidden;
@@ -3983,6 +4098,328 @@
       color: var(--text-muted);
       margin-top: 1px;
     }
+
+    /* ===== MARKET HEATMAP ===== */
+    .heatmap-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius);
+      padding: 12px 16px;
+    }
+
+    .heatmap-pills {
+      display: flex;
+      gap: 6px;
+      background: var(--bg-elevated);
+      padding: 4px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .hm-pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: var(--radius-xs);
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .hm-pill:hover {
+      color: var(--text-primary);
+    }
+
+    .hm-pill.active {
+      background: var(--accent);
+      color: white;
+      box-shadow: 0 2px 8px var(--accent-glow);
+    }
+
+    .hm-filters-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex: 1;
+      min-width: 220px;
+      max-width: 440px;
+    }
+
+    .hm-search-box {
+      position: relative;
+      flex: 1;
+      display: flex;
+      align-items: center;
+    }
+
+    .hm-search-box svg {
+      position: absolute;
+      left: 10px;
+      width: 14px;
+      height: 14px;
+      fill: var(--text-muted);
+      pointer-events: none;
+    }
+
+    .hm-search-box input {
+      width: 100%;
+      height: 34px;
+      background: var(--bg-input);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-xs);
+      padding: 0 10px 0 32px;
+      color: var(--text-primary);
+      font-size: 12px;
+      outline: none;
+      transition: var(--transition);
+    }
+
+    .hm-search-box input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px var(--accent-glow);
+    }
+
+    .hm-sector-select {
+      height: 34px;
+      background: var(--bg-input);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-xs);
+      padding: 0 10px;
+      color: var(--text-primary);
+      font-size: 12px;
+      font-weight: 500;
+      outline: none;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .hm-sector-select:focus {
+      border-color: var(--accent);
+    }
+
+    .hm-legend {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+    }
+
+    .hm-legend-bar {
+      display: flex;
+      height: 12px;
+      border-radius: 4px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .hm-leg-c {
+      width: 16px;
+      height: 100%;
+    }
+
+    .leg-d3 { background: #b91c1c; }
+    .leg-d2 { background: #991b1b; }
+    .leg-d1 { background: #450a0a; }
+    .leg-0  { background: #1e1e2d; }
+    .leg-u1 { background: #064e3b; }
+    .leg-u2 { background: #047857; }
+    .leg-u3 { background: #059669; }
+
+    /* Heatmap Grid & Sectors */
+    .heatmap-content {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .hm-sector-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      transition: border-color 0.2s ease;
+    }
+
+    .hm-sector-card:hover {
+      border-color: var(--border-primary);
+    }
+
+    .hm-sec-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .hm-sec-title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .hm-sec-name {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .hm-sec-etf {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      background: var(--bg-elevated);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .hm-sec-stats {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .hm-sec-chg-badge {
+      font-size: 12px;
+      font-weight: 700;
+      font-family: var(--font-mono);
+      padding: 3px 8px;
+      border-radius: 4px;
+    }
+
+    .hm-sec-chg-badge.up {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--green);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .hm-sec-chg-badge.down {
+      background: rgba(239, 68, 68, 0.15);
+      color: var(--red);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    .hm-tiles-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 8px;
+    }
+
+    .hm-tile {
+      border-radius: var(--radius-xs);
+      padding: 10px 12px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 80px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+      position: relative;
+      user-select: none;
+    }
+
+    .hm-tile:hover {
+      transform: translateY(-2px) scale(1.02);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+      z-index: 5;
+      border-color: rgba(255, 255, 255, 0.35);
+    }
+
+    .hm-tile.mega {
+      grid-column: span 2;
+      min-height: 90px;
+    }
+
+    .hm-tile-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 4px;
+    }
+
+    .hm-tile-sym {
+      font-weight: 800;
+      font-size: 13px;
+      color: #ffffff;
+      letter-spacing: 0.3px;
+    }
+
+    .hm-tile.mega .hm-tile-sym {
+      font-size: 15px;
+    }
+
+    .hm-tile-price {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.85);
+    }
+
+    .hm-tile-name {
+      font-size: 10px;
+      color: rgba(255, 255, 255, 0.6);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-top: 2px;
+    }
+
+    .hm-tile-bottom {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      margin-top: 6px;
+    }
+
+    .hm-tile-pct {
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 12px;
+      color: #ffffff;
+    }
+
+    .hm-tile.mega .hm-tile-pct {
+      font-size: 14px;
+    }
+
+    .hm-tile-vol {
+      font-size: 9px;
+      color: rgba(255, 255, 255, 0.5);
+      font-family: var(--font-mono);
+    }
+
+    /* Dynamic Heatmap Colors */
+    .hm-bg-up3 { background: linear-gradient(135deg, #047857, #065f46); }
+    .hm-bg-up2 { background: linear-gradient(135deg, #059669, #047857); }
+    .hm-bg-up1 { background: linear-gradient(135deg, #065f46, #064e3b); }
+    .hm-bg-flat { background: linear-gradient(135deg, #232332, #1a1a26); }
+    .hm-bg-dn1 { background: linear-gradient(135deg, #7f1d1d, #450a0a); }
+    .hm-bg-dn2 { background: linear-gradient(135deg, #991b1b, #7f1d1d); }
+    .hm-bg-dn3 { background: linear-gradient(135deg, #dc2626, #991b1b); }
+
+    .heatmap-loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 60px 20px;
+      gap: 12px;
+      color: var(--text-muted);
+    }
   </style>
 </head>
 
@@ -4151,6 +4588,12 @@
           </svg>
           <span id="stockTabLabel">Stock</span>
         </button>
+        <button class="nav-tab" id="tab-heatmap" onclick="switchPage('heatmap')">
+          <svg viewBox="0 0 24 24">
+            <path d="M3 3v8h8V3H3zm0 10v8h8v-8H3zm10-10v8h8V3h-8zm0 10v8h8v-8h-8z" />
+          </svg>
+          <span class="i18n-lbl" data-en="Heatmap">Heatmap</span>
+        </button>
         <button class="nav-tab" id="tab-portfolio" onclick="openPortfolioPage()">
           <svg viewBox="0 0 24 24">
             <path
@@ -4294,6 +4737,69 @@
           </div>
         </div>
 
+        <!-- MARKET HEATMAP -->
+        <div class="page-view" id="page-heatmap">
+          <div class="dash-header">
+            <div class="dash-greeting">
+              <h1 id="heatmapTitle">Market Heatmap 🔥</h1>
+              <p id="heatmapSubtitle">Visual overview of sector rotation & capital flows</p>
+            </div>
+            <button class="refresh-btn" onclick="loadHeatmapData(true)">
+              <svg viewBox="0 0 24 24">
+                <path
+                  d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" />
+              </svg>
+              <span class="i18n-lbl" data-en="Refresh">Refresh</span>
+            </button>
+          </div>
+
+          <div class="heatmap-toolbar">
+            <div class="heatmap-pills">
+              <button class="hm-pill active" id="hmMarketUS" onclick="setHeatmapMarket('us')">
+                <span>🇺🇸 S&P 500 (US)</span>
+              </button>
+              <button class="hm-pill" id="hmMarketSET" onclick="setHeatmapMarket('set')">
+                <span>🇹🇭 SET Top 50 (Thai)</span>
+              </button>
+            </div>
+
+            <div class="hm-filters-wrap">
+              <div class="hm-search-box">
+                <svg viewBox="0 0 24 24">
+                  <path
+                    d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />
+                </svg>
+                <input type="text" id="hmSearchInput" placeholder="Filter symbol (e.g. AAPL, PTT)..." oninput="filterHeatmap(this.value)" autocomplete="off" />
+              </div>
+
+              <select class="hm-sector-select" id="hmSectorSelect" onchange="filterHeatmapSector(this.value)">
+                <option value="all">All Sectors (ทุกกลุ่มอุตสาหกรรม)</option>
+              </select>
+            </div>
+
+            <div class="hm-legend">
+              <span class="hm-legend-lbl">&le; -3%</span>
+              <div class="hm-legend-bar">
+                <span class="hm-leg-c leg-d3" title="&le; -3%"></span>
+                <span class="hm-leg-c leg-d2" title="-1.5% to -3%"></span>
+                <span class="hm-leg-c leg-d1" title="0% to -1.5%"></span>
+                <span class="hm-leg-c leg-0"  title="0%"></span>
+                <span class="hm-leg-c leg-u1" title="0% to +1.5%"></span>
+                <span class="hm-leg-c leg-u2" title="+1.5% to +3%"></span>
+                <span class="hm-leg-c leg-u3" title="&ge; +3%"></span>
+              </div>
+              <span class="hm-legend-lbl">&ge; +3%</span>
+            </div>
+          </div>
+
+          <div id="heatmapContent" class="heatmap-content">
+            <div class="heatmap-loading">
+              <div class="spinner" style="width:28px;height:28px;border:3px solid rgba(255,255,255,0.1);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite;"></div>
+              <p>Loading Market Heatmap...</p>
+            </div>
+          </div>
+        </div>
+
         <!-- PORTFOLIO -->
         <div class="page-view" id="page-portfolio">
           <div class="dash-header" style="margin-bottom:18px;">
@@ -4373,7 +4879,19 @@
               <div class="stock-col-left">
                 <div class="chart-wrap">
                   <div class="chart-header">
-                    <div class="chart-info-tag" id="chartInfoTag">1D • Area Chart</div>
+                    <div class="chart-header-left">
+                      <div class="chart-type-toggle">
+                        <button type="button" class="chart-type-btn active" id="btnChartTypeArea" onclick="setChartType('area')" title="Area Chart">
+                          <svg viewBox="0 0 24 24"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z" /></svg>
+                          <span>Area</span>
+                        </button>
+                        <button type="button" class="chart-type-btn" id="btnChartTypeCandle" onclick="setChartType('candle')" title="Candlestick Chart">
+                          <svg viewBox="0 0 24 24"><path d="M9 4h2v2H9V4zm0 14h2v2H9v-2zm-2-12h6v10H7V6zm8-4h2v4h-2V2zm0 16h2v4h-2v-4zm-2-10h6v6h-6V8z"/></svg>
+                          <span>Candles</span>
+                        </button>
+                      </div>
+                      <div class="chart-info-tag" id="chartInfoTag">1D • Area Chart</div>
+                    </div>
                     <div class="chart-tabs">
                       <button class="chart-tab active" id="chartTab1D" onclick="setChartRange('1D')">1D</button>
                       <button class="chart-tab" id="chartTab1W" onclick="setChartRange('1W')">1W</button>
@@ -4381,6 +4899,33 @@
                       <button class="chart-tab" id="chartTab1Y" onclick="setChartRange('1Y')">1Y</button>
                     </div>
                   </div>
+
+                  <!-- Indicator Overlays Toolbar -->
+                  <div class="chart-indicators-bar">
+                    <div class="chart-indicators-list">
+                      <button type="button" class="indicator-chip active" id="btnIndVol" onclick="toggleIndicator('vol')" title="Toggle Volume Sub-chart">
+                        <span class="indicator-dot" style="background:#10b981; color:#10b981;"></span>
+                        <span>Vol</span>
+                      </button>
+                      <button type="button" class="indicator-chip" id="btnIndSma20" onclick="toggleIndicator('sma20')" title="Toggle 20-period Moving Average">
+                        <span class="indicator-dot" style="background:#f59e0b; color:#f59e0b;"></span>
+                        <span>SMA 20</span>
+                      </button>
+                      <button type="button" class="indicator-chip" id="btnIndSma50" onclick="toggleIndicator('sma50')" title="Toggle 50-period Moving Average">
+                        <span class="indicator-dot" style="background:#3b82f6; color:#3b82f6;"></span>
+                        <span>SMA 50</span>
+                      </button>
+                      <button type="button" class="indicator-chip" id="btnIndSma200" onclick="toggleIndicator('sma200')" title="Toggle 200-period Moving Average">
+                        <span class="indicator-dot" style="background:#ec4899; color:#ec4899;"></span>
+                        <span>SMA 200</span>
+                      </button>
+                      <button type="button" class="indicator-chip" id="btnIndPivot" onclick="toggleIndicator('pivot')" title="Toggle Daily Pivot Levels S/R">
+                        <span class="indicator-dot" style="background:#a78bfa; color:#a78bfa;"></span>
+                        <span>Pivot S/R</span>
+                      </button>
+                    </div>
+                  </div>
+
                   <div class="chart-container" id="stockChartContainer">
                     <div class="chart-loading" id="chartLoading" style="display:none">
                       <div class="pf-spinner" style="width:20px;height:20px;"></div>
@@ -4645,6 +5190,12 @@
         </svg>
         <span class="i18n-lbl" data-en="Stock">Stock</span>
       </button>
+      <button class="mnav-btn" id="mnav-heatmap" onclick="switchPage('heatmap')">
+        <svg viewBox="0 0 24 24">
+          <path d="M3 3v8h8V3H3zm0 10v8h8v-8H3zm10-10v8h8V3h-8zm0 10v8h8v-8h-8z" />
+        </svg>
+        <span class="i18n-lbl" data-en="Heatmap">Heatmap</span>
+      </button>
       <button class="mnav-btn" id="mnav-watchlist" onclick="openMobileWatchlist()">
         <svg viewBox="0 0 24 24">
           <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
@@ -4702,6 +5253,26 @@
       { id: 'comm', name: 'Comm Services', css: 'comm', etf: 'XLC', tickers: ['META', 'GOOGL', 'NFLX', 'DIS', 'VZ', 'T'] },
     ];
 
+    const SET_SECTORS = [
+      { id: 'set_energy', name: 'Energy & Utilities', thName: 'พลังงานและสาธารณูปโภค', tickers: ['PTT.BK', 'PTTEP.BK', 'GULF.BK', 'GPSC.BK', 'BGRIM.BK', 'TOP.BK', 'BANPU.BK', 'EA.BK'] },
+      { id: 'set_bank', name: 'Banking & Finance', thName: 'ธนาคารและการเงิน', tickers: ['SCB.BK', 'KBANK.BK', 'BBL.BK', 'KTB.BK', 'TTB.BK', 'TIDLOR.BK', 'MTC.BK', 'SAWAD.BK'] },
+      { id: 'set_commerce', name: 'Commerce & Retail', thName: 'พาณิชย์และค้าปลีก', tickers: ['CPALL.BK', 'CPAXT.BK', 'CRC.BK', 'BJC.BK', 'HMPRO.BK', 'GLOBAL.BK'] },
+      { id: 'set_ict', name: 'ICT & Telecom', thName: 'เทคโนโลยีและการสื่อสาร', tickers: ['ADVANC.BK', 'TRUE.BK', 'INTUCH.BK', 'DIF.BK', 'JAS.BK'] },
+      { id: 'set_trans', name: 'Transportation', thName: 'ขนส่งและโลจิสติกส์', tickers: ['AOT.BK', 'BEM.BK', 'BTS.BK', 'PSL.BK', 'RCL.BK'] },
+      { id: 'set_health', name: 'Healthcare', thName: 'การแพทย์และโรงพยาบาล', tickers: ['BDMS.BK', 'BH.BK', 'BCH.BK', 'CHG.BK', 'PR9.BK'] },
+      { id: 'set_electronics', name: 'Electronics', thName: 'ชิ้นส่วนอิเล็กทรอนิกส์', tickers: ['DELTA.BK', 'HANA.BK', 'KCE.BK', 'CCET.BK'] },
+      { id: 'set_property', name: 'Property & Construction', thName: 'อสังหาฯ และก่อสร้าง', tickers: ['CPN.BK', 'LH.BK', 'AP.BK', 'SPALI.BK', 'SIRI.BK', 'SCC.BK', 'CK.BK'] },
+      { id: 'set_food', name: 'Food & Beverage', thName: 'อาหารและเครื่องดื่ม', tickers: ['CPF.BK', 'CBG.BK', 'OSP.BK', 'MINT.BK', 'TU.BK', 'ICHI.BK'] }
+    ];
+
+    const HM = {
+      market: 'us', // 'us' | 'set'
+      filterQuery: '',
+      filterSector: 'all',
+      cache: { us: null, set: null },
+      loading: false
+    };
+
     const HARDCODED_API_KEY = 'd9vjs4pr01qgk75onskgd9vjs4pr01qgk75onsl0';
     localStorage.setItem('stockpulse_api_key', HARDCODED_API_KEY);
 
@@ -4717,7 +5288,7 @@
 
     const I18N = {
       en: {
-        dashboard: 'Dashboard', stock: 'Stock', watchlist: 'Watchlist', settings: 'Settings', searchPlaceholder: 'Search stocks...',
+        dashboard: 'Dashboard', stock: 'Stock', heatmap: 'Heatmap', watchlist: 'Watchlist', settings: 'Settings', searchPlaceholder: 'Search stocks...',
         marketClosed: 'Closed', marketOpen: 'Open', marketPre: 'Pre-Market', marketAfter: 'After Hours', marketIntermission: 'Lunch Break',
         marketRealtime: 'Real-time', marketAtClose: 'At Close', atClose: 'At close:',
         refresh: 'Refresh', gainers: 'Gainers', losers: 'Losers', best: 'Best', sectors: 'Sectors',
@@ -4725,6 +5296,8 @@
         add: 'Add', addCurrent: 'Add Current',
         statOpen: 'Open', statHigh: 'High', statLow: 'Low', statPrev: 'Prev Close',
         statVolume: 'Volume', statAvgVolume: 'Avg Volume', stat52High: '52W High', stat52Low: '52W Low',
+        // Heatmap
+        heatmapTitle: 'Market Heatmap 🔥', heatmapSubtitle: 'Visual overview of sector rotation & capital flows',
         // Technicals
         techTitle: 'Technical Indicators', techDailyClassic: 'Daily / Classic',
         techTabPivot: 'Pivot S/R', techTabFibo: 'Fibonacci', techTabMa: 'Moving Averages', techTabRsi: 'RSI (14)',
@@ -4768,7 +5341,7 @@
         pinIncorrect: 'Incorrect PIN. Please try again.',
       },
       th: {
-        dashboard: 'แดชบอร์ด', stock: 'หุ้น', watchlist: 'รายการเฝ้าดู', settings: 'ตั้งค่า', searchPlaceholder: 'ค้นหาหุ้น...',
+        dashboard: 'แดชบอร์ด', stock: 'หุ้น', heatmap: 'แผนที่ตลาด', watchlist: 'รายการเฝ้าดู', settings: 'ตั้งค่า', searchPlaceholder: 'ค้นหาหุ้น...',
         marketClosed: 'ปิดทำการ', marketOpen: 'เปิดทำการ', marketPre: 'ก่อนตลาดเปิด', marketAfter: 'หลังตลาดปิด', marketIntermission: 'พักเที่ยง',
         marketRealtime: 'เรียลไทม์', marketAtClose: 'ราคาปิด', atClose: 'ราคาปิด:',
         refresh: 'รีเฟรช', gainers: 'บวก', losers: 'ลบ', best: 'ดีที่สุด', sectors: 'อุตสาหกรรม',
@@ -4776,6 +5349,8 @@
         add: 'เพิ่ม', addCurrent: 'เพิ่มปัจจุบัน',
         statOpen: 'ราคาเปิด', statHigh: 'ราคาสูงสุด', statLow: 'ราคาต่ำสุด', statPrev: 'ปิดวันก่อน',
         statVolume: 'ปริมาณซื้อขาย', statAvgVolume: 'ปริมาณเฉลี่ย', stat52High: 'สูงสุด 52 สัปดาห์', stat52Low: 'ต่ำสุด 52 สัปดาห์',
+        // Heatmap
+        heatmapTitle: 'แผนที่ตลาดหุ้น (Heatmap) 🔥', heatmapSubtitle: 'ภาพรวมทิศทางเม็ดเงินและผลตอบแทนรายกลุ่มอุตสาหกรรม',
         // Technicals
         techTitle: 'เครื่องมือวิเคราะห์ทางเทคนิค', techDailyClassic: 'รายวัน / คลาสสิก',
         techTabPivot: 'แนวรับ-แนวต้าน', techTabFibo: 'ฟีโบนัชชี (Fibo)', techTabMa: 'เส้นค่าเฉลี่ย (MA)', techTabRsi: 'ดัชนี RSI (14)',
@@ -4833,11 +5408,15 @@
       const setLbl = (sel, txt) => { const el = document.querySelector(sel); if (el) el.textContent = txt; };
       setLbl('#tab-dashboard .i18n-lbl', t.dashboard);
       setLbl('#mnav-dashboard .i18n-lbl', t.dashboard);
+      setLbl('#tab-heatmap .i18n-lbl', t.heatmap);
+      setLbl('#mnav-heatmap .i18n-lbl', t.heatmap);
       setLbl('#mnav-stock .i18n-lbl', t.stock);
       setLbl('#mnav-watchlist .i18n-lbl', t.watchlist);
       setLbl('#mnav-settings .i18n-lbl', t.settings);
       setLbl('#tab-portfolio .i18n-lbl', t.portfolio);
       setLbl('#mnav-portfolio .i18n-lbl', t.portfolio);
+      setLbl('#heatmapTitle', t.heatmapTitle);
+      setLbl('#heatmapSubtitle', t.heatmapSubtitle);
       document.getElementById('searchInput').placeholder = t.searchPlaceholder;
       if (document.querySelector('.summary-card:nth-child(1) .summary-lbl')) document.querySelector('.summary-card:nth-child(1) .summary-lbl').textContent = t.watchlist;
       if (document.querySelector('.summary-card:nth-child(2) .summary-lbl')) document.querySelector('.summary-card:nth-child(2) .summary-lbl').textContent = t.gainers;
@@ -5001,6 +5580,9 @@
       document.getElementById('tab-' + page)?.classList.add('active');
       document.querySelectorAll('.mnav-btn').forEach(b => b.classList.remove('active'));
       document.getElementById('mnav-' + page)?.classList.add('active');
+      if (page === 'heatmap') {
+        initOrRefreshHeatmap();
+      }
     }
 
     // Mobile watchlist
@@ -5722,10 +6304,30 @@
         if (q && q.c) {
           S.quote = q;
           renderQuote(q);
-          if (chartSeries && currentChartRange === '1D') {
+          if (currentChartRange === '1D') {
             const time = (q.t || Math.floor(Date.now() / 1000)) + (7 * 3600);
             if (time >= lastChartTime) {
-              try { chartSeries.update({ time: time, value: q.c }); lastChartTime = time; } catch (e) { }
+              try {
+                if (areaSeries) areaSeries.update({ time: time, value: q.c });
+                if (candleSeries) {
+                  candleSeries.update({
+                    time: time,
+                    open: Number(q.o ?? q.c),
+                    high: Number(q.h ?? q.c),
+                    low: Number(q.l ?? q.c),
+                    close: Number(q.c)
+                  });
+                }
+                if (volumeSeries && q.v) {
+                  const isUp = (q.c >= (q.o ?? q.pc ?? q.c));
+                  volumeSeries.update({
+                    time: time,
+                    value: Number(q.v),
+                    color: isUp ? 'rgba(16, 185, 129, 0.45)' : 'rgba(239, 68, 68, 0.45)'
+                  });
+                }
+                lastChartTime = time;
+              } catch (e) { }
             }
           }
         }
@@ -5733,8 +6335,23 @@
     }
 
     let stockChart = null;
-    let chartSeries = null;
+    let areaSeries = null;
+    let candleSeries = null;
+    let volumeSeries = null;
+    let sma20Series = null;
+    let sma50Series = null;
+    let sma200Series = null;
+    let pivotPriceLines = [];
     let currentChartRange = '1D';
+    let currentChartType = localStorage.getItem('stockpulse_chart_type') || 'area';
+    let activeIndicators = (() => {
+      try {
+        const saved = JSON.parse(localStorage.getItem('stockpulse_chart_indicators') || '{}');
+        return Object.assign({ vol: true, sma20: false, sma50: false, sma200: false, pivot: false }, saved);
+      } catch {
+        return { vol: true, sma20: false, sma50: false, sma200: false, pivot: false };
+      }
+    })();
     let lastChartTime = 0;
     const chartParams = {
       '1D': { interval: '2m', range: '1d' },
@@ -5743,13 +6360,112 @@
       '1Y': { interval: '1d', range: '1y' }
     };
 
+    function isIndicatorActive(name) {
+      return !!activeIndicators[name];
+    }
+
+    function toggleIndicator(name) {
+      activeIndicators[name] = !activeIndicators[name];
+      localStorage.setItem('stockpulse_chart_indicators', JSON.stringify(activeIndicators));
+      updateIndicatorUI();
+      applyIndicatorVisibility();
+    }
+
+    function updateIndicatorUI() {
+      ['vol', 'sma20', 'sma50', 'sma200', 'pivot'].forEach(name => {
+        const btn = document.getElementById(`btnInd${name.charAt(0).toUpperCase() + name.slice(1)}`);
+        if (btn) btn.classList.toggle('active', !!activeIndicators[name]);
+      });
+    }
+
+    function applyIndicatorVisibility() {
+      if (volumeSeries) volumeSeries.applyOptions({ visible: isIndicatorActive('vol') });
+      if (sma20Series) sma20Series.applyOptions({ visible: isIndicatorActive('sma20') });
+      if (sma50Series) sma50Series.applyOptions({ visible: isIndicatorActive('sma50') });
+      if (sma200Series) sma200Series.applyOptions({ visible: isIndicatorActive('sma200') });
+      renderPivotPriceLines();
+    }
+
+    function calculateSMA(data, count) {
+      const result = [];
+      for (let i = 0; i < data.length; i++) {
+        if (i < count - 1) continue;
+        let sum = 0;
+        for (let j = 0; j < count; j++) {
+          sum += data[i - j].close;
+        }
+        result.push({ time: data[i].time, value: sum / count });
+      }
+      return result;
+    }
+
+    function clearPivotPriceLines() {
+      if (areaSeries) {
+        pivotPriceLines.forEach(l => {
+          try { areaSeries.removePriceLine(l); } catch (e) { }
+        });
+      }
+      if (candleSeries) {
+        pivotPriceLines.forEach(l => {
+          try { candleSeries.removePriceLine(l); } catch (e) { }
+        });
+      }
+      pivotPriceLines = [];
+    }
+
+    function renderPivotPriceLines() {
+      clearPivotPriceLines();
+      if (!isIndicatorActive('pivot') || !S.quote) return;
+      const q = S.quote;
+      const targetSeries = currentChartType === 'candle' ? candleSeries : areaSeries;
+      if (!targetSeries) return;
+
+      const high = q.prevHigh || q.h || q.pc || q.c;
+      const low = q.prevLow || q.l || q.pc || q.c;
+      const prevClose = q.pc || q.c;
+      if (!high || !low || !prevClose) return;
+
+      const P = (high + low + prevClose) / 3;
+      const diffHL = high - low;
+      const R1 = (2 * P) - low;
+      const R2 = P + diffHL;
+      const R3 = high + 2 * (P - low);
+      const S1 = (2 * P) - high;
+      const S2 = P - diffHL;
+      const S3 = low - 2 * (high - P);
+
+      const pivotConfigs = [
+        { price: R3, title: 'R3', color: '#ef4444' },
+        { price: R2, title: 'R2', color: '#f87171' },
+        { price: R1, title: 'R1', color: '#fca5a5' },
+        { price: P,  title: 'P',  color: '#a78bfa' },
+        { price: S1, title: 'S1', color: '#6ee7b7' },
+        { price: S2, title: 'S2', color: '#34d399' },
+        { price: S3, title: 'S3', color: '#10b981' },
+      ];
+
+      pivotConfigs.forEach(cfg => {
+        try {
+          const line = targetSeries.createPriceLine({
+            price: Number(cfg.price.toFixed(2)),
+            color: cfg.color,
+            lineWidth: 1,
+            lineStyle: LightweightCharts.LineStyle.Dashed,
+            axisLabelVisible: true,
+            title: cfg.title,
+          });
+          pivotPriceLines.push(line);
+        } catch (e) { }
+      });
+    }
+
     function initChart() {
       if (stockChart) return;
       const container = document.getElementById('stockChartContainer');
       if (!window.LightweightCharts || !container) return;
       stockChart = LightweightCharts.createChart(container, {
         autoSize: true,
-        height: 300,
+        height: 320,
         layout: {
           background: { color: 'transparent' },
           textColor: '#9898b0',
@@ -5762,7 +6478,7 @@
         },
         rightPriceScale: {
           borderVisible: false,
-          scaleMargins: { top: 0.1, bottom: 0.1 }
+          scaleMargins: { top: 0.08, bottom: 0.22 }
         },
         timeScale: {
           borderVisible: false,
@@ -5776,19 +6492,107 @@
         }
       });
 
-      chartSeries = stockChart.addAreaSeries({
+      // Volume Series (Overlay at bottom 22%)
+      volumeSeries = stockChart.addHistogramSeries({
+        priceFormat: { type: 'volume' },
+        priceScaleId: 'volume',
+        priceLineVisible: false,
+        lastValueVisible: false,
+        visible: isIndicatorActive('vol')
+      });
+      stockChart.priceScale('volume').applyOptions({
+        scaleMargins: {
+          top: 0.78,
+          bottom: 0,
+        },
+      });
+
+      // Area Series
+      areaSeries = stockChart.addAreaSeries({
         lineColor: '#7c3aed',
         topColor: 'rgba(124, 58, 237, 0.4)',
         bottomColor: 'rgba(124, 58, 237, 0.0)',
         lineWidth: 2,
+        priceFormat: { type: 'price', precision: 2, minMove: 0.01 },
+        visible: currentChartType === 'area'
+      });
+
+      // Candlestick Series
+      candleSeries = stockChart.addCandlestickSeries({
+        upColor: '#10b981',
+        downColor: '#ef4444',
+        borderVisible: false,
+        wickUpColor: '#10b981',
+        wickDownColor: '#ef4444',
+        priceFormat: { type: 'price', precision: 2, minMove: 0.01 },
+        visible: currentChartType === 'candle'
+      });
+
+      // SMA Series
+      sma20Series = stockChart.addLineSeries({
+        color: '#f59e0b',
+        lineWidth: 1.5,
+        priceLineVisible: false,
+        lastValueVisible: false,
+        crosshairMarkerVisible: false,
+        visible: isIndicatorActive('sma20'),
         priceFormat: { type: 'price', precision: 2, minMove: 0.01 }
       });
+
+      sma50Series = stockChart.addLineSeries({
+        color: '#3b82f6',
+        lineWidth: 1.5,
+        priceLineVisible: false,
+        lastValueVisible: false,
+        crosshairMarkerVisible: false,
+        visible: isIndicatorActive('sma50'),
+        priceFormat: { type: 'price', precision: 2, minMove: 0.01 }
+      });
+
+      sma200Series = stockChart.addLineSeries({
+        color: '#ec4899',
+        lineWidth: 1.5,
+        priceLineVisible: false,
+        lastValueVisible: false,
+        crosshairMarkerVisible: false,
+        visible: isIndicatorActive('sma200'),
+        priceFormat: { type: 'price', precision: 2, minMove: 0.01 }
+      });
+
+      // Update button UI state
+      document.getElementById('btnChartTypeArea')?.classList.toggle('active', currentChartType === 'area');
+      document.getElementById('btnChartTypeCandle')?.classList.toggle('active', currentChartType === 'candle');
+      updateIndicatorUI();
 
       window.addEventListener('resize', () => {
         if (stockChart && container) {
           stockChart.applyOptions({ width: container.clientWidth });
         }
       });
+    }
+
+    async function setChartType(type) {
+      if (type !== 'area' && type !== 'candle') return;
+      currentChartType = type;
+      localStorage.setItem('stockpulse_chart_type', type);
+
+      document.getElementById('btnChartTypeArea')?.classList.toggle('active', type === 'area');
+      document.getElementById('btnChartTypeCandle')?.classList.toggle('active', type === 'candle');
+
+      if (areaSeries) areaSeries.applyOptions({ visible: type === 'area' });
+      if (candleSeries) candleSeries.applyOptions({ visible: type === 'candle' });
+
+      renderPivotPriceLines();
+      updateChartInfoTag();
+      if (stockChart) stockChart.timeScale().fitContent();
+    }
+
+    function updateChartInfoTag() {
+      const tag = document.getElementById('chartInfoTag');
+      if (tag) {
+        const typeLabel = currentChartType === 'candle' ? 'Candlestick' : 'Area Chart';
+        tag.textContent = `${currentChartRange} • ${typeLabel}`;
+      }
     }
 
     async function setChartRange(range) {
@@ -5798,8 +6602,7 @@
         const tab = document.getElementById(`chartTab${r}`);
         if (tab) tab.classList.toggle('active', r === range);
       });
-      const tag = document.getElementById('chartInfoTag');
-      if (tag) tag.textContent = `${range} • Area Chart`;
+      updateChartInfoTag();
       await renderChart();
     }
 
@@ -5834,6 +6637,7 @@
           if (result?.timestamp?.length && result?.indicators?.quote?.[0]?.close) {
             const timestamps = result.timestamp;
             const closes = result.indicators.quote[0].close;
+            const volumes = result.indicators.quote[0].volume || [];
             const parsed = timestamps.map((t, i) => {
               const c = closes[i];
               if (c == null) return null;
@@ -5842,7 +6646,8 @@
                 close: c,
                 open: result.indicators.quote[0].open?.[i] ?? c,
                 high: result.indicators.quote[0].high?.[i] ?? c,
-                low: result.indicators.quote[0].low?.[i] ?? c
+                low: result.indicators.quote[0].low?.[i] ?? c,
+                volume: volumes[i] ?? 0
               };
             }).filter(Boolean);
             if (parsed.length > 0) {
@@ -5866,7 +6671,14 @@
           if (r.ok) {
             const d = await r.json();
             if (d?.s === 'ok' && Array.isArray(d.t)) {
-              const parsed = d.t.map((t, i) => ({ time: t, close: d.c[i], open: d.o[i], high: d.h[i], low: d.l[i] })).filter(x => x.close != null);
+              const parsed = d.t.map((t, i) => ({
+                time: t,
+                close: d.c[i],
+                open: d.o[i],
+                high: d.h[i],
+                low: d.l[i],
+                volume: d.v?.[i] ?? 0
+              })).filter(x => x.close != null);
               if (parsed.length > 0) {
                 CACHE.set('chart', chartCacheKey, parsed, 30000);
                 return parsed;
@@ -5882,7 +6694,7 @@
     async function renderChart() {
       if (!S.sym) return;
       initChart();
-      if (!stockChart || !chartSeries) return;
+      if (!stockChart) return;
 
       const loading = document.getElementById('chartLoading');
       if (loading) loading.style.display = 'flex';
@@ -5897,7 +6709,23 @@
           const TZ_OFFSET = 7 * 3600; // seconds
           const sorted = rawData
             .filter(d => d && d.time && typeof d.close === 'number' && !isNaN(d.close))
-            .map(d => ({ time: Number(d.time) + TZ_OFFSET, value: Number(d.close) }))
+            .map(d => {
+              const t = Number(d.time) + TZ_OFFSET;
+              const open = Number(d.open ?? d.close);
+              const high = Number(d.high ?? Math.max(open, d.close));
+              const low = Number(d.low ?? Math.min(open, d.close));
+              const close = Number(d.close);
+              const volume = Number(d.volume || 0);
+              return {
+                time: t,
+                open,
+                high: Math.max(high, open, close),
+                low: Math.min(low, open, close),
+                close,
+                value: close,
+                volume
+              };
+            })
             .sort((a, b) => a.time - b.time);
 
           const unique = [];
@@ -5917,11 +6745,57 @@
             const lineColor = isUp ? '#10b981' : '#ef4444';
             const topColor = isUp ? 'rgba(16, 185, 129, 0.35)' : 'rgba(239, 68, 68, 0.35)';
 
-            chartSeries.applyOptions({
-              lineColor: lineColor,
-              topColor: topColor,
-              bottomColor: 'rgba(0, 0, 0, 0.0)'
-            });
+            if (areaSeries) {
+              areaSeries.applyOptions({
+                lineColor: lineColor,
+                topColor: topColor,
+                bottomColor: 'rgba(0, 0, 0, 0.0)',
+                visible: currentChartType === 'area'
+              });
+              areaSeries.setData(unique.map(d => ({ time: d.time, value: d.value })));
+            }
+
+            if (candleSeries) {
+              candleSeries.applyOptions({
+                visible: currentChartType === 'candle'
+              });
+              candleSeries.setData(unique.map(d => ({
+                time: d.time,
+                open: d.open,
+                high: d.high,
+                low: d.low,
+                close: d.close
+              })));
+            }
+
+            // Volume Sub-chart
+            if (volumeSeries) {
+              volumeSeries.applyOptions({
+                visible: isIndicatorActive('vol')
+              });
+              volumeSeries.setData(unique.map(d => ({
+                time: d.time,
+                value: d.volume || 0,
+                color: (d.close >= d.open) ? 'rgba(16, 185, 129, 0.45)' : 'rgba(239, 68, 68, 0.45)'
+              })));
+            }
+
+            // SMAs
+            if (sma20Series) {
+              sma20Series.applyOptions({ visible: isIndicatorActive('sma20') });
+              sma20Series.setData(calculateSMA(unique, 20));
+            }
+            if (sma50Series) {
+              sma50Series.applyOptions({ visible: isIndicatorActive('sma50') });
+              sma50Series.setData(calculateSMA(unique, 50));
+            }
+            if (sma200Series) {
+              sma200Series.applyOptions({ visible: isIndicatorActive('sma200') });
+              sma200Series.setData(calculateSMA(unique, 200));
+            }
+
+            // Pivot S/R Lines
+            renderPivotPriceLines();
 
             const showTime = currentChartRange === '1D' || currentChartRange === '1W';
             stockChart.applyOptions({
@@ -5931,19 +6805,37 @@
               }
             });
 
-            chartSeries.setData(unique);
             stockChart.timeScale().fitContent();
           } else {
-            chartSeries.setData([]);
+            if (areaSeries) areaSeries.setData([]);
+            if (candleSeries) candleSeries.setData([]);
+            if (volumeSeries) volumeSeries.setData([]);
+            if (sma20Series) sma20Series.setData([]);
+            if (sma50Series) sma50Series.setData([]);
+            if (sma200Series) sma200Series.setData([]);
+            clearPivotPriceLines();
           }
         } else {
-          chartSeries.setData([]);
+          if (areaSeries) areaSeries.setData([]);
+          if (candleSeries) candleSeries.setData([]);
+          if (volumeSeries) volumeSeries.setData([]);
+          if (sma20Series) sma20Series.setData([]);
+          if (sma50Series) sma50Series.setData([]);
+          if (sma200Series) sma200Series.setData([]);
+          clearPivotPriceLines();
         }
       } catch (e) {
         console.error('Chart error', e);
-        if (chartSeries) chartSeries.setData([]);
+        if (areaSeries) areaSeries.setData([]);
+        if (candleSeries) candleSeries.setData([]);
+        if (volumeSeries) volumeSeries.setData([]);
+        if (sma20Series) sma20Series.setData([]);
+        if (sma50Series) sma50Series.setData([]);
+        if (sma200Series) sma200Series.setData([]);
+        clearPivotPriceLines();
       } finally {
         if (loading) loading.style.display = 'none';
+        updateChartInfoTag();
       }
     }
 
@@ -5966,6 +6858,226 @@
         const vis = s.tickers.slice(0, 4);
         return `<div class="sector-card ${s.css}"><div class="sector-top"><div class="sector-name">${esc(s.name)}</div><span class="sector-perf ${cl}">${tx}</span></div><div class="sector-tickers">${vis.map(t => `<span class="sector-ticker" onclick="loadStock('${t}');event.stopPropagation()">${t}</span>`).join('')}<span class="sector-ticker" style="opacity:.4;cursor:default">+${s.tickers.length - vis.length}</span></div></div>`;
       }).join('');
+    }
+
+    // ===== MARKET HEATMAP LOGIC =====
+    function initOrRefreshHeatmap() {
+      populateHeatmapSectorOptions();
+      if (!HM.cache[HM.market]) {
+        loadHeatmapData();
+      } else {
+        renderHeatmap();
+      }
+    }
+
+    function setHeatmapMarket(mkt) {
+      if (HM.market === mkt && HM.cache[mkt]) return;
+      HM.market = mkt;
+      document.getElementById('hmMarketUS')?.classList.toggle('active', mkt === 'us');
+      document.getElementById('hmMarketSET')?.classList.toggle('active', mkt === 'set');
+      HM.filterSector = 'all';
+      populateHeatmapSectorOptions();
+      if (!HM.cache[mkt]) {
+        loadHeatmapData();
+      } else {
+        renderHeatmap();
+      }
+    }
+
+    function populateHeatmapSectorOptions() {
+      const sel = document.getElementById('hmSectorSelect');
+      if (!sel) return;
+      const isTh = S.lang === 'th';
+      const sectorsList = HM.market === 'us' ? SECTORS : SET_SECTORS;
+      
+      let html = `<option value="all">${isTh ? 'ทุกกลุ่มอุตสาหกรรม (All Sectors)' : 'All Sectors'}</option>`;
+      sectorsList.forEach(sec => {
+        const title = isTh && sec.thName ? `${sec.name} (${sec.thName})` : sec.name;
+        html += `<option value="${sec.id}">${title}</option>`;
+      });
+      sel.innerHTML = html;
+      sel.value = HM.filterSector || 'all';
+    }
+
+    function filterHeatmap(query) {
+      HM.filterQuery = (query || '').trim().toUpperCase();
+      renderHeatmap();
+    }
+
+    function filterHeatmapSector(secId) {
+      HM.filterSector = secId || 'all';
+      renderHeatmap();
+    }
+
+    async function loadHeatmapData(forceRefresh = false) {
+      if (HM.loading) return;
+      HM.loading = true;
+      const content = document.getElementById('heatmapContent');
+      if (!HM.cache[HM.market] || forceRefresh) {
+        if (content) {
+          content.innerHTML = `
+            <div class="heatmap-loading">
+              <div class="spinner" style="width:28px;height:28px;border:3px solid rgba(255,255,255,0.1);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite;"></div>
+              <p>${S.lang === 'th' ? 'กำลังโหลดข้อมูล Market Heatmap...' : 'Loading Market Heatmap data...'}</p>
+            </div>`;
+        }
+      }
+
+      const sectorsList = HM.market === 'us' ? SECTORS : SET_SECTORS;
+      const currentMarket = HM.market;
+
+      try {
+        const sectorDataPromises = sectorsList.map(async sec => {
+          // 1. Fetch Sector ETF Quote if available
+          let secQuote = null;
+          if (sec.etf) {
+            try { secQuote = await fetchQ(sec.etf); } catch (e) { }
+          }
+
+          // 2. Fetch constituent tickers for this sector
+          const tickerQuotes = await Promise.allSettled(sec.tickers.map(async sym => {
+            try {
+              const q = await fetchQ(sym);
+              return { symbol: sym, quote: q };
+            } catch (e) {
+              return { symbol: sym, quote: null };
+            }
+          }));
+
+          const stocks = tickerQuotes.map(r => {
+            const sym = r.value.symbol;
+            const q = r.value.quote;
+            return {
+              symbol: sym,
+              name: q?.shortName || q?.name || sym,
+              price: q?.c ?? null,
+              change: q?.d ?? 0,
+              dp: q?.dp ?? 0,
+              volume: q?.v ?? null,
+              currency: q?.currency || (sym.endsWith('.BK') ? 'THB' : 'USD')
+            };
+          });
+
+          // Calculate Sector Average % Change
+          const validStocks = stocks.filter(s => s.price !== null && typeof s.dp === 'number');
+          const avgDp = secQuote?.dp ?? (validStocks.length ? (validStocks.reduce((sum, s) => sum + s.dp, 0) / validStocks.length) : 0);
+
+          return {
+            id: sec.id,
+            name: sec.name,
+            thName: sec.thName,
+            etf: sec.etf || null,
+            avgDp,
+            stocks
+          };
+        });
+
+        const results = await Promise.all(sectorDataPromises);
+        HM.cache[currentMarket] = results;
+        HM.loading = false;
+        renderHeatmap();
+      } catch (err) {
+        console.error('Heatmap load error:', err);
+        HM.loading = false;
+        if (content) {
+          content.innerHTML = `<div class="heatmap-loading" style="color:var(--red);">Failed to load heatmap data. Click Refresh to try again.</div>`;
+        }
+      }
+    }
+
+    function renderHeatmap() {
+      const content = document.getElementById('heatmapContent');
+      if (!content) return;
+      const data = HM.cache[HM.market];
+      if (!data || !data.length) {
+        if (!HM.loading) loadHeatmapData();
+        return;
+      }
+
+      const isTh = S.lang === 'th';
+      const qUpper = (HM.filterQuery || '').toUpperCase();
+      const secFilter = HM.filterSector || 'all';
+
+      const MEGA_CAPS = new Set(['AAPL', 'MSFT', 'NVDA', 'AMZN', 'GOOGL', 'META', 'TSLA', 'JPM', 'LLY', 'XOM', 'PTT.BK', 'PTTEP.BK', 'DELTA.BK', 'AOT.BK', 'SCB.BK', 'KBANK.BK', 'CPALL.BK', 'ADVANC.BK', 'GULF.BK', 'BDMS.BK']);
+
+      let renderedSectorsCount = 0;
+      let html = '';
+
+      data.forEach(sec => {
+        if (secFilter !== 'all' && sec.id !== secFilter) return;
+
+        // Filter stocks by search query
+        const filteredStocks = sec.stocks.filter(s => {
+          if (!qUpper) return true;
+          return s.symbol.toUpperCase().includes(qUpper) || (s.name && s.name.toUpperCase().includes(qUpper));
+        });
+
+        if (!filteredStocks.length && qUpper) return;
+
+        renderedSectorsCount++;
+        const isUp = sec.avgDp >= 0;
+        const secBadgeClass = isUp ? 'up' : 'down';
+        const secSign = isUp ? '+' : '';
+        const secTitle = isTh && sec.thName ? `${sec.name} • ${sec.thName}` : sec.name;
+
+        const tilesHtml = filteredStocks.map(s => {
+          const isMega = MEGA_CAPS.has(s.symbol);
+          const dp = s.dp || 0;
+          const priceStr = s.price != null ? (getCurSym(s.symbol, null) + fmtNum(s.price)) : '—';
+          const pctStr = (dp >= 0 ? '+' : '') + dp.toFixed(2) + '%';
+          const volStr = s.volume ? fmtVol(s.volume) : '';
+
+          // Determine color background class based on % change
+          let bgCls = 'hm-bg-flat';
+          if (dp >= 3.0) bgCls = 'hm-bg-up3';
+          else if (dp >= 1.5) bgCls = 'hm-bg-up2';
+          else if (dp > 0.05) bgCls = 'hm-bg-up1';
+          else if (dp <= -3.0) bgCls = 'hm-bg-dn3';
+          else if (dp <= -1.5) bgCls = 'hm-bg-dn2';
+          else if (dp < -0.05) bgCls = 'hm-bg-dn1';
+
+          return `
+            <div class="hm-tile ${bgCls} ${isMega ? 'mega' : ''}" onclick="loadStock('${esc(s.symbol)}')" title="${esc(s.name)} • ${pctStr}">
+              <div class="hm-tile-top">
+                <span class="hm-tile-sym">${esc(s.symbol)}</span>
+                <span class="hm-tile-price">${priceStr}</span>
+              </div>
+              <div class="hm-tile-name">${esc(s.name)}</div>
+              <div class="hm-tile-bottom">
+                <span class="hm-tile-pct">${pctStr}</span>
+                ${volStr ? `<span class="hm-tile-vol">Vol: ${volStr}</span>` : ''}
+              </div>
+            </div>`;
+        }).join('');
+
+        html += `
+          <div class="hm-sector-card">
+            <div class="hm-sec-header">
+              <div class="hm-sec-title-wrap">
+                <span class="hm-sec-name">${secTitle}</span>
+                ${sec.etf ? `<span class="hm-sec-etf">${sec.etf}</span>` : ''}
+              </div>
+              <div class="hm-sec-stats">
+                <span class="hm-sec-chg-badge ${secBadgeClass}">${secSign}${sec.avgDp.toFixed(2)}%</span>
+              </div>
+            </div>
+            <div class="hm-tiles-grid">
+              ${tilesHtml}
+            </div>
+          </div>`;
+      });
+
+      if (!renderedSectorsCount) {
+        html = `
+          <div class="heatmap-loading">
+            <svg viewBox="0 0 24 24" style="width:36px;height:36px;fill:var(--text-muted);opacity:0.4;">
+              <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 14z"/>
+            </svg>
+            <p>${isTh ? 'ไม่พบหุ้นที่ค้นหาใน Heatmap' : 'No matching stocks found in Heatmap'}</p>
+          </div>`;
+      }
+
+      content.innerHTML = html;
     }
 
     function isUSDST() {
