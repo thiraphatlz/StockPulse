@@ -1194,14 +1194,21 @@
 
     .chart-tabs {
       display: flex;
-      gap: 4px;
+      gap: 3px;
       background: var(--bg-input);
       padding: 3px;
       border-radius: var(--radius-xs);
+      overflow-x: auto;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .chart-tabs::-webkit-scrollbar {
+      display: none;
     }
 
     .chart-tab {
-      padding: 4px 10px;
+      padding: 4px 8px;
       border-radius: 4px;
       font-size: 11px;
       font-weight: 600;
@@ -1209,6 +1216,8 @@
       background: transparent;
       transition: var(--transition);
       cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
     }
 
     .chart-tab:hover {
@@ -5016,7 +5025,10 @@
                       <button class="chart-tab active" id="chartTab1D" onclick="setChartRange('1D')">1D</button>
                       <button class="chart-tab" id="chartTab1W" onclick="setChartRange('1W')">1W</button>
                       <button class="chart-tab" id="chartTab1M" onclick="setChartRange('1M')">1M</button>
+                      <button class="chart-tab" id="chartTab6M" onclick="setChartRange('6M')">6M</button>
+                      <button class="chart-tab" id="chartTabYTD" onclick="setChartRange('YTD')">YTD</button>
                       <button class="chart-tab" id="chartTab1Y" onclick="setChartRange('1Y')">1Y</button>
+                      <button class="chart-tab" id="chartTab5Y" onclick="setChartRange('5Y')">5Y</button>
                     </div>
                   </div>
 
@@ -6494,7 +6506,10 @@
       '1D': { interval: '2m', range: '1d' },
       '1W': { interval: '15m', range: '5d' },
       '1M': { interval: '1d', range: '1mo' },
-      '1Y': { interval: '1d', range: '1y' }
+      '6M': { interval: '1d', range: '6mo' },
+      'YTD': { interval: '1d', range: 'ytd' },
+      '1Y': { interval: '1d', range: '1y' },
+      '5Y': { interval: '1wk', range: '5y' }
     };
 
     function isIndicatorActive(name) {
@@ -6735,7 +6750,7 @@
     async function setChartRange(range) {
       if (!S.sym) return;
       currentChartRange = range;
-      ['1D', '1W', '1M', '1Y'].forEach(r => {
+      ['1D', '1W', '1M', '6M', 'YTD', '1Y', '5Y'].forEach(r => {
         const tab = document.getElementById(`chartTab${r}`);
         if (tab) tab.classList.toggle('active', r === range);
       });
@@ -6802,7 +6817,15 @@
           let res = 'D', from = now - 40 * 86400;
           if (range === '1d') { res = '5'; from = now - 2 * 86400; }
           else if (range === '5d') { res = '60'; from = now - 8 * 86400; }
+          else if (range === '1mo') { res = 'D'; from = now - 40 * 86400; }
+          else if (range === '6mo') { res = 'D'; from = now - 185 * 86400; }
+          else if (range === 'ytd') {
+            const startOfYear = Math.floor(new Date(new Date().getFullYear(), 0, 1).getTime() / 1000);
+            res = 'D';
+            from = startOfYear;
+          }
           else if (range === '1y') { res = 'D'; from = now - 370 * 86400; }
+          else if (range === '5y') { res = 'W'; from = now - 5 * 365 * 86400; }
           const fhUrl = `https://finnhub.io/api/v1/stock/candle?symbol=${encodeURIComponent(sym)}&resolution=${res}&from=${from}&to=${now}&token=${S.apiKey || HARDCODED_API_KEY}`;
           const r = await fetch(fhUrl, { signal: AbortSignal.timeout(3000) });
           if (r.ok) {

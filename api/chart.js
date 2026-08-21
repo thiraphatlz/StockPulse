@@ -17,10 +17,17 @@ export default async function handler(req, res) {
   function getFinnhubParams() {
     const now = Math.floor(Date.now() / 1000);
     switch (range) {
-      case '1d':  return { resolution: '5',  from: now - 2  * 86400, to: now };
-      case '5d':  return { resolution: '60', from: now - 8  * 86400, to: now };
-      case '1mo': return { resolution: 'D',  from: now - 40 * 86400, to: now };
-      default:    return { resolution: 'D',  from: now - 40 * 86400, to: now };
+      case '1d':  return { resolution: '5',  from: now - 2   * 86400, to: now };
+      case '5d':  return { resolution: '60', from: now - 8   * 86400, to: now };
+      case '1mo': return { resolution: 'D',  from: now - 40  * 86400, to: now };
+      case '6mo': return { resolution: 'D',  from: now - 185 * 86400, to: now };
+      case 'ytd': {
+        const startOfYear = Math.floor(new Date(new Date().getFullYear(), 0, 1).getTime() / 1000);
+        return { resolution: 'D', from: startOfYear, to: now };
+      }
+      case '1y':  return { resolution: 'D',  from: now - 370 * 86400, to: now };
+      case '5y':  return { resolution: 'W',  from: now - 5 * 365 * 86400, to: now };
+      default:    return { resolution: 'D',  from: now - 40  * 86400, to: now };
     }
   }
 
