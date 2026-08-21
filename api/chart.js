@@ -22,7 +22,8 @@ export default async function handler(req, res) {
       case '1mo': return { resolution: 'D',  from: now - 40  * 86400, to: now };
       case '6mo': return { resolution: 'D',  from: now - 185 * 86400, to: now };
       case 'ytd': {
-        const startOfYear = Math.floor(new Date(new Date().getFullYear(), 0, 1).getTime() / 1000);
+        const bkkYear = new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Bangkok', year: 'numeric' }).format(new Date());
+        const startOfYear = Math.floor(new Date(`${bkkYear}-01-01T00:00:00+07:00`).getTime() / 1000);
         return { resolution: 'D', from: startOfYear, to: now };
       }
       case '1y':  return { resolution: 'D',  from: now - 370 * 86400, to: now };

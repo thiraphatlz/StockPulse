@@ -5860,16 +5860,79 @@
       }, 30000);
     }
 
+    // ===== THAILAND TIME HELPERS (Asia/Bangkok - UTC+7) =====
+    function getBkkTimeParts(date = new Date()) {
+      try {
+        const parts = new Intl.DateTimeFormat('en-US', {
+          timeZone: 'Asia/Bangkok',
+          hourCycle: 'h23',
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          weekday: 'short'
+        }).formatToParts(date);
+        const map = {};
+        parts.forEach(p => map[p.type] = p.value);
+        return {
+          year: parseInt(map.year, 10),
+          month: parseInt(map.month, 10),
+          day: parseInt(map.day, 10),
+          hour: parseInt(map.hour, 10),
+          minute: parseInt(map.minute, 10),
+          second: parseInt(map.second, 10),
+          weekday: map.weekday,
+          dateKey: `${map.year}-${map.month}-${map.day}`
+        };
+      } catch (e) {
+        const d = new Date(date.getTime() + (7 * 3600000) + (date.getTimezoneOffset() * 60000));
+        return {
+          year: d.getUTCFullYear(),
+          month: d.getUTCMonth() + 1,
+          day: d.getUTCDate(),
+          hour: d.getUTCHours(),
+          minute: d.getUTCMinutes(),
+          second: d.getUTCSeconds(),
+          weekday: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getUTCDay()],
+          dateKey: d.toISOString().slice(0, 10)
+        };
+      }
+    }
+
+    function getBkkDateKey(date = new Date()) {
+      try {
+        return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok' }).format(date);
+      } catch (e) {
+        return getBkkTimeParts(date).dateKey;
+      }
+    }
+
     function updateGreeting() {
-      const h = new Date().getHours();
+      const bkk = getBkkTimeParts();
+      const h = bkk.hour;
       const t = I18N[S.lang] || I18N.en;
       document.getElementById('dashGreeting').textContent = h < 12 ? t.gMorning : h < 17 ? t.gAfternoon : t.gEvening;
       const loc = S.lang === 'th' ? 'th-TH' : 'en-US';
-      document.getElementById('dashDate').textContent = new Date().toLocaleDateString(loc, { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' });
+      document.getElementById('dashDate').textContent = new Date().toLocaleDateString(loc, {
+        timeZone: 'Asia/Bangkok',
+        weekday: 'long',
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
     }
     function updateLastRefresh() {
       const el = document.getElementById('lastUpdateText');
-      if (el) el.textContent = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+      if (el) {
+        el.textContent = new Date().toLocaleTimeString(S.lang === 'th' ? 'th-TH' : 'en-US', {
+          timeZone: 'Asia/Bangkok',
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false
+        }) + (S.lang === 'th' ? ' น.' : ' ICT');
+      }
     }
 
     function switchPage(page) {
@@ -6971,7 +7034,8 @@
           else if (range === '1mo') { res = 'D'; from = now - 40 * 86400; }
           else if (range === '6mo') { res = 'D'; from = now - 185 * 86400; }
           else if (range === 'ytd') {
-            const startOfYear = Math.floor(new Date(new Date().getFullYear(), 0, 1).getTime() / 1000);
+            const bkkYear = getBkkTimeParts().year;
+            const startOfYear = Math.floor(new Date(`${bkkYear}-01-01T00:00:00+07:00`).getTime() / 1000);
             res = 'D';
             from = startOfYear;
           }
@@ -7392,20 +7456,28 @@
     }
 
     function isUSDST() {
-      // In US, DST starts 2nd Sunday of March (02:00 EST / 07:00 UTC) and ends 1st Sunday of November (02:00 EDT / 06:00 UTC)
-      const now = new Date();
-      const year = now.getUTCFullYear();
-      const marchFirst = new Date(Date.UTC(year, 2, 1));
-      const marchFirstDay = marchFirst.getUTCDay();
-      const secondSundayMarch = 1 + (marchFirstDay === 0 ? 7 : (7 - marchFirstDay) + 7);
-      const dstStart = new Date(Date.UTC(year, 2, secondSundayMarch, 7, 0, 0));
+      try {
+        const dStr = new Intl.DateTimeFormat('en-US', {
+          timeZone: 'America/New_York',
+          timeZoneName: 'short'
+        }).format(new Date());
+        return dStr.includes('EDT') || dStr.includes('GMT-4');
+      } catch (e) {
+        // Fallback: In US, DST starts 2nd Sunday of March (02:00 EST / 07:00 UTC) and ends 1st Sunday of November (02:00 EDT / 06:00 UTC)
+        const now = new Date();
+        const year = now.getUTCFullYear();
+        const marchFirst = new Date(Date.UTC(year, 2, 1));
+        const marchFirstDay = marchFirst.getUTCDay();
+        const secondSundayMarch = 1 + (marchFirstDay === 0 ? 7 : (7 - marchFirstDay) + 7);
+        const dstStart = new Date(Date.UTC(year, 2, secondSundayMarch, 7, 0, 0));
 
-      const novFirst = new Date(Date.UTC(year, 10, 1));
-      const novFirstDay = novFirst.getUTCDay();
-      const firstSundayNov = 1 + (novFirstDay === 0 ? 0 : (7 - novFirstDay));
-      const dstEnd = new Date(Date.UTC(year, 10, firstSundayNov, 6, 0, 0));
+        const novFirst = new Date(Date.UTC(year, 10, 1));
+        const novFirstDay = novFirst.getUTCDay();
+        const firstSundayNov = 1 + (novFirstDay === 0 ? 0 : (7 - novFirstDay));
+        const dstEnd = new Date(Date.UTC(year, 10, firstSundayNov, 6, 0, 0));
 
-      return now >= dstStart && now < dstEnd;
+        return now >= dstStart && now < dstEnd;
+      }
     }
 
     function updateMarketClock() {
@@ -7604,47 +7676,55 @@
 
     // Market status
     function getUSSession() {
-      const now = new Date();
-      const dst = isUSDST();
-      const offsetHours = dst ? -4 : -5;
-      const utcMs = now.getTime() + (now.getTimezoneOffset() * 60000);
-      const usTime = new Date(utcMs + (offsetHours * 3600000));
-      const day = usTime.getDay();
-      if (day === 0 || day === 6) return 'closed';
-
-      const t = usTime.getHours() * 60 + usTime.getMinutes();
-      // Pre-market: 04:00 - 09:30 (240 - 570 min)
-      if (t >= 240 && t < 570) return 'pre-market';
-      // Regular: 09:30 - 16:00 (570 - 960 min)
-      if (t >= 570 && t < 960) return 'regular';
-      // Post-market: 16:00 - 20:00 (960 - 1200 min)
-      if (t >= 960 && t < 1200) return 'post-market';
-      return 'closed';
+      try {
+        const parts = new Intl.DateTimeFormat('en-US', {
+          timeZone: 'America/New_York',
+          hourCycle: 'h23',
+          hour: 'numeric',
+          minute: 'numeric',
+          weekday: 'short'
+        }).formatToParts(new Date());
+        const map = {};
+        parts.forEach(p => map[p.type] = p.value);
+        if (map.weekday === 'Sun' || map.weekday === 'Sat') return 'closed';
+        const h = parseInt(map.hour, 10);
+        const m = parseInt(map.minute, 10);
+        const t = h * 60 + m;
+        // Pre-market: 04:00 - 09:30 (240 - 570 min)
+        if (t >= 240 && t < 570) return 'pre-market';
+        // Regular: 09:30 - 16:00 (570 - 960 min)
+        if (t >= 570 && t < 960) return 'regular';
+        // Post-market: 16:00 - 20:00 (960 - 1200 min)
+        if (t >= 960 && t < 1200) return 'post-market';
+        return 'closed';
+      } catch (e) {
+        return 'closed';
+      }
     }
 
     function getSETSession() {
-      const now = new Date();
-      const utcMs = now.getTime() + (now.getTimezoneOffset() * 60000);
-      const bkk = new Date(utcMs + (7 * 3600000));
-      const day = bkk.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
-      if (day === 0 || day === 6) return 'closed';
+      try {
+        const bkk = getBkkTimeParts();
+        if (bkk.weekday === 'Sun' || bkk.weekday === 'Sat') return 'closed';
+        const t = bkk.hour * 60 + bkk.minute;
 
-      const t = bkk.getHours() * 60 + bkk.getMinutes();
-
-      // SET Schedule (ICT):
-      // 09:30 - 10:00 (570 - 600): Pre-Open 1
-      if (t >= 570 && t < 600) return 'pre-market';
-      // 10:00 - 12:30 (600 - 750): Morning Trading Session
-      if (t >= 600 && t < 750) return 'regular';
-      // 12:30 - 14:00 (750 - 840): Intermission / Lunch Break (พักการซื้อขายช่วงเที่ยง)
-      if (t >= 750 && t < 840) return 'intermission';
-      // 14:00 - 14:30 (840 - 870): Pre-Open 2
-      if (t >= 840 && t < 870) return 'pre-market';
-      // 14:30 - 16:30 (870 - 990): Afternoon Trading Session
-      if (t >= 870 && t < 990) return 'regular';
-      // 16:30 - 16:40 (990 - 1000): Pre-Close
-      if (t >= 990 && t < 1000) return 'post-market';
-      return 'closed';
+        // SET Schedule (ICT):
+        // 09:30 - 10:00 (570 - 600): Pre-Open 1
+        if (t >= 570 && t < 600) return 'pre-market';
+        // 10:00 - 12:30 (600 - 750): Morning Trading Session
+        if (t >= 600 && t < 750) return 'regular';
+        // 12:30 - 14:00 (750 - 840): Intermission / Lunch Break (พักการซื้อขายช่วงเที่ยง)
+        if (t >= 750 && t < 840) return 'intermission';
+        // 14:00 - 14:30 (840 - 870): Pre-Open 2
+        if (t >= 840 && t < 870) return 'pre-market';
+        // 14:30 - 16:30 (870 - 990): Afternoon Trading Session
+        if (t >= 870 && t < 990) return 'regular';
+        // 16:30 - 16:40 (990 - 1000): Pre-Close
+        if (t >= 990 && t < 1000) return 'post-market';
+        return 'closed';
+      } catch (e) {
+        return 'closed';
+      }
     }
 
     function updateMarketStatus() {
@@ -7811,7 +7891,7 @@
         direction: dirLabel,
         target_price: cs + Number(targetPrice).toFixed(2),
         current_price: cs + Number(currentPrice).toFixed(2),
-        timestamp: new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })
+        timestamp: new Date().toLocaleString(S.lang === 'th' ? 'th-TH' : 'en-US', { timeZone: 'Asia/Bangkok', dateStyle: 'medium', timeStyle: 'short' }) + ' ICT'
       };
       if (typeof emailjs !== 'undefined' && EMAILJS_PUBLIC_KEY && EMAILJS_PUBLIC_KEY !== 'YOUR_PUBLIC_KEY') {
         try {
@@ -7844,14 +7924,6 @@
     }
 
     // ===== PRE-MARKET SECTOR FLOW & TOP MOVERS REPORT =====
-    function getBkkDateKey(date = new Date()) {
-      try {
-        return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok' }).format(date);
-      } catch (e) {
-        return new Date().toISOString().slice(0, 10);
-      }
-    }
-
     function getPreMarketScheduleInfo() {
       const now = new Date();
       const dst = isUSDST();
@@ -7863,30 +7935,11 @@
       const openHourBkk = dst ? 20 : 21;
       const openMinBkk = 30;
 
-      let bkkHour = 20, bkkMin = 15, isWeekday = true, dateKey = getBkkDateKey(now);
-      try {
-        const parts = new Intl.DateTimeFormat('en-US', {
-          timeZone: 'Asia/Bangkok',
-          hourCycle: 'h23',
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit',
-          hour: '2-digit',
-          minute: '2-digit',
-          weekday: 'short'
-        }).formatToParts(now);
-        const map = {};
-        parts.forEach(p => map[p.type] = p.value);
-        bkkHour = parseInt(map.hour, 10);
-        bkkMin = parseInt(map.minute, 10);
-        isWeekday = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'].includes(map.weekday);
-        dateKey = `${map.year}-${map.month}-${map.day}`;
-      } catch (e) {
-        const d = new Date();
-        bkkHour = d.getHours();
-        bkkMin = d.getMinutes();
-        isWeekday = d.getDay() >= 1 && d.getDay() <= 5;
-      }
+      const bkk = getBkkTimeParts(now);
+      const bkkHour = bkk.hour;
+      const bkkMin = bkk.minute;
+      const isWeekday = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'].includes(bkk.weekday);
+      const dateKey = bkk.dateKey;
 
       const curTotalMin = bkkHour * 60 + bkkMin;
       const targetTotalMin = targetHourBkk * 60 + targetMinBkk; // e.g. 20*60+15 = 1215
@@ -8001,8 +8054,8 @@
       const detailedSectors = sectorDetails.filter(r => r.status === 'fulfilled').map(r => r.value);
 
       const now = new Date();
-      const timeStr = now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) + ' น. ICT';
-      const dateStr = now.toLocaleDateString('th-TH', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' });
+      const timeStr = now.toLocaleTimeString('th-TH', { timeZone: 'Asia/Bangkok', hour: '2-digit', minute: '2-digit' }) + ' น. ICT';
+      const dateStr = now.toLocaleDateString('th-TH', { timeZone: 'Asia/Bangkok', weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' });
 
       // Plain Text Summary
       let textSummary = `🚀 [StockPulse] Pre-Market US Sector Flow Intelligence (${dateStr} • ${timeStr})\n\n`;
@@ -8464,7 +8517,7 @@
           const el = document.getElementById('pfUsdThbRate');
           if (el) el.textContent = PF.usdThb.toFixed(2);
           const te = document.getElementById('pfRateTime');
-          if (te) te.textContent = 'Updated ' + new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+          if (te) te.textContent = 'Updated ' + new Date().toLocaleTimeString('th-TH', { timeZone: 'Asia/Bangkok', hour: '2-digit', minute: '2-digit' }) + ' ICT';
           return PF.usdThb;
         }
       } catch (e) { console.error('Exchange rate fetch error:', e); }
@@ -8545,7 +8598,7 @@
       document.getElementById('posSymbol').value = initialSym;
       document.getElementById('posPricePerShare').value = '';
       document.getElementById('posAmount').value = '';
-      document.getElementById('posPurchaseDate').value = new Date().toISOString().split('T')[0];
+      document.getElementById('posPurchaseDate').value = getBkkDateKey();
       document.getElementById('posCalcResult').textContent = '';
       document.getElementById('posPricePreview').style.display = 'none';
       document.getElementById('posSymbolDD').classList.remove('active');
@@ -8798,7 +8851,7 @@
 
         return `<tr>
           <td><div class="pf-sym" style="cursor:pointer" onclick="loadStock('${esc(pos.symbol)}')">${esc(pos.symbol)} ${isThai ? '<span class="search-tag-th">SET</span>' : ''}</div>
-              ${pos.purchase_date ? `<div class="pf-note">${new Date(pos.purchase_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>` : ''}</td>
+              ${pos.purchase_date ? `<div class="pf-note">${new Date(pos.purchase_date + 'T00:00:00+07:00').toLocaleDateString(S.lang === 'th' ? 'th-TH' : 'en-US', { timeZone: 'Asia/Bangkok', month: 'short', day: 'numeric', year: 'numeric' })}</div>` : ''}</td>
           <td class="pf-td-r pf-mono">${Number(pos.shares) % 1 === 0 ? pos.shares : Number(pos.shares).toFixed(4)}</td>
           <td class="pf-td-r pf-mono">${cs}${fmtNum(avgPrice)}</td>
           <td class="pf-td-r pf-mono">${curPrice ? cs + fmtNum(curPrice) : '<span style="color:var(--text-muted)">—</span>'}</td>
