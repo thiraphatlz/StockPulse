@@ -619,7 +619,15 @@
       margin-bottom: 24px;
     }
 
-    /* Watchlist table (desktop) / cards (mobile) */
+    /* Watchlist — minimal list rows */
+    .wl-list-wrap {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    /* Keep table-wrap as alias for legacy mobile/compat */
     .table-wrap {
       background: var(--bg-card);
       border: 1px solid var(--border-subtle);
@@ -627,43 +635,61 @@
       overflow: hidden;
     }
 
-    .wl-table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-
-    .wl-table th {
-      text-align: left;
-      font-size: 10px;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.8px;
-      font-weight: 600;
+    .wl-row {
+      display: flex;
+      align-items: center;
       padding: 10px 14px;
       border-bottom: 1px solid var(--border-subtle);
+      cursor: pointer;
+      transition: background 0.12s;
+      gap: 10px;
+      min-height: 52px;
+      -webkit-tap-highlight-color: transparent;
     }
 
-    .wl-table th.r {
-      text-align: right;
-    }
-
-    .wl-table td {
-      padding: 10px 14px;
-      border-bottom: 1px solid var(--border-subtle);
-      vertical-align: middle;
-    }
-
-    .wl-table tr:last-child td {
+    .wl-row:last-child {
       border-bottom: none;
     }
 
-    .wl-table tbody tr {
-      transition: background 0.1s;
-      cursor: pointer;
+    .wl-row:hover {
+      background: var(--bg-card-hover);
     }
 
-    .wl-table tbody tr:hover td {
-      background: var(--bg-card-hover);
+    .wl-row:active {
+      background: var(--bg-elevated);
+    }
+
+    .wl-row-left {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .wl-row-sym-block {
+      min-width: 0;
+    }
+
+    .wl-row-right {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 3px;
+      flex-shrink: 0;
+    }
+
+    .wl-row-badges {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .wl-row-vol {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-top: 1px;
     }
 
     .wl-sym {
@@ -674,7 +700,10 @@
     .wl-name {
       font-size: 11px;
       color: var(--text-muted);
-      margin-top: 1px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 180px;
     }
 
     .wl-price {
@@ -685,7 +714,7 @@
 
     .wl-chg {
       font-family: var(--font-mono);
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 500;
     }
 
@@ -699,7 +728,7 @@
 
     .pct-badge {
       display: inline-flex;
-      padding: 3px 8px;
+      padding: 2px 7px;
       border-radius: var(--radius-pill);
       font-size: 11px;
       font-weight: 600;
@@ -2518,53 +2547,112 @@
       font-weight: 600;
     }
 
-    .pf-table-wrap {
-      background: var(--bg-card);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius);
-      overflow: hidden;
+    /* Portfolio position cards — replaces table */
+    .pf-pos-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
       margin-bottom: 16px;
     }
 
-    .pf-table {
-      width: 100%;
-      border-collapse: collapse;
+    .pf-pos-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      transition: border-color 0.15s;
     }
 
-    .pf-table th {
-      text-align: left;
-      font-size: 10px;
+    .pf-pos-card:hover {
+      border-color: var(--border-primary);
+    }
+
+    .pf-pos-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      gap: 8px;
+    }
+
+    .pf-pos-sym-block {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .pf-pos-right-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .pf-pos-pl-badge {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      padding: 3px 9px;
+      border-radius: var(--radius-pill);
+    }
+
+    .pf-pos-pl-badge.up {
+      background: var(--green-bg);
+      color: var(--green);
+      border: 1px solid rgba(16,185,129,0.2);
+    }
+
+    .pf-pos-pl-badge.down {
+      background: var(--red-bg);
+      color: var(--red);
+      border: 1px solid rgba(239,68,68,0.2);
+    }
+
+    .pf-pos-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+
+    @media (max-width: 480px) {
+      .pf-pos-stats {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    .pf-pos-stat {
+      background: var(--bg-elevated);
+      border-radius: var(--radius-xs);
+      padding: 7px 10px;
+      border: 1px solid var(--border-subtle);
+    }
+
+    .pf-pos-stat-lbl {
+      display: block;
+      font-size: 9px;
       color: var(--text-muted);
       text-transform: uppercase;
-      letter-spacing: 0.8px;
+      letter-spacing: 0.5px;
       font-weight: 600;
-      padding: 10px 14px;
-      border-bottom: 1px solid var(--border-subtle);
+      margin-bottom: 3px;
+    }
+
+    .pf-pos-stat-val {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 600;
       white-space: nowrap;
     }
 
-    .pf-table th.r {
-      text-align: right;
-    }
+    .pf-pos-stat-val.up { color: var(--green); }
+    .pf-pos-stat-val.down { color: var(--red); }
+    .pf-pos-stat-val.dim { color: var(--text-muted); opacity: 0.5; }
 
-    .pf-table td {
-      padding: 12px 14px;
-      border-bottom: 1px solid var(--border-subtle);
-      vertical-align: middle;
-    }
-
-    .pf-table tr:last-child td {
-      border-bottom: none;
-    }
-
-    .pf-table tbody tr {
-      transition: background 0.1s;
-    }
-
-    .pf-table tbody tr:hover td {
-      background: var(--bg-card-hover);
-    }
-
+    /* Legacy compat */
     .pf-td-r {
       text-align: right;
     }
@@ -2936,12 +3024,8 @@
         font-size: 14px;
       }
 
-      .pf-table-wrap {
-        overflow-x: auto;
-      }
-
-      .pf-table {
-        min-width: 600px;
+      .pf-pos-stats {
+        grid-template-columns: repeat(2, 1fr);
       }
 
       .pos-form-grid {
@@ -3308,13 +3392,25 @@
         font-size: 11px;
       }
 
-      /* Table → Cards on mobile */
+      /* Hide legacy table wrap on mobile (wl-row handles both) */
       .table-wrap {
         display: none;
       }
 
       .wl-cards {
         display: block;
+      }
+
+      .wl-list-wrap {
+        display: block;
+      }
+
+      .wl-row {
+        padding: 10px 12px;
+      }
+
+      .wl-name {
+        max-width: 120px;
       }
 
       /* Sectors 1 col */
@@ -3636,7 +3732,58 @@
       }
     }
 
-    /* ===== EXTENDED STATS 8 CARDS ===== */
+    /* ===== EXTENDED STATS — Compact Inline 2-col ===== */
+    .stats-inline-wrap {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin-bottom: 12px;
+    }
+
+    .stats-inline-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .stats-inline-row:last-child {
+      border-bottom: none;
+    }
+
+    .stats-inline-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 9px 14px;
+      gap: 8px;
+      border-right: 1px solid var(--border-subtle);
+      transition: background 0.1s;
+    }
+
+    .stats-inline-item:last-child {
+      border-right: none;
+    }
+
+    .stats-inline-item:hover {
+      background: var(--bg-card-hover);
+    }
+
+    .stat-lbl-sm {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    .stat-val-sm {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 600;
+      text-align: right;
+    }
+
+    /* Legacy compat — hide old grid if any remnants */
     .stats-grid-8 {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
@@ -3650,10 +3797,6 @@
       border-radius: var(--radius);
       padding: 10px 12px;
       transition: var(--transition);
-    }
-
-    .stat-card-sm:hover {
-      border-color: var(--border-primary);
     }
 
     @media (max-width: 768px) {
@@ -5066,39 +5209,47 @@
                   </div>
                 </div>
 
-                <!-- Extended 8 Stats -->
-                <div class="stats-grid-8">
-                  <div class="stat-card-sm">
-                    <div class="stat-label" id="lblStatOpen">Open</div>
-                    <div class="stat-value" id="statOpen">—</div>
+                <!-- Extended Stats — compact inline 2-col -->
+                <div class="stats-inline-wrap">
+                  <div class="stats-inline-row">
+                    <div class="stats-inline-item">
+                      <span class="stat-lbl-sm" id="lblStatOpen">Open</span>
+                      <span class="stat-val-sm" id="statOpen">—</span>
+                    </div>
+                    <div class="stats-inline-item">
+                      <span class="stat-lbl-sm" id="lblStatPrev">Prev Close</span>
+                      <span class="stat-val-sm" id="statPrevClose">—</span>
+                    </div>
                   </div>
-                  <div class="stat-card-sm">
-                    <div class="stat-label" id="lblStatHigh">High</div>
-                    <div class="stat-value" id="statHigh">—</div>
+                  <div class="stats-inline-row">
+                    <div class="stats-inline-item">
+                      <span class="stat-lbl-sm" id="lblStatHigh">High</span>
+                      <span class="stat-val-sm" style="color:var(--green)" id="statHigh">—</span>
+                    </div>
+                    <div class="stats-inline-item">
+                      <span class="stat-lbl-sm" id="lblStatLow">Low</span>
+                      <span class="stat-val-sm" style="color:var(--red)" id="statLow">—</span>
+                    </div>
                   </div>
-                  <div class="stat-card-sm">
-                    <div class="stat-label" id="lblStatLow">Low</div>
-                    <div class="stat-value" id="statLow">—</div>
+                  <div class="stats-inline-row">
+                    <div class="stats-inline-item">
+                      <span class="stat-lbl-sm" id="lblStatVol">Volume</span>
+                      <span class="stat-val-sm" id="statVolume">—</span>
+                    </div>
+                    <div class="stats-inline-item">
+                      <span class="stat-lbl-sm" id="lblStatAvgVol">Avg Vol</span>
+                      <span class="stat-val-sm" id="statAvgVolume">—</span>
+                    </div>
                   </div>
-                  <div class="stat-card-sm">
-                    <div class="stat-label" id="lblStatPrev">Prev Close</div>
-                    <div class="stat-value" id="statPrevClose">—</div>
-                  </div>
-                  <div class="stat-card-sm">
-                    <div class="stat-label" id="lblStatVol">Volume</div>
-                    <div class="stat-value" id="statVolume">—</div>
-                  </div>
-                  <div class="stat-card-sm">
-                    <div class="stat-label" id="lblStatAvgVol">Avg Volume</div>
-                    <div class="stat-value" id="statAvgVolume">—</div>
-                  </div>
-                  <div class="stat-card-sm">
-                    <div class="stat-label" id="lblStat52H">52W High</div>
-                    <div class="stat-value" id="stat52High" style="color:var(--green)">—</div>
-                  </div>
-                  <div class="stat-card-sm">
-                    <div class="stat-label" id="lblStat52L">52W Low</div>
-                    <div class="stat-value" id="stat52Low" style="color:var(--red)">—</div>
+                  <div class="stats-inline-row">
+                    <div class="stats-inline-item">
+                      <span class="stat-lbl-sm" id="lblStat52H">52W High</span>
+                      <span class="stat-val-sm" style="color:var(--green)" id="stat52High">—</span>
+                    </div>
+                    <div class="stats-inline-item">
+                      <span class="stat-lbl-sm" id="lblStat52L">52W Low</span>
+                      <span class="stat-val-sm" style="color:var(--red)" id="stat52Low">—</span>
+                    </div>
                   </div>
                 </div>
 
@@ -7330,20 +7481,22 @@
       const setMktLbl = isTh ? '🇹🇭 ตลาดหุ้นไทย (SET)' : '🇹🇭 SET Market (Thailand)';
 
       container.innerHTML = `
-        <div class="clock-card">
-          <div class="clock-dot ${usInfo.cls}"></div>
-          <div>
-            <div class="clock-mkt-lbl">${usMktLbl} • ${usTimeStr}</div>
-            <div class="clock-session-lbl ${usInfo.cls}">${usInfo.title}</div>
-            <div class="clock-countdown-txt">${usInfo.desc}</div>
+        <div class="stats-inline-wrap">
+          <div class="clock-card">
+            <div class="clock-dot ${usInfo.cls}"></div>
+            <div>
+              <div class="clock-mkt-lbl">${usMktLbl} • ${usTimeStr}</div>
+              <div class="clock-session-lbl ${usInfo.cls}">${usInfo.title}</div>
+              <div class="clock-countdown-txt">${usInfo.desc}</div>
+            </div>
           </div>
-        </div>
-        <div class="clock-card">
-          <div class="clock-dot ${setInfo.cls}"></div>
-          <div>
-            <div class="clock-mkt-lbl">${setMktLbl} • ${setTimeStr}</div>
-            <div class="clock-session-lbl ${setInfo.cls}">${setInfo.title}</div>
-            <div class="clock-countdown-txt">${setInfo.desc}</div>
+          <div class="clock-card">
+            <div class="clock-dot ${setInfo.cls}"></div>
+            <div>
+              <div class="clock-mkt-lbl">${setMktLbl} • ${setTimeStr}</div>
+              <div class="clock-session-lbl ${setInfo.cls}">${setInfo.title}</div>
+              <div class="clock-countdown-txt">${setInfo.desc}</div>
+            </div>
           </div>
         </div>`;
     }
@@ -7417,26 +7570,34 @@
       const c = document.getElementById('dashWatchlist');
       if (!S.wl.length) { c.innerHTML = `<div class="dash-empty"><svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg><span>${t.emptyWatchlist}</span></div>`; return; }
 
-      // Desktop table
+      // Unified minimal rows (works desktop + mobile)
       const rows = S.wl.map(s => {
-        const q = s._quote, cs = getCurSym(s.symbol, q), p = q ? cs + fmtNum(q.c) : '—', pct = q ? q.dp : null, d = pct === null ? 'flat' : pct >= 0 ? 'up' : 'down', pt = pct !== null ? (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%' : '—', ct = q ? (q.d >= 0 ? '+' : '-') + cs + Math.abs(q.d).toFixed(2) : '—';
-        const vol = q && q.v ? fmtVol(q.v) : '—';
-        return `<tr onclick="loadStock('${esc(s.symbol)}')">
-          <td><div class="wl-sym">${esc(s.symbol)} ${s.symbol.endsWith('.BK') ? '<span class="search-tag-th">SET</span>' : ''}</div><div class="wl-name">${esc(s.name || '')}</div></td>
-          <td><div class="wl-price">${p}</div></td>
-          <td><div class="wl-chg ${d}">${ct}</div></td>
-          <td><span class="pct-badge ${d}">${pt}</span></td>
-          <td class="r" style="font-family:var(--font-mono);font-size:11px;color:var(--text-secondary)">${vol}</td>
-        </tr>`;
+        const q = s._quote, cs = getCurSym(s.symbol, q);
+        const p = q ? cs + fmtNum(q.c) : '—';
+        const pct = q ? q.dp : null;
+        const d = pct === null ? 'flat' : pct >= 0 ? 'up' : 'down';
+        const pt = pct !== null ? (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%' : '—';
+        const ct = q ? (q.d >= 0 ? '+' : '') + cs + Math.abs(q.d).toFixed(2) : '';
+        const vol = q && q.v ? fmtVol(q.v) : null;
+        return `<div class="wl-row" onclick="loadStock('${esc(s.symbol)}')">
+          <div class="wl-row-left">
+            <div class="wl-row-sym-block">
+              <div class="wl-sym">${esc(s.symbol)}${s.symbol.endsWith('.BK') ? ' <span class="search-tag-th">SET</span>' : ''}</div>
+              <div class="wl-name">${esc(s.name || '')}</div>
+            </div>
+          </div>
+          <div class="wl-row-right">
+            <div class="wl-price">${p}</div>
+            <div class="wl-row-badges">
+              <span class="pct-badge ${d}">${pt}</span>
+              ${ct ? `<span class="wl-chg ${d}">${ct}</span>` : ''}
+            </div>
+            ${vol ? `<div class="wl-row-vol">${vol}</div>` : ''}
+          </div>
+        </div>`;
       }).join('');
 
-      // Mobile cards
-      const cards = S.wl.map(s => {
-        const q = s._quote, cs = getCurSym(s.symbol, q), p = q ? cs + fmtNum(q.c) : '—', pct = q ? q.dp : null, d = pct !== null ? (pct >= 0 ? 'up' : 'down') : '', pt = pct !== null ? (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%' : '';
-        return `<div class="wl-card-item" onclick="loadStock('${esc(s.symbol)}')"><div class="wl-card-left"><div class="wl-sym">${esc(s.symbol)} ${s.symbol.endsWith('.BK') ? '<span class="search-tag-th">SET</span>' : ''}</div><div class="wl-name">${esc(s.name || '')}</div></div><div class="wl-card-right"><div class="wl-price">${p}</div><div class="wl-chg ${d}">${pt}</div></div></div>`;
-      }).join('');
-
-      c.innerHTML = `<div class="table-wrap"><table class="wl-table"><thead><tr><th>${t.tblSymbol}</th><th>${t.tblPrice}</th><th>${t.tblChange}</th><th>%</th><th class="r">${t.tblVolume || 'Volume'}</th></tr></thead><tbody>${rows}</tbody></table></div><div class="wl-cards">${cards}</div>`;
+      c.innerHTML = `<div class="wl-list-wrap">${rows}</div>`;
       renderDashboardAlerts();
       updateDashboardExtras();
     }
@@ -8684,24 +8845,7 @@
         </div>`;
 
       document.getElementById('pfAddPositionBtn').style.display = 'flex';
-      document.getElementById('pfContent').innerHTML = `
-        <div class="pf-table-wrap">
-          <table class="pf-table">
-            <thead><tr>
-              <th>${t.pfSymbol}</th>
-              <th class="r">${t.pfShares}</th>
-              <th class="r">${t.pfAvgCost}</th>
-              <th class="r">${t.pfPrice}</th>
-              <th class="r">${t.pfCostBasis}</th>
-              <th class="r">${t.pfMktValue}</th>
-              <th class="r">P&L ($)</th>
-              <th class="r">P&L (%)</th>
-              <th class="r">P&L (฿)</th>
-              <th></th>
-            </tr></thead>
-            <tbody>${rows}</tbody>
-          </table>
-        </div>`;
+      document.getElementById('pfContent').innerHTML = `<div class="pf-pos-grid">${rows}</div>`;
     }
 
     // ===== WATCHLIST + SUPABASE SYNC =====
