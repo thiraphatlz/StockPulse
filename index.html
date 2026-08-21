@@ -5810,8 +5810,10 @@
     document.addEventListener('DOMContentLoaded', () => { initEmailJS(); initSupabase(); initApp(); setupEvents(); applyLanguage(); });
 
     function initApp() {
+      syncThailandTime();
+      setInterval(syncThailandTime, 300000); // Re-sync network time every 5 minutes
       updateMarketStatus(); setInterval(updateMarketStatus, 30000);
-      updateMarketClock(); setInterval(updateMarketClock, 10000);
+      updateMarketClock(); setInterval(updateMarketClock, 1000); // 1-second live clock tick
       renderWishlist(); renderSectors(); updateDashboard();
 
       // Load wishlist prices and sectors concurrently
@@ -5860,8 +5862,112 @@
       }, 30000);
     }
 
-    // ===== THAILAND TIME HELPERS (Asia/Bangkok - UTC+7) =====
-    function getBkkTimeParts(date = new Date()) {
+    // ===== REAL-TIME NETWORK CLOCK SYNCHRONIZATION (THAILAND TIME / ICT / UTC+7) =====
+    let _netTimeSyncBase = null;
+    let _netTimeSyncPerf = null;
+    let _isSyncingTime = false;
+
+    function recordNetworkTime(epochMs) {
+      if (!epochMs || isNaN(epochMs)) return;
+      _netTimeSyncBase = Number(epochMs);
+      _netTimeSyncPerf = typeof performance !== 'undefined' && performance.now ? performance.now() : 0;
+      console.log('[TimeSync] Synced real time with network:', new Date(getRealNowMs()).toISOString());
+    }
+
+    function getRealNowMs() {
+      if (_netTimeSyncBase != null && _netTimeSyncPerf != null && typeof performance !== 'undefined' && performance.now) {
+        return _netTimeSyncBase + (performance.now() - _netTimeSyncPerf);
+      }
+      return Date.now();
+    }
+
+    function getRealNow() {
+      return new Date(getRealNowMs());
+    }
+
+    async function syncThailandTime() {
+      if (_isSyncingTime) return;
+      _isSyncingTime = true;
+      try {
+        // 1. Binance Atomic Time API (Global Atomic Clock, <100ms, Full CORS on all origins)
+        try {
+          const r = await fetch('https://api.binance.com/api/v3/time', { signal: AbortSignal.timeout(3000) });
+          if (r.ok) {
+            const d = await r.json();
+            if (d && d.serverTime && typeof d.serverTime === 'number') {
+              recordNetworkTime(d.serverTime);
+              _isSyncingTime = false;
+              updateGreeting();
+              updateMarketClock();
+              updateMarketStatus();
+              updateLastRefresh();
+              return;
+            }
+          }
+        } catch (e) { }
+
+        // 2. Kraken Atomic Time API (Global Exchange Atomic Time, Full CORS)
+        try {
+          const r = await fetch('https://api.kraken.com/0/public/Time', { signal: AbortSignal.timeout(3000) });
+          if (r.ok) {
+            const d = await r.json();
+            if (d && d.result && d.result.unixtime) {
+              recordNetworkTime(d.result.unixtime * 1000);
+              _isSyncingTime = false;
+              updateGreeting();
+              updateMarketClock();
+              updateMarketStatus();
+              updateLastRefresh();
+              return;
+            }
+          }
+        } catch (e) { }
+
+        // 3. timeapi.io (Timezone API)
+        try {
+          const r = await fetch('https://timeapi.io/api/v1/time/current/zone?timeZone=Asia/Bangkok', { signal: AbortSignal.timeout(3000) });
+          if (r.ok) {
+            const d = await r.json();
+            const dateStr = d.date_time || d.dateTime;
+            if (dateStr) {
+              const ms = Date.parse(dateStr);
+              if (ms && !isNaN(ms)) {
+                recordNetworkTime(ms);
+                _isSyncingTime = false;
+                updateGreeting();
+                updateMarketClock();
+                updateMarketStatus();
+                updateLastRefresh();
+                return;
+              }
+            }
+          }
+        } catch (e) { }
+
+        // 4. Serverless API endpoint (when hosted on Vercel/Node)
+        try {
+          const r = await fetch('/api/time', { cache: 'no-store', signal: AbortSignal.timeout(2000) });
+          if (r.ok) {
+            const d = await r.json();
+            if (d && d.unixtime) {
+              recordNetworkTime(d.unixtime);
+              _isSyncingTime = false;
+              updateGreeting();
+              updateMarketClock();
+              updateMarketStatus();
+              updateLastRefresh();
+              return;
+            }
+          }
+        } catch (e) { }
+      } catch (err) {
+        console.error('Time sync error:', err);
+      } finally {
+        _isSyncingTime = false;
+      }
+    }
+
+    function getBkkTimeParts(date = getRealNow()) {
       try {
         const parts = new Intl.DateTimeFormat('en-US', {
           timeZone: 'Asia/Bangkok',
@@ -5901,7 +6007,7 @@
       }
     }
 
-    function getBkkDateKey(date = new Date()) {
+    function getBkkDateKey(date = getRealNow()) {
       try {
         return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok' }).format(date);
       } catch (e) {
@@ -5915,7 +6021,7 @@
       const t = I18N[S.lang] || I18N.en;
       document.getElementById('dashGreeting').textContent = h < 12 ? t.gMorning : h < 17 ? t.gAfternoon : t.gEvening;
       const loc = S.lang === 'th' ? 'th-TH' : 'en-US';
-      document.getElementById('dashDate').textContent = new Date().toLocaleDateString(loc, {
+      document.getElementById('dashDate').textContent = getRealNow().toLocaleDateString(loc, {
         timeZone: 'Asia/Bangkok',
         weekday: 'long',
         year: 'numeric',
@@ -5926,7 +6032,7 @@
     function updateLastRefresh() {
       const el = document.getElementById('lastUpdateText');
       if (el) {
-        el.textContent = new Date().toLocaleTimeString(S.lang === 'th' ? 'th-TH' : 'en-US', {
+        el.textContent = getRealNow().toLocaleTimeString(S.lang === 'th' ? 'th-TH' : 'en-US', {
           timeZone: 'Asia/Bangkok',
           hour: '2-digit',
           minute: '2-digit',
@@ -6668,7 +6774,7 @@
           S.quote = q;
           renderQuote(q);
           if (currentChartRange === '1D') {
-            const time = (q.t || Math.floor(Date.now() / 1000)) + (7 * 3600);
+            const time = (q.t || Math.floor(getRealNowMs() / 1000)) + (7 * 3600);
             if (time >= lastChartTime) {
               try {
                 if (areaSeries) areaSeries.update({ time: time, value: q.c });
@@ -7027,7 +7133,7 @@
       // 3. Fallback to Finnhub candle API for US stocks
       if (!sym.endsWith('.BK') && !sym.endsWith('.TH')) {
         try {
-          const now = Math.floor(Date.now() / 1000);
+          const now = Math.floor(getRealNowMs() / 1000);
           let res = 'D', from = now - 40 * 86400;
           if (range === '1d') { res = '5'; from = now - 2 * 86400; }
           else if (range === '5d') { res = '60'; from = now - 8 * 86400; }
@@ -7460,11 +7566,11 @@
         const dStr = new Intl.DateTimeFormat('en-US', {
           timeZone: 'America/New_York',
           timeZoneName: 'short'
-        }).format(new Date());
+        }).format(getRealNow());
         return dStr.includes('EDT') || dStr.includes('GMT-4');
       } catch (e) {
         // Fallback: In US, DST starts 2nd Sunday of March (02:00 EST / 07:00 UTC) and ends 1st Sunday of November (02:00 EDT / 06:00 UTC)
-        const now = new Date();
+        const now = getRealNow();
         const year = now.getUTCFullYear();
         const marchFirst = new Date(Date.UTC(year, 2, 1));
         const marchFirstDay = marchFirst.getUTCDay();
@@ -7547,8 +7653,8 @@
       };
       const setInfo = setTimes[sset] || setTimes.closed;
 
-      const usTimeStr = new Date().toLocaleTimeString('en-US', { timeZone: 'America/New_York', hour: '2-digit', minute: '2-digit' }) + ' ' + usTz;
-      const setTimeStr = new Date().toLocaleTimeString('th-TH', { timeZone: 'Asia/Bangkok', hour: '2-digit', minute: '2-digit' }) + ' ICT';
+      const usTimeStr = getRealNow().toLocaleTimeString('en-US', { timeZone: 'America/New_York', hour: '2-digit', minute: '2-digit', hour12: false }) + ' ' + usTz;
+      const setTimeStr = getRealNow().toLocaleTimeString('th-TH', { timeZone: 'Asia/Bangkok', hour: '2-digit', minute: '2-digit', hour12: false }) + (isTh ? ' น.' : ' ICT');
       const usMktLbl = isTh ? '🇺🇸 ตลาดหุ้นสหรัฐฯ (NYSE/NASDAQ)' : '🇺🇸 US Market (NYSE/NASDAQ)';
       const setMktLbl = isTh ? '🇹🇭 ตลาดหุ้นไทย (SET)' : '🇹🇭 SET Market (Thailand)';
 
@@ -7683,7 +7789,7 @@
           hour: 'numeric',
           minute: 'numeric',
           weekday: 'short'
-        }).formatToParts(new Date());
+        }).formatToParts(getRealNow());
         const map = {};
         parts.forEach(p => map[p.type] = p.value);
         if (map.weekday === 'Sun' || map.weekday === 'Sat') return 'closed';
@@ -7891,7 +7997,7 @@
         direction: dirLabel,
         target_price: cs + Number(targetPrice).toFixed(2),
         current_price: cs + Number(currentPrice).toFixed(2),
-        timestamp: new Date().toLocaleString(S.lang === 'th' ? 'th-TH' : 'en-US', { timeZone: 'Asia/Bangkok', dateStyle: 'medium', timeStyle: 'short' }) + ' ICT'
+        timestamp: getRealNow().toLocaleString(S.lang === 'th' ? 'th-TH' : 'en-US', { timeZone: 'Asia/Bangkok', dateStyle: 'medium', timeStyle: 'short', hour12: false }) + ' ICT'
       };
       if (typeof emailjs !== 'undefined' && EMAILJS_PUBLIC_KEY && EMAILJS_PUBLIC_KEY !== 'YOUR_PUBLIC_KEY') {
         try {
@@ -7925,7 +8031,7 @@
 
     // ===== PRE-MARKET SECTOR FLOW & TOP MOVERS REPORT =====
     function getPreMarketScheduleInfo() {
-      const now = new Date();
+      const now = getRealNow();
       const dst = isUSDST();
       // Target time: 15 min before regular US market open
       // DST (EDT): US open 20:30 BKK -> Pre-Market Briefing at 20:15 BKK
@@ -8053,8 +8159,8 @@
 
       const detailedSectors = sectorDetails.filter(r => r.status === 'fulfilled').map(r => r.value);
 
-      const now = new Date();
-      const timeStr = now.toLocaleTimeString('th-TH', { timeZone: 'Asia/Bangkok', hour: '2-digit', minute: '2-digit' }) + ' น. ICT';
+      const now = getRealNow();
+      const timeStr = now.toLocaleTimeString('th-TH', { timeZone: 'Asia/Bangkok', hour: '2-digit', minute: '2-digit', hour12: false }) + ' น. ICT';
       const dateStr = now.toLocaleDateString('th-TH', { timeZone: 'Asia/Bangkok', weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' });
 
       // Plain Text Summary
@@ -8506,10 +8612,15 @@
 
     // --- Exchange Rate ---
     async function fetchUsdThb() {
-      const now = Date.now();
+      const now = getRealNowMs();
       if (PF.usdThb && now - PF.usdThbTs < 10 * 60 * 1000) return PF.usdThb; // cache 10 min
       try {
         const r = await fetch('https://open.er-api.com/v6/latest/USD');
+        const dateHeader = r.headers.get('date');
+        if (dateHeader) {
+          const ms = Date.parse(dateHeader);
+          if (ms && !isNaN(ms)) recordNetworkTime(ms);
+        }
         const d = await r.json();
         if (d.rates && d.rates.THB) {
           PF.usdThb = d.rates.THB;
@@ -8517,7 +8628,7 @@
           const el = document.getElementById('pfUsdThbRate');
           if (el) el.textContent = PF.usdThb.toFixed(2);
           const te = document.getElementById('pfRateTime');
-          if (te) te.textContent = 'Updated ' + new Date().toLocaleTimeString('th-TH', { timeZone: 'Asia/Bangkok', hour: '2-digit', minute: '2-digit' }) + ' ICT';
+          if (te) te.textContent = 'Updated ' + getRealNow().toLocaleTimeString('th-TH', { timeZone: 'Asia/Bangkok', hour: '2-digit', minute: '2-digit', hour12: false }) + ' ICT';
           return PF.usdThb;
         }
       } catch (e) { console.error('Exchange rate fetch error:', e); }
