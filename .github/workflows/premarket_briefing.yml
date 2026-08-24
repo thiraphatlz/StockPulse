@@ -1,0 +1,30 @@
+name: Daily Pre-Market Briefing Alert
+
+on:
+  schedule:
+    # 13:15 UTC = 20:15 Bangkok (EDT Daylight Saving Time)
+    # 14:15 UTC = 21:15 Bangkok (EST Standard Time)
+    # Runs Monday to Friday
+    - cron: '15 13 * * 1-5'
+    - cron: '15 14 * * 1-5'
+  workflow_dispatch: # Allows manual trigger from GitHub UI anytime
+
+jobs:
+  send-briefing:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Run Pre-Market Briefing Script
+        run: node scripts/send_premarket_briefing.js
+        env:
+          EMAILJS_PUBLIC_KEY: ${{ secrets.EMAILJS_PUBLIC_KEY || '8EBack4zwyOa1x49O' }}
+          EMAILJS_SERVICE_ID: ${{ secrets.EMAILJS_SERVICE_ID || 'service_u55ha9b' }}
+          EMAILJS_PREMARKET_TEMPLATE_ID: ${{ secrets.EMAILJS_PREMARKET_TEMPLATE_ID || 'template_2mgjigz' }}
+          ALERT_EMAIL: ${{ secrets.ALERT_EMAIL || 'thiraphatlaohiao1@gmail.com' }}

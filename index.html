@@ -5967,6 +5967,15 @@
       }
     }
 
+    function getBkkDateKey(date = getRealNow()) {
+      try {
+        return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok' }).format(date);
+      } catch (e) {
+        const d = new Date(date.getTime() + (7 * 3600000) + (date.getTimezoneOffset() * 60000));
+        return d.toISOString().slice(0, 10);
+      }
+    }
+
     function getBkkTimeParts(date = getRealNow()) {
       try {
         const parts = new Intl.DateTimeFormat('en-US', {
@@ -5990,7 +5999,7 @@
           minute: parseInt(map.minute, 10),
           second: parseInt(map.second, 10),
           weekday: map.weekday,
-          dateKey: `${map.year}-${map.month}-${map.day}`
+          dateKey: getBkkDateKey(date)
         };
       } catch (e) {
         const d = new Date(date.getTime() + (7 * 3600000) + (date.getTimezoneOffset() * 60000));
@@ -6004,14 +6013,6 @@
           weekday: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getUTCDay()],
           dateKey: d.toISOString().slice(0, 10)
         };
-      }
-    }
-
-    function getBkkDateKey(date = getRealNow()) {
-      try {
-        return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok' }).format(date);
-      } catch (e) {
-        return getBkkTimeParts(date).dateKey;
       }
     }
 
@@ -8032,33 +8033,44 @@
     // ===== PRE-MARKET SECTOR FLOW & TOP MOVERS REPORT =====
     function getPreMarketScheduleInfo() {
       const now = getRealNow();
-      const dst = isUSDST();
+      const dst = isUSDST(now);
       // Target time: 15 min before regular US market open
       // DST (EDT): US open 20:30 BKK -> Pre-Market Briefing at 20:15 BKK
       // Non-DST (EST): US open 21:30 BKK -> Pre-Market Briefing at 21:15 BKK
       const targetHourBkk = dst ? 20 : 21;
       const targetMinBkk = 15;
-      const openHourBkk = dst ? 20 : 21;
-      const openMinBkk = 30;
+      const targetTotalMin = targetHourBkk * 60 + targetMinBkk; // e.g. 20*60+15 = 1215
 
       const bkk = getBkkTimeParts(now);
       const bkkHour = bkk.hour;
       const bkkMin = bkk.minute;
-      const isWeekday = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'].includes(bkk.weekday);
-      const dateKey = bkk.dateKey;
-
       const curTotalMin = bkkHour * 60 + bkkMin;
-      const targetTotalMin = targetHourBkk * 60 + targetMinBkk; // e.g. 20*60+15 = 1215
-      const openTotalMin = openHourBkk * 60 + openMinBkk; // e.g. 20*60+30 = 1230
 
-      // Active window: from target time (20:15) until market open (20:30) and up to +20 min after open (20:50)
-      const isEligibleTime = isWeekday && (curTotalMin >= targetTotalMin && curTotalMin <= (openTotalMin + 20));
+      // Determine active trading day session
+      // In BKK timezone:
+      // Mon-Fri: evening from 20:15 onwards is the premarket / market session for that date.
+      // Tue-Sat early morning (00:00 to 06:00): continuation of previous day's evening US session.
+      let targetDateKey = bkk.dateKey;
+      let isEligibleTime = false;
+
+      const isWeekdayEvening = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'].includes(bkk.weekday) && curTotalMin >= targetTotalMin;
+      const isLateNightContinuation = ['Tue', 'Wed', 'Thu', 'Fri', 'Sat'].includes(bkk.weekday) && bkkHour < 6;
+
+      if (isWeekdayEvening) {
+        targetDateKey = bkk.dateKey;
+        isEligibleTime = true;
+      } else if (isLateNightContinuation) {
+        const prevDay = new Date(now.getTime() - 24 * 3600000);
+        targetDateKey = getBkkDateKey(prevDay);
+        isEligibleTime = true;
+      }
 
       return {
-        isWeekday,
+        isWeekday: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'].includes(bkk.weekday),
         bkkHour,
         bkkMin,
-        dateKey,
+        dateKey: targetDateKey,
+        targetDateKey,
         targetHourBkk,
         targetMinBkk,
         timeLabel: `${targetHourBkk}:${targetMinBkk < 10 ? '0' : ''}${targetMinBkk} น.`,
@@ -8075,13 +8087,12 @@
       }
       if (!el) return;
 
-      const dateKey = getBkkDateKey();
       const lastSent = localStorage.getItem('stockpulse_premarket_sent_date');
       const lastTime = localStorage.getItem('stockpulse_premarket_sent_time');
 
       if (!S.premarketAlert) {
         el.innerHTML = `<span style="color:var(--text-muted);">⚪ ปิดการใช้งาน</span>`;
-      } else if (lastSent === dateKey) {
+      } else if (lastSent === sched.targetDateKey) {
         el.innerHTML = `<span style="color:var(--green);">🟢 ส่งแล้ววันนี้ (${lastTime || 'สำเร็จ'})</span> <a onclick="resetPreMarketBriefingSentToday()" style="color:var(--accent-light); cursor:pointer; text-decoration:underline; margin-left:6px;">รีเซ็ตเพื่อส่งใหม่</a>`;
       } else if (sched.isEligibleTime) {
         el.innerHTML = `<span style="color:var(--amber);">⚡ ถึงเวลาส่งแล้ว (กำลังดำเนินการ / คลิกส่งได้ทันที)</span>`;
@@ -8099,26 +8110,38 @@
     }
 
     async function generatePreMarketReport() {
-      // 1. Fetch Sector ETF Quotes in parallel
-      const sectorResults = await Promise.allSettled(SECTORS.map(async s => {
-        try {
-          const q = await fetchQ(s.etf);
-          return { ...s, quote: q };
-        } catch (e) {
-          return { ...s, quote: null };
-        }
-      }));
+      // 1. Fetch Sector ETF Quotes in small batches (5 per batch)
+      const sectorResults = [];
+      const batchSize = 5;
+      for (let i = 0; i < SECTORS.length; i += batchSize) {
+        const chunk = SECTORS.slice(i, i + batchSize);
+        const chunkRes = await Promise.allSettled(chunk.map(async s => {
+          try {
+            const q = await fetchQ(s.etf);
+            return { ...s, quote: q };
+          } catch (e) {
+            return { ...s, quote: null };
+          }
+        }));
+        chunkRes.forEach(r => {
+          if (r.status === 'fulfilled') sectorResults.push(r.value);
+        });
+      }
 
       const validSectors = sectorResults
-        .filter(r => r.status === 'fulfilled' && r.value.quote && r.value.quote.c)
-        .map(r => ({
-          id: r.value.id,
-          name: r.value.name,
-          etf: r.value.etf,
-          price: r.value.quote.c,
-          dp: r.value.quote.dp || 0,
-          tickers: r.value.tickers || []
-        }))
+        .filter(r => r && r.quote && (r.quote.c || r.quote.preMarketPrice))
+        .map(r => {
+          const price = r.quote.preMarketPrice ?? r.quote.c ?? 0;
+          const dp = r.quote.preMarketChangePercent ?? r.quote.dp ?? 0;
+          return {
+            id: r.id,
+            name: r.name,
+            etf: r.etf,
+            price: Number(price),
+            dp: Number(dp),
+            tickers: r.tickers || []
+          };
+        })
         .sort((a, b) => b.dp - a.dp);
 
       if (!validSectors.length) return null;
@@ -8126,38 +8149,44 @@
       const leadingSector = validSectors[0];
       const laggingSector = validSectors[validSectors.length - 1];
 
-      // 2. Fetch constituent stock prices for all sectors (top 3 gainers/losers each)
-      const sectorDetails = await Promise.allSettled(validSectors.map(async sec => {
-        const tickerResults = await Promise.allSettled(sec.tickers.map(async sym => {
-          try {
-            const q = await fetchQ(sym);
-            return { symbol: sym, quote: q };
-          } catch (e) {
-            return { symbol: sym, quote: null };
-          }
-        }));
+      // 2. Fetch constituent stock prices for all sectors in controlled batches
+      const detailedSectors = [];
+      for (const sec of validSectors) {
+        const tickerQuotes = [];
+        for (let i = 0; i < sec.tickers.length; i += 4) {
+          const chunk = sec.tickers.slice(i, i + 4);
+          const chunkRes = await Promise.allSettled(chunk.map(async sym => {
+            try {
+              const q = await fetchQ(sym);
+              return { symbol: sym, quote: q };
+            } catch (e) {
+              return { symbol: sym, quote: null };
+            }
+          }));
+          chunkRes.forEach(r => {
+            if (r.status === 'fulfilled' && r.value.quote && (r.value.quote.c || r.value.quote.preMarketPrice)) {
+              const price = r.value.quote.preMarketPrice ?? r.value.quote.c ?? 0;
+              const dp = r.value.quote.preMarketChangePercent ?? r.value.quote.dp ?? 0;
+              tickerQuotes.push({
+                symbol: r.value.symbol,
+                price: Number(price),
+                dp: Number(dp)
+              });
+            }
+          });
+        }
 
-        const rankedTickers = tickerResults
-          .filter(r => r.status === 'fulfilled' && r.value.quote && r.value.quote.c)
-          .map(r => ({
-            symbol: r.value.symbol,
-            price: r.value.quote.c,
-            dp: r.value.quote.dp || 0
-          }))
-          .sort((a, b) => b.dp - a.dp);
-
+        const rankedTickers = tickerQuotes.sort((a, b) => b.dp - a.dp);
         const gainers = rankedTickers.filter(t => t.dp > 0).slice(0, 3);
         const losers = [...rankedTickers].reverse().filter(t => t.dp < 0).slice(0, 3);
 
-        return {
+        detailedSectors.push({
           ...sec,
           topGainers: gainers,
           topLosers: losers,
           allRanked: rankedTickers
-        };
-      }));
-
-      const detailedSectors = sectorDetails.filter(r => r.status === 'fulfilled').map(r => r.value);
+        });
+      }
 
       const now = getRealNow();
       const timeStr = now.toLocaleTimeString('th-TH', { timeZone: 'Asia/Bangkok', hour: '2-digit', minute: '2-digit', hour12: false }) + ' น. ICT';
@@ -8278,17 +8307,18 @@
           timestamp: report.timeStr
         };
 
+        const sched = getPreMarketScheduleInfo();
+        const saveDateKey = sched.targetDateKey || getBkkDateKey();
+
         if (typeof emailjs !== 'undefined' && EMAILJS_PUBLIC_KEY && EMAILJS_PUBLIC_KEY !== 'YOUR_PUBLIC_KEY') {
           await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_PREMARKET_TEMPLATE_ID, params);
-          const dateKey = getBkkDateKey();
-          localStorage.setItem('stockpulse_premarket_sent_date', dateKey);
+          localStorage.setItem('stockpulse_premarket_sent_date', saveDateKey);
           localStorage.setItem('stockpulse_premarket_sent_time', report.timeStr);
           updateSettingsPremarketStatus();
           showToast(`🚀 Pre-Market Briefing sent to ${email}!`, 'success');
         } else {
           console.log('[Pre-Market Briefing Report]:', params);
-          const dateKey = getBkkDateKey();
-          localStorage.setItem('stockpulse_premarket_sent_date', dateKey);
+          localStorage.setItem('stockpulse_premarket_sent_date', saveDateKey);
           localStorage.setItem('stockpulse_premarket_sent_time', report.timeStr);
           updateSettingsPremarketStatus();
           showToast('🚀 Pre-Market Briefing generated! (EmailJS logged)', 'success');
@@ -8309,7 +8339,7 @@
       if (!sched.isEligibleTime) return;
 
       const lastSent = localStorage.getItem('stockpulse_premarket_sent_date');
-      if (lastSent === sched.dateKey) {
+      if (lastSent === sched.targetDateKey) {
         return; // Already sent successfully today
       }
 
@@ -8320,7 +8350,7 @@
 
       if (_isSendingPreMarketBriefing) return;
 
-      console.log(`[Auto Scheduler] Triggering Pre-Market Briefing (${sched.timeLabel}) for ${sched.dateKey}...`);
+      console.log(`[Auto Scheduler] Triggering Pre-Market Briefing (${sched.timeLabel}) for ${sched.targetDateKey}...`);
       await sendPreMarketBriefingEmail(false);
     }
 
