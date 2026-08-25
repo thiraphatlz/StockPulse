@@ -7,6 +7,49 @@ const EMAILJS_PUBLIC_KEY = process.env.EMAILJS_PUBLIC_KEY || '8EBack4zwyOa1x49O'
 const EMAILJS_SERVICE_ID = process.env.EMAILJS_SERVICE_ID || 'service_u55ha9b';
 const EMAILJS_PREMARKET_TEMPLATE_ID = process.env.EMAILJS_PREMARKET_TEMPLATE_ID || 'template_2mgjigz';
 const ALERT_EMAIL = process.env.ALERT_EMAIL || 'thiraphatlaohiao1@gmail.com';
+const SUPABASE_URL = process.env.SUPABASE_URL || 'https://pxxtyzphnbbxrogikotc.supabase.co';
+const SUPABASE_ANON = process.env.SUPABASE_ANON || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4eHR5enBobmJieHJvZ2lrb3RjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY3Njg0NTQsImV4cCI6MjEwMjM0NDQ1NH0.w0tui-y9KFY-6qqZfM8ol2b3EuR3LP0sXZRjIYM6xVc';
+
+export async function checkPremarketSentInSupabase(dateKey) {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/alerts?symbol=eq.__SYS_PREMARKET__&select=*&limit=1`, {
+      headers: { apikey: SUPABASE_ANON, Authorization: `Bearer ${SUPABASE_ANON}` }
+    });
+    if (res.ok) {
+      const rows = await res.json();
+      if (rows && rows.length && rows[0].name) {
+        const parts = rows[0].name.split('|');
+        if (parts[0] === dateKey) return true;
+      }
+    }
+  } catch (e) { }
+  return false;
+}
+
+export async function syncPremarketSentToSupabase(dateKey, timeStr) {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/alerts`, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_ANON,
+        Authorization: `Bearer ${SUPABASE_ANON}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'resolution=merge-duplicates'
+      },
+      body: JSON.stringify({
+        symbol: '__SYS_PREMARKET__',
+        direction: 'above',
+        price: Date.now(),
+        name: `${dateKey}|${timeStr}`
+      })
+    });
+    if (res.ok) {
+      console.log(`[StockPulse] ✅ Synced pre-market sent state (${dateKey}) to Supabase.`);
+    }
+  } catch (e) {
+    console.warn('[StockPulse] Supabase sync warning:', e.message);
+  }
+}
 
 const SECTORS = [
   { id: 'tech', name: 'Technology', etf: 'XLK', tickers: ['AAPL', 'MSFT', 'NVDA', 'META', 'GOOGL', 'AVGO', 'AMD', 'INTC', 'ORCL', 'CRM'] },
@@ -254,6 +297,13 @@ export async function sendEmailJSBriefing(report, targetEmail = ALERT_EMAIL) {
   }
 
   console.log(`[StockPulse] ✅ Pre-Market Briefing email successfully delivered to ${targetEmail}!`);
+  
+  // Sync to Supabase so website and all devices know it has already been sent today
+  try {
+    const dateKey = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok' }).format(new Date());
+    await syncPremarketSentToSupabase(dateKey, report.timeStr);
+  } catch (e) { }
+
   return true;
 }
 
@@ -272,6 +322,12 @@ if (import.meta.url === `file://${process.argv[1]}` || process.argv[1]?.endsWith
 
       if (!isManual && Math.abs(utcHour - targetUtcHour) > 0) {
         console.log(`[Cron Guard] Current UTC hour (${utcHour}) is not target UTC hour (${targetUtcHour}). Skipping execution.`);
+        process.exit(0);
+      }
+
+      const dateKey = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok' }).format(now);
+      if (!isManual && await checkPremarketSentInSupabase(dateKey)) {
+        console.log(`[Cron Guard] Pre-Market Briefing already sent today (${dateKey}). Skipping duplicate send.`);
         process.exit(0);
       }
 

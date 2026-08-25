@@ -1,4 +1,4 @@
-import { generatePreMarketReportData, sendEmailJSBriefing } from '../scripts/send_premarket_briefing.js';
+import { generatePreMarketReportData, sendEmailJSBriefing, checkPremarketSentInSupabase } from '../scripts/send_premarket_briefing.js';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Credentials', 'true');
@@ -9,6 +9,17 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   try {
+    const isForce = req.query.force === 'true' || req.query.force === '1';
+    const dateKey = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok' }).format(new Date());
+
+    if (!isForce && await checkPremarketSentInSupabase(dateKey)) {
+      return res.status(200).json({
+        success: true,
+        message: `Pre-Market Briefing already sent today (${dateKey}). Skipped duplicate send.`,
+        dateKey
+      });
+    }
+
     const report = await generatePreMarketReportData();
     const targetEmail = req.query.email || process.env.ALERT_EMAIL || 'thiraphatlaohiao1@gmail.com';
     await sendEmailJSBriefing(report, targetEmail);

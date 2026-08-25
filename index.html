@@ -5823,9 +5823,16 @@
       ]);
 
       startAutoRefresh(); updateLastRefresh();
-      checkAndSendDailyPreMarketBriefing();
 
-      // Listen for tab focus/visibility to immediately trigger pre-market briefing if due
+      // Load alerts from Supabase then subscribe for real-time cross-device sync
+      loadAlerts().then(() => {
+        renderDashboardAlerts();
+        updateAlertStats();
+        checkAndSendDailyPreMarketBriefing();
+      });
+      subscribeAlerts();
+
+      // Listen for tab focus/visibility to trigger pre-market briefing if currently within active 20:15 window
       document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible') {
           checkAndSendDailyPreMarketBriefing();
@@ -5834,10 +5841,6 @@
       window.addEventListener('focus', () => {
         checkAndSendDailyPreMarketBriefing();
       });
-
-      // Load alerts from Supabase then subscribe for real-time cross-device sync
-      loadAlerts().then(() => { renderDashboardAlerts(); updateAlertStats(); });
-      subscribeAlerts();
 
       // Initialize desktop sidebar collapse state
       const savedCollapse = localStorage.getItem('stockpulse_sidebar_collapsed');
@@ -8046,27 +8049,18 @@
       const bkkMin = bkk.minute;
       const curTotalMin = bkkHour * 60 + bkkMin;
 
-      // Determine active trading day session
-      // In BKK timezone:
-      // Mon-Fri: evening from 20:15 onwards is the premarket / market session for that date.
-      // Tue-Sat early morning (00:00 to 06:00): continuation of previous day's evening US session.
-      let targetDateKey = bkk.dateKey;
-      let isEligibleTime = false;
+      const isWeekday = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'].includes(bkk.weekday);
+      const targetDateKey = bkk.dateKey || getBkkDateKey(now);
 
-      const isWeekdayEvening = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'].includes(bkk.weekday) && curTotalMin >= targetTotalMin;
-      const isLateNightContinuation = ['Tue', 'Wed', 'Thu', 'Fri', 'Sat'].includes(bkk.weekday) && bkkHour < 6;
-
-      if (isWeekdayEvening) {
-        targetDateKey = bkk.dateKey;
-        isEligibleTime = true;
-      } else if (isLateNightContinuation) {
-        const prevDay = new Date(now.getTime() - 24 * 3600000);
-        targetDateKey = getBkkDateKey(prevDay);
-        isEligibleTime = true;
-      }
+      // Auto-trigger eligibility:
+      // 1. Must be a weekday (Mon-Fri)
+      // 2. Current time must be within the active pre-market window [targetTotalMin, targetTotalMin + 45] (e.g. 20:15 - 21:00 BKK)
+      // This ensures opening the site late at night (e.g. 23:00 or next morning) will NOT blindly auto-send an obsolete email.
+      const isTimeReached = isWeekday && (curTotalMin >= targetTotalMin);
+      const isWithinActiveWindow = isWeekday && (curTotalMin >= targetTotalMin && curTotalMin <= (targetTotalMin + 45));
 
       return {
-        isWeekday: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'].includes(bkk.weekday),
+        isWeekday,
         bkkHour,
         bkkMin,
         dateKey: targetDateKey,
@@ -8074,8 +8068,59 @@
         targetHourBkk,
         targetMinBkk,
         timeLabel: `${targetHourBkk}:${targetMinBkk < 10 ? '0' : ''}${targetMinBkk} น.`,
-        isEligibleTime
+        isTimeReached,
+        isEligibleTime: isWithinActiveWindow
       };
+    }
+
+    async function loadPreMarketSentStateFromSupabase() {
+      if (!SB) return;
+      try {
+        const { data, error } = await SB.from('alerts').select('*').eq('symbol', '__SYS_PREMARKET__').maybeSingle();
+        if (!error && data && data.name) {
+          const parts = data.name.split('|');
+          const sentDate = parts[0] || '';
+          const sentTime = parts[1] || '';
+          if (sentDate) {
+            localStorage.setItem('stockpulse_premarket_sent_date', sentDate);
+            if (sentTime) localStorage.setItem('stockpulse_premarket_sent_time', sentTime);
+            updateSettingsPremarketStatus();
+          }
+        }
+      } catch (e) {
+        console.warn('[Premarket Sync Error]:', e);
+      }
+    }
+
+    async function markPreMarketSentToSupabase(dateKey, timeStr) {
+      localStorage.setItem('stockpulse_premarket_sent_date', dateKey);
+      localStorage.setItem('stockpulse_premarket_sent_time', timeStr);
+      updateSettingsPremarketStatus();
+      if (SB) {
+        try {
+          await SB.from('alerts').upsert({
+            symbol: '__SYS_PREMARKET__',
+            direction: 'above',
+            price: Date.now(),
+            name: `${dateKey}|${timeStr}`
+          }, { onConflict: 'symbol,direction' });
+        } catch (e) {
+          console.warn('[Supabase Premarket Save Error]:', e);
+        }
+      }
+    }
+
+    async function clearPreMarketSentFromSupabase() {
+      localStorage.removeItem('stockpulse_premarket_sent_date');
+      localStorage.removeItem('stockpulse_premarket_sent_time');
+      updateSettingsPremarketStatus();
+      if (SB) {
+        try {
+          await SB.from('alerts').delete().eq('symbol', '__SYS_PREMARKET__');
+        } catch (e) {
+          console.warn('[Supabase Premarket Clear Error]:', e);
+        }
+      }
     }
 
     function updateSettingsPremarketStatus() {
@@ -8095,15 +8140,14 @@
       } else if (lastSent === sched.targetDateKey) {
         el.innerHTML = `<span style="color:var(--green);">🟢 ส่งแล้ววันนี้ (${lastTime || 'สำเร็จ'})</span> <a onclick="resetPreMarketBriefingSentToday()" style="color:var(--accent-light); cursor:pointer; text-decoration:underline; margin-left:6px;">รีเซ็ตเพื่อส่งใหม่</a>`;
       } else if (sched.isEligibleTime) {
-        el.innerHTML = `<span style="color:var(--amber);">⚡ ถึงเวลาส่งแล้ว (กำลังดำเนินการ / คลิกส่งได้ทันที)</span>`;
+        el.innerHTML = `<span style="color:var(--amber);">⚡ ถึงเวลาส่งแล้ว (${sched.timeLabel}) — พร้อมส่งอัตโนมัติ</span>`;
       } else {
         el.innerHTML = `<span style="color:var(--text-secondary);">⏰ กำหนดส่งรอบถัดไป: วันทำการ เวลา ${sched.timeLabel}</span>`;
       }
     }
 
-    function resetPreMarketBriefingSentToday() {
-      localStorage.removeItem('stockpulse_premarket_sent_date');
-      localStorage.removeItem('stockpulse_premarket_sent_time');
+    async function resetPreMarketBriefingSentToday() {
+      await clearPreMarketSentFromSupabase();
       updateSettingsPremarketStatus();
       showToast('🔄 Reset pre-market status for today. Triggering send...', 'success');
       sendPreMarketBriefingEmail(true);
@@ -8312,15 +8356,11 @@
 
         if (typeof emailjs !== 'undefined' && EMAILJS_PUBLIC_KEY && EMAILJS_PUBLIC_KEY !== 'YOUR_PUBLIC_KEY') {
           await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_PREMARKET_TEMPLATE_ID, params);
-          localStorage.setItem('stockpulse_premarket_sent_date', saveDateKey);
-          localStorage.setItem('stockpulse_premarket_sent_time', report.timeStr);
-          updateSettingsPremarketStatus();
+          await markPreMarketSentToSupabase(saveDateKey, report.timeStr);
           showToast(`🚀 Pre-Market Briefing sent to ${email}!`, 'success');
         } else {
           console.log('[Pre-Market Briefing Report]:', params);
-          localStorage.setItem('stockpulse_premarket_sent_date', saveDateKey);
-          localStorage.setItem('stockpulse_premarket_sent_time', report.timeStr);
-          updateSettingsPremarketStatus();
+          await markPreMarketSentToSupabase(saveDateKey, report.timeStr);
           showToast('🚀 Pre-Market Briefing generated! (EmailJS logged)', 'success');
         }
         _isSendingPreMarketBriefing = false;
@@ -8333,14 +8373,33 @@
       }
     }
 
-    async function checkAndSendDailyPreMarketBriefing() {
-      if (!S.premarketAlert) return;
+    async function checkAndSendDailyPreMarketBriefing(isManual = false) {
+      if (!isManual && !S.premarketAlert) return;
       const sched = getPreMarketScheduleInfo();
-      if (!sched.isEligibleTime) return;
+      
+      // Auto mode: Only trigger on weekdays within the active 20:15 pre-market window
+      if (!isManual && (!sched.isWeekday || !sched.isEligibleTime)) return;
 
+      // 1. Check local cache first
       const lastSent = localStorage.getItem('stockpulse_premarket_sent_date');
-      if (lastSent === sched.targetDateKey) {
-        return; // Already sent successfully today
+      if (!isManual && lastSent === sched.targetDateKey) {
+        return; // Already sent today
+      }
+
+      // 2. Check Supabase shared record across all devices to prevent race conditions & duplicate sends
+      if (!isManual && SB) {
+        try {
+          const { data } = await SB.from('alerts').select('*').eq('symbol', '__SYS_PREMARKET__').maybeSingle();
+          if (data && data.name) {
+            const parts = data.name.split('|');
+            if (parts[0] === sched.targetDateKey) {
+              localStorage.setItem('stockpulse_premarket_sent_date', parts[0]);
+              if (parts[1]) localStorage.setItem('stockpulse_premarket_sent_time', parts[1]);
+              updateSettingsPremarketStatus();
+              return; // Already sent today on another device or via automated cron!
+            }
+          }
+        } catch (e) { }
       }
 
       if (!S.alertEmail) {
@@ -8351,7 +8410,7 @@
       if (_isSendingPreMarketBriefing) return;
 
       console.log(`[Auto Scheduler] Triggering Pre-Market Briefing (${sched.timeLabel}) for ${sched.targetDateKey}...`);
-      await sendPreMarketBriefingEmail(false);
+      await sendPreMarketBriefingEmail(isManual);
     }
 
     // ===== PRICE ALERTS — Supabase-backed (cross-device real-time sync) =====
@@ -8367,6 +8426,16 @@
         const { data } = await SB.from('alerts').select('*');
         const map = {};
         (data || []).forEach(r => {
+          if (r.symbol === '__SYS_PREMARKET__') {
+            const parts = (r.name || '').split('|');
+            if (parts[0]) {
+              localStorage.setItem('stockpulse_premarket_sent_date', parts[0]);
+              if (parts[1]) localStorage.setItem('stockpulse_premarket_sent_time', parts[1]);
+              updateSettingsPremarketStatus();
+            }
+            return;
+          }
+          if (r.symbol.startsWith('__')) return; // Ignore internal system records
           if (!map[r.symbol]) map[r.symbol] = {};
           map[r.symbol][r.direction] = { price: r.price, name: r.name };
         });
@@ -8987,22 +9056,47 @@
           plPct = (plThb != null && invAmt > 0) ? (plThb / invAmt) * 100 : null;
         }
 
-        const dir = plPct == null ? '' : plPct >= 0 ? 'pf-green' : 'pf-red';
+        const dir = plPct == null ? '' : plPct >= 0 ? 'up' : 'down';
         const dirSign = plPct == null ? '' : plPct >= 0 ? '+' : '';
 
-        return `<tr>
-          <td><div class="pf-sym" style="cursor:pointer" onclick="loadStock('${esc(pos.symbol)}')">${esc(pos.symbol)} ${isThai ? '<span class="search-tag-th">SET</span>' : ''}</div>
-              ${pos.purchase_date ? `<div class="pf-note">${new Date(pos.purchase_date + 'T00:00:00+07:00').toLocaleDateString(S.lang === 'th' ? 'th-TH' : 'en-US', { timeZone: 'Asia/Bangkok', month: 'short', day: 'numeric', year: 'numeric' })}</div>` : ''}</td>
-          <td class="pf-td-r pf-mono">${Number(pos.shares) % 1 === 0 ? pos.shares : Number(pos.shares).toFixed(4)}</td>
-          <td class="pf-td-r pf-mono">${cs}${fmtNum(avgPrice)}</td>
-          <td class="pf-td-r pf-mono">${curPrice ? cs + fmtNum(curPrice) : '<span style="color:var(--text-muted)">—</span>'}</td>
-          <td class="pf-td-r pf-mono">${invCs}${fmtNum(invAmt)}</td>
-          <td class="pf-td-r pf-mono">${currentValInInvCur != null ? invCs + fmtNum(currentValInInvCur) : '—'}</td>
-          <td class="pf-td-r pf-mono ${invCur === 'USD' ? dir : ''}" style="${invCur === 'THB' ? 'opacity:0.3' : ''}">${plUsd != null ? dirSign + '$' + fmtNum(plUsd) : '—'}</td>
-          <td class="pf-td-r pf-mono ${dir}">${plPct != null ? dirSign + plPct.toFixed(2) + '%' : '—'}</td>
-          <td class="pf-td-r pf-mono ${invCur === 'THB' ? dir : ''}" style="font-size:11px;${invCur === 'USD' ? 'opacity:0.3' : ''}">${plThb != null ? dirSign + '฿' + Math.round(plThb).toLocaleString() : '—'}</td>
-          <td><button class="pf-del-btn" onclick="deletePosition('${pos.id}')" title="Remove"><svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button></td>
-        </tr>`;
+        return `<div class="pf-pos-card">
+          <div class="pf-pos-header">
+            <div class="pf-pos-sym-block">
+              <div class="pf-sym" style="cursor:pointer" onclick="loadStock('${esc(pos.symbol)}')">${esc(pos.symbol)} ${isThai ? '<span class="search-tag-th">SET</span>' : ''}</div>
+              ${pos.purchase_date ? `<span class="pf-note">${new Date(pos.purchase_date + 'T00:00:00+07:00').toLocaleDateString(S.lang === 'th' ? 'th-TH' : 'en-US', { timeZone: 'Asia/Bangkok', month: 'short', day: 'numeric', year: 'numeric' })}</span>` : ''}
+            </div>
+            <div class="pf-pos-right-header">
+              <span class="pf-pos-pl-badge ${dir}">${plPct != null ? dirSign + plPct.toFixed(2) + '%' : '—'}</span>
+              <button class="pf-del-btn" onclick="deletePosition('${pos.id}')" title="Remove"><svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>
+            </div>
+          </div>
+          <div class="pf-pos-stats">
+            <div class="pf-pos-stat">
+              <span class="pf-pos-stat-lbl">${t.pfShares || 'Shares'}</span>
+              <span class="pf-pos-stat-val">${Number(pos.shares) % 1 === 0 ? pos.shares : Number(pos.shares).toFixed(4)}</span>
+            </div>
+            <div class="pf-pos-stat">
+              <span class="pf-pos-stat-lbl">${t.pfAvgCost || 'Avg Cost'}</span>
+              <span class="pf-pos-stat-val">${cs}${fmtNum(avgPrice)}</span>
+            </div>
+            <div class="pf-pos-stat">
+              <span class="pf-pos-stat-lbl">${t.pfPrice || 'Current Price'}</span>
+              <span class="pf-pos-stat-val">${curPrice ? cs + fmtNum(curPrice) : '<span style="color:var(--text-muted)">—</span>'}</span>
+            </div>
+            <div class="pf-pos-stat">
+              <span class="pf-pos-stat-lbl">${t.pfCostBasis || 'Invested'}</span>
+              <span class="pf-pos-stat-val">${invCs}${fmtNum(invAmt)}</span>
+            </div>
+            <div class="pf-pos-stat">
+              <span class="pf-pos-stat-lbl">${t.pfMktValue || 'Market Value'}</span>
+              <span class="pf-pos-stat-val">${currentValInInvCur != null ? invCs + fmtNum(currentValInInvCur) : '—'}</span>
+            </div>
+            <div class="pf-pos-stat">
+              <span class="pf-pos-stat-lbl">${t.pfPL || 'P&L'}</span>
+              <span class="pf-pos-stat-val ${dir}">${plUsd != null ? dirSign + (invCur === 'USD' ? '$' : '฿') + fmtNum(Math.abs(invCur === 'USD' ? plUsd : plThb)) : '—'}</span>
+            </div>
+          </div>
+        </div>`;
       }).join('');
 
       const totalCostUsd = costUsd + (rate > 0 ? costThb / rate : 0);
@@ -9127,6 +9221,7 @@
         const wl = S.wl.find(w => w.symbol === pos.symbol);
         const curPrice = (S.sym === pos.symbol && S.quote?.c) ? S.quote.c : wl?._quote?.c;
         if (!curPrice) return;
+        const isThai = pos.symbol.endsWith('.BK');
         const avgPrice = pos.avg_cost_usd ?? pos.avg_cost ?? 0;
         const invAmt = pos.invested_amount ?? (pos.shares * avgPrice);
         const invUsd = (pos.invested_currency === 'THB') ? invAmt / rate : invAmt;
