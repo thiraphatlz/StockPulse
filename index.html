@@ -8592,16 +8592,24 @@
         let price = null;
         let name = alerts[sym].above?.name || alerts[sym].below?.name || sym;
 
+        // 1. Use currently-loaded stock quote (most up-to-date)
         if (S.sym === sym && S.quote && S.quote.c) {
           price = S.quote.c;
           if (S.profile?.name) name = S.profile.name;
         }
+        // 2. Use watchlist cached quote if it was recently updated (< 30s old)
         if (!price && S.wl) {
           const entry = S.wl.find(w => w.symbol === sym);
           if (entry?._quote?.c) { price = entry._quote.c; if (entry.name) name = entry.name; }
         }
+        // 3. Bypass CACHE and fetch fresh price directly — critical for alert accuracy
         if (!price) {
-          try { const q = await fetchQ(sym); if (q && q.c) price = q.c; } catch (e) { }
+          try {
+            // Delete any cached quote so fetchQ fetches fresh
+            CACHE.quote.delete(sym);
+            const q = await fetchQ(sym);
+            if (q && q.c) { price = q.c; if (q.name) name = q.name; }
+          } catch (e) { console.warn('checkAlerts fetchQ failed for', sym, e); }
         }
         if (!price) continue;
 
@@ -8942,23 +8950,137 @@
         const amountUsd = PF.posAmountCur === 'THB' ? amount / rate : amount;
         shares = amountUsd / pricePerShare;
       }
+      shares = parseFloat(shares.toFixed(6));
 
+      // Check for existing positions with the same symbol in current portfolio
+      const existingPositions = PF.positions.filter(p => p.symbol === symbol && p.portfolio_id === PF.activeId);
+      if (existingPositions.length > 0) {
+        // Show merge-or-separate dialog
+        await showMergeDialog(symbol, shares, pricePerShare, amount, purchaseDate, existingPositions);
+        return;
+      }
+
+      // No existing position — insert as new
+      await insertNewPosition(symbol, shares, pricePerShare, amount, purchaseDate);
+    }
+
+    async function insertNewPosition(symbol, shares, pricePerShare, amount, purchaseDate) {
+      const isThai = symbol.endsWith('.BK');
       const payload = {
         portfolio_id: PF.activeId,
         symbol,
-        shares: parseFloat(shares.toFixed(6)),
+        shares,
         avg_cost_usd: pricePerShare,
+        invested_amount: amount,
+        invested_currency: PF.posAmountCur,
         commission_usd: 0,
         purchase_date: purchaseDate,
         note: null
       };
-
       const { data, error } = await SB.from('positions').insert(payload).select().single();
       if (error) { showToast('Error: ' + error.message, 'error'); return; }
       PF.positions.push(data);
       closePosModal();
       showToast(`${symbol} added!`, 'success');
       await renderPortfolio();
+    }
+
+    function showMergeDialog(symbol, newShares, newPrice, newAmount, purchaseDate, existingPositions) {
+      return new Promise((resolve) => {
+        const t = I18N[S.lang] || I18N.en;
+        const isTH = S.lang === 'th';
+
+        // Calculate total existing shares and weighted avg cost
+        let totalExShares = 0, totalExCost = 0;
+        for (const p of existingPositions) {
+          const avgCost = p.avg_cost ?? p.avg_cost_usd ?? 0;
+          totalExShares += p.shares;
+          totalExCost += p.shares * avgCost;
+        }
+        const mergedShares = parseFloat((totalExShares + newShares).toFixed(6));
+        const mergedAvgCost = parseFloat(((totalExCost + newShares * newPrice) / mergedShares).toFixed(4));
+        const isThai = symbol.endsWith('.BK');
+        const cs = isThai ? '฿' : '$';
+
+        const title = isTH ? `${symbol} มีอยู่แล้ว` : `${symbol} Already Exists`;
+        const msgMerge = isTH
+          ? `รวมกับ ${existingPositions.length > 1 ? existingPositions.length + ' positions' : 'position'} ที่มีอยู่\nหุ้นรวม: ${mergedShares.toLocaleString()} | ต้นทุนเฉลี่ยใหม่: ${cs}${mergedAvgCost.toFixed(4)}`
+          : `Merge with existing ${existingPositions.length > 1 ? existingPositions.length + ' positions' : 'position'}\nTotal shares: ${mergedShares.toLocaleString()} | New avg cost: ${cs}${mergedAvgCost.toFixed(4)}`;
+        const msgSep = isTH ? 'เพิ่มเป็น Position แยกใหม่' : 'Add as separate new position';
+        const msgCancel = isTH ? 'ยกเลิก' : 'Cancel';
+
+        // Build overlay
+        const overlay = document.createElement('div');
+        overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+        overlay.innerHTML = `
+          <div style="background:var(--bg-card);border:1px solid var(--border-primary);border-radius:16px;padding:24px;max-width:360px;width:100%;box-shadow:var(--shadow-lg);">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+              <svg viewBox="0 0 24 24" style="width:22px;height:22px;fill:var(--amber);flex-shrink:0;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+              <span style="font-size:15px;font-weight:700;color:var(--text-primary);">${title}</span>
+            </div>
+            <p style="font-size:13px;color:var(--text-secondary);margin-bottom:20px;line-height:1.6;">${isTH ? `พบหุ้น <strong style="color:var(--accent-light);">${symbol}</strong> ในพอร์ตอยู่แล้ว ต้องการทำอะไร?` : `You already hold <strong style="color:var(--accent-light);">${symbol}</strong> in this portfolio. What would you like to do?`}</p>
+            <button id="mergeDialogMerge" style="width:100%;background:var(--bg-elevated);border:1px solid var(--border-primary);border-radius:10px;padding:12px 14px;text-align:left;cursor:pointer;margin-bottom:8px;transition:border-color 0.2s;">
+              <div style="font-size:13px;font-weight:600;color:var(--accent-light);margin-bottom:4px;">${isTH ? '🔗 รวม Position (เฉลี่ยต้นทุน)' : '🔗 Merge (Average Cost)'}</div>
+              <div style="font-size:11.5px;color:var(--text-secondary);line-height:1.5;white-space:pre-line;">${msgMerge}</div>
+            </button>
+            <button id="mergeDialogSep" style="width:100%;background:var(--bg-elevated);border:1px solid var(--border-primary);border-radius:10px;padding:12px 14px;text-align:left;cursor:pointer;margin-bottom:16px;transition:border-color 0.2s;">
+              <div style="font-size:13px;font-weight:600;color:var(--green);margin-bottom:4px;">${isTH ? '➕ เพิ่มแยกต่างหาก' : '➕ Add Separately'}</div>
+              <div style="font-size:11.5px;color:var(--text-secondary);">${msgSep}</div>
+            </button>
+            <button id="mergeDialogCancel" style="width:100%;background:transparent;border:1px solid var(--border-subtle);border-radius:10px;padding:10px;color:var(--text-muted);font-size:13px;cursor:pointer;">${msgCancel}</button>
+          </div>`;
+
+        document.body.appendChild(overlay);
+
+        // Hover effects
+        ['mergeDialogMerge','mergeDialogSep'].forEach(id => {
+          const btn = overlay.querySelector('#' + id);
+          btn.addEventListener('mouseenter', () => btn.style.borderColor = 'var(--border-accent)');
+          btn.addEventListener('mouseleave', () => btn.style.borderColor = 'var(--border-primary)');
+        });
+
+        async function cleanup() { overlay.remove(); resolve(); }
+
+        overlay.querySelector('#mergeDialogMerge').onclick = async () => {
+          overlay.remove();
+          // Update all existing positions for this symbol with merged weighted avg
+          try {
+            // We update the first existing position with merged data, delete the rest
+            const primary = existingPositions[0];
+            const { error } = await SB.from('positions')
+              .update({ shares: mergedShares, avg_cost_usd: mergedAvgCost })
+              .eq('id', primary.id);
+            if (error) { showToast('Error merging: ' + error.message, 'error'); resolve(); return; }
+            // Delete other positions for the same symbol if >1 existing
+            for (let i = 1; i < existingPositions.length; i++) {
+              await SB.from('positions').delete().eq('id', existingPositions[i].id);
+            }
+            // Update local state
+            const idx = PF.positions.findIndex(p => p.id === primary.id);
+            if (idx !== -1) {
+              PF.positions[idx].shares = mergedShares;
+              PF.positions[idx].avg_cost_usd = mergedAvgCost;
+              PF.positions[idx].avg_cost = mergedAvgCost;
+            }
+            // Remove other merged positions from local state
+            for (let i = 1; i < existingPositions.length; i++) {
+              PF.positions = PF.positions.filter(p => p.id !== existingPositions[i].id);
+            }
+            closePosModal();
+            showToast(`${symbol} merged! Avg cost: ${cs}${mergedAvgCost.toFixed(4)}`, 'success');
+            await renderPortfolio();
+          } catch (e) { showToast('Merge error: ' + e.message, 'error'); }
+          resolve();
+        };
+
+        overlay.querySelector('#mergeDialogSep').onclick = async () => {
+          overlay.remove();
+          await insertNewPosition(symbol, newShares, newPrice, newAmount, purchaseDate);
+          resolve();
+        };
+
+        overlay.querySelector('#mergeDialogCancel').onclick = () => { overlay.remove(); resolve(); };
+      });
     }
 
     async function deletePosition(id) {
