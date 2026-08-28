@@ -286,7 +286,7 @@ export async function sendEmailJSBriefing(report, targetEmail = ALERT_EMAIL) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Origin': 'https://stockpulse.personal'
+      'Origin': 'http://localhost'
     },
     body: JSON.stringify(payload)
   });
@@ -308,20 +308,29 @@ export async function sendEmailJSBriefing(report, targetEmail = ALERT_EMAIL) {
 }
 
 // Direct execution CLI runner with DST scheduling guard
-if (import.meta.url === `file://${process.argv[1]}` || process.argv[1]?.endsWith('send_premarket_briefing.js')) {
+// Use a reliable path-based check instead of import.meta.url comparison
+const _scriptArg = process.argv[1] || '';
+const _isDirectRun = _scriptArg.endsWith('send_premarket_briefing.js') ||
+  _scriptArg.replace(/\\/g, '/').endsWith('scripts/send_premarket_briefing.js');
+
+if (_isDirectRun) {
   (async () => {
     try {
       const isManual = process.argv.includes('--force') || process.env.GITHUB_EVENT_NAME === 'workflow_dispatch';
       const now = new Date();
       const dst = isUSDST(now);
       const utcHour = now.getUTCHours();
+      const utcMinute = now.getUTCMinutes();
       const targetUtcHour = dst ? 13 : 14; // 13:15 UTC (20:15 BKK) during DST / 14:15 UTC (21:15 BKK) during EST
 
       console.log(`=== StockPulse Pre-Market Briefing Runner ===`);
-      console.log(`Time: ${now.toISOString()} | US DST: ${dst ? 'EDT' : 'EST'} | Target UTC Hour: ${targetUtcHour}:15`);
+      console.log(`Time: ${now.toISOString()} | US DST: ${dst ? 'EDT' : 'EST'} | Target UTC: ${targetUtcHour}:15 | isManual: ${isManual}`);
 
-      if (!isManual && Math.abs(utcHour - targetUtcHour) > 0) {
-        console.log(`[Cron Guard] Current UTC hour (${utcHour}) is not target UTC hour (${targetUtcHour}). Skipping execution.`);
+      // Use minute-level tolerance (±90 min) to handle GitHub Actions queue delays
+      const nowMinutes = utcHour * 60 + utcMinute;
+      const targetMinutes = targetUtcHour * 60 + 15;
+      if (!isManual && Math.abs(nowMinutes - targetMinutes) > 90) {
+        console.log(`[Cron Guard] Current UTC time (${utcHour}:${String(utcMinute).padStart(2,'0')}) is too far from target (${targetUtcHour}:15). Skipping execution.`);
         process.exit(0);
       }
 
@@ -333,11 +342,15 @@ if (import.meta.url === `file://${process.argv[1]}` || process.argv[1]?.endsWith
 
       const report = await generatePreMarketReportData();
       await sendEmailJSBriefing(report);
-      console.log('Finished successfully.');
+      console.log('[StockPulse] Finished successfully.');
       process.exit(0);
     } catch (err) {
-      console.error('Fatal error:', err);
+      console.error('[StockPulse] Fatal error:', err.message);
+      console.error(err.stack);
       process.exit(1);
     }
   })();
+} else {
+  // Log when imported as a module (not direct run) - helps debugging
+  console.log('[StockPulse] send_premarket_briefing.js loaded as module (functions exported).');
 }
