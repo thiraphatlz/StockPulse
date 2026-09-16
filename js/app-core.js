@@ -41,7 +41,9 @@
       page: 'dashboard', sectors: {},
       lang: localStorage.getItem('stockpulse_lang') || 'en',
       alertEmail: localStorage.getItem('stockpulse_alert_email') || 'thiraphatlaohiao1@gmail.com',
-      premarketAlert: localStorage.getItem('stockpulse_premarket_alert') !== 'false'
+      premarketAlert: localStorage.getItem('stockpulse_premarket_alert') !== 'false',
+      notifyEmail: localStorage.getItem('stockpulse_notify_email') !== 'false',
+      notifyDiscord: localStorage.getItem('stockpulse_notify_discord') !== 'false'
     };
 
     const I18N = {

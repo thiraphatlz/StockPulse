@@ -577,6 +577,8 @@
       inp.classList.remove('error');
       const toggle = document.getElementById('settingsPremarketToggle');
       if (toggle) toggle.checked = S.premarketAlert;
+      document.getElementById('settingsNotifyEmail').checked = S.notifyEmail;
+      document.getElementById('settingsNotifyDiscord').checked = S.notifyDiscord;
       updateSettingsPremarketStatus();
       document.getElementById('settingsModal').classList.add('active');
     }
@@ -597,6 +599,10 @@
       }
       S.alertEmail = email;
       localStorage.setItem('stockpulse_alert_email', email);
+      S.notifyEmail = document.getElementById('settingsNotifyEmail').checked;
+      localStorage.setItem('stockpulse_notify_email', S.notifyEmail ? 'true' : 'false');
+      S.notifyDiscord = document.getElementById('settingsNotifyDiscord').checked;
+      localStorage.setItem('stockpulse_notify_discord', S.notifyDiscord ? 'true' : 'false');
       const toggle = document.getElementById('settingsPremarketToggle');
       if (toggle) {
         S.premarketAlert = toggle.checked;

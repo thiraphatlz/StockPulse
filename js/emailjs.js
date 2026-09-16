@@ -10,9 +10,8 @@
       }
     }
 
-    async function sendAlertEmail(symbol, name, direction, targetPrice, currentPrice) {
+    async function sendAlertEmail(symbol, name, direction, targetPrice, currentPrice, force = false) {
       const email = S.alertEmail;
-      if (!email) { showToast('⚠ No alert email set (Go to Settings)', 'error'); return; }
       const dirLabel = direction === 'above' ? 'risen above' : 'fallen below';
       const cs = getCurSym(symbol, null);
       const params = {
@@ -24,7 +23,11 @@
         current_price: cs + Number(currentPrice).toFixed(2),
         timestamp: getRealNow().toLocaleString(S.lang === 'th' ? 'th-TH' : 'en-US', { timeZone: 'Asia/Bangkok', dateStyle: 'medium', timeStyle: 'short', hour12: false }) + ' ICT'
       };
-      sendDiscordMessage(`🔔 **${symbol}** ราคา${direction === 'above' ? 'ขึ้นเหนือ' : 'ลงต่ำกว่า'} ${params.target_price}\nราคาปัจจุบัน: ${params.current_price}\n🕐 ${params.timestamp}`);
+      if (force || S.notifyDiscord) {
+        sendDiscordMessage(`🔔 **${symbol}** ราคา${direction === 'above' ? 'ขึ้นเหนือ' : 'ลงต่ำกว่า'} ${params.target_price}\nราคาปัจจุบัน: ${params.current_price}\n🕐 ${params.timestamp}`);
+      }
+      if (!force && !S.notifyEmail) return;
+      if (!email) { showToast('⚠ No alert email set (Go to Settings)', 'error'); return; }
       if (typeof emailjs !== 'undefined' && EMAILJS_PUBLIC_KEY && EMAILJS_PUBLIC_KEY !== 'YOUR_PUBLIC_KEY') {
         try {
           showToast(`Sending email to ${email}...`, 'success');
@@ -52,6 +55,6 @@
       S.alertEmail = email;
       localStorage.setItem('stockpulse_alert_email', email);
       renderAlertEmailNote();
-      await sendAlertEmail('TEST', 'Test Stock (Apple Inc.)', 'risen above', 100.00, 105.50);
+      await sendAlertEmail('TEST', 'Test Stock (Apple Inc.)', 'risen above', 100.00, 105.50, true);
     }
 

@@ -282,7 +282,12 @@
 
     async function sendPreMarketBriefingEmail(isManual = false) {
       const email = S.alertEmail;
-      if (!email) {
+      if (!S.notifyEmail && !S.notifyDiscord) {
+        showToast('⚠️ No notification channel enabled (Go to Settings)', 'error');
+        if (isManual) openSettings();
+        return false;
+      }
+      if (S.notifyEmail && !email) {
         showToast('⚠️ No alert email set (Go to Settings)', 'error');
         if (isManual) openSettings();
         return false;
@@ -319,17 +324,18 @@
         const sched = getPreMarketScheduleInfo();
         const saveDateKey = sched.targetDateKey || getBkkDateKey();
 
-        sendDiscordMessage(report.textSummary);
+        if (S.notifyDiscord) sendDiscordMessage(report.textSummary);
 
-        if (typeof emailjs !== 'undefined' && EMAILJS_PUBLIC_KEY && EMAILJS_PUBLIC_KEY !== 'YOUR_PUBLIC_KEY') {
+        if (S.notifyEmail && typeof emailjs !== 'undefined' && EMAILJS_PUBLIC_KEY && EMAILJS_PUBLIC_KEY !== 'YOUR_PUBLIC_KEY') {
           await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_PREMARKET_TEMPLATE_ID, params);
-          await markPreMarketSentToSupabase(saveDateKey, report.timeStr);
           showToast(`🚀 Pre-Market Briefing sent to ${email}!`, 'success');
-        } else {
+        } else if (S.notifyEmail) {
           console.log('[Pre-Market Briefing Report]:', params);
-          await markPreMarketSentToSupabase(saveDateKey, report.timeStr);
           showToast('🚀 Pre-Market Briefing generated! (EmailJS logged)', 'success');
+        } else {
+          showToast('🚀 Pre-Market Briefing sent to Discord!', 'success');
         }
+        await markPreMarketSentToSupabase(saveDateKey, report.timeStr);
         _isSendingPreMarketBriefing = false;
         return true;
       } catch (err) {
@@ -369,7 +375,11 @@
         } catch (e) { }
       }
 
-      if (!S.alertEmail) {
+      if (!S.notifyEmail && !S.notifyDiscord) {
+        console.warn(`[Auto Scheduler] Pre-Market Briefing reached (${sched.timeLabel}) but no notification channel is enabled.`);
+        return;
+      }
+      if (S.notifyEmail && !S.alertEmail) {
         console.warn(`[Auto Scheduler] Pre-Market Briefing reached (${sched.timeLabel}) but no Alert Email is set.`);
         return;
       }
