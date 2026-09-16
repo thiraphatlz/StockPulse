@@ -1,8 +1,9 @@
 import crypto from 'crypto';
 import { fetchQuoteYahoo, generatePreMarketReportData, splitForDiscord } from '../scripts/send_premarket_briefing.js';
 
-// Vercel auto-parses JSON bodies by default, but Discord signature verification needs the exact raw bytes
-export const config = { api: { bodyParser: false } };
+// Vercel auto-parses JSON bodies by default, but Discord signature verification needs the exact raw bytes.
+// maxDuration gives /premarket and /portfolio room to finish their quote fetches before Discord's follow-up window matters.
+export const config = { api: { bodyParser: false }, maxDuration: 60 };
 
 const DISCORD_PUBLIC_KEY = process.env.DISCORD_PUBLIC_KEY || '';
 const DISCORD_ALLOWED_USER_ID = process.env.DISCORD_ALLOWED_USER_ID || ''; // your Discord user ID — /portfolio is refused for anyone else
@@ -124,10 +125,10 @@ async function sendPortfolioFollowup(interaction, filterName) {
 
     const rate = await fetchUsdThbRate();
     const symbols = [...new Set(positions.map(p => p.symbol))];
+    const quoteResults = await Promise.allSettled(symbols.map(sym => fetchQuoteYahoo(sym).then(q => [sym, q])));
     const quotes = {};
-    for (const sym of symbols) {
-      const q = await fetchQuoteYahoo(sym);
-      if (q?.price) quotes[sym] = q.price;
+    for (const r of quoteResults) {
+      if (r.status === 'fulfilled' && r.value[1]?.price) quotes[r.value[0]] = r.value[1].price;
     }
 
     const lines = targets.map(pf => {
