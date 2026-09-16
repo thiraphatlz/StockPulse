@@ -24,6 +24,7 @@
         current_price: cs + Number(currentPrice).toFixed(2),
         timestamp: getRealNow().toLocaleString(S.lang === 'th' ? 'th-TH' : 'en-US', { timeZone: 'Asia/Bangkok', dateStyle: 'medium', timeStyle: 'short', hour12: false }) + ' ICT'
       };
+      sendDiscordMessage(`🔔 **${symbol}** ราคา${direction === 'above' ? 'ขึ้นเหนือ' : 'ลงต่ำกว่า'} ${params.target_price}\nราคาปัจจุบัน: ${params.current_price}\n🕐 ${params.timestamp}`);
       if (typeof emailjs !== 'undefined' && EMAILJS_PUBLIC_KEY && EMAILJS_PUBLIC_KEY !== 'YOUR_PUBLIC_KEY') {
         try {
           showToast(`Sending email to ${email}...`, 'success');

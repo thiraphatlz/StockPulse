@@ -28,3 +28,4 @@ jobs:
           EMAILJS_SERVICE_ID: ${{ secrets.EMAILJS_SERVICE_ID || 'service_u55ha9b' }}
           EMAILJS_PREMARKET_TEMPLATE_ID: ${{ secrets.EMAILJS_PREMARKET_TEMPLATE_ID || 'template_2mgjigz' }}
           ALERT_EMAIL: ${{ secrets.ALERT_EMAIL || 'thiraphatlaohiao1@gmail.com' }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}

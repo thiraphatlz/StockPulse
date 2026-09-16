@@ -319,6 +319,8 @@
         const sched = getPreMarketScheduleInfo();
         const saveDateKey = sched.targetDateKey || getBkkDateKey();
 
+        sendDiscordMessage(report.textSummary);
+
         if (typeof emailjs !== 'undefined' && EMAILJS_PUBLIC_KEY && EMAILJS_PUBLIC_KEY !== 'YOUR_PUBLIC_KEY') {
           await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_PREMARKET_TEMPLATE_ID, params);
           await markPreMarketSentToSupabase(saveDateKey, report.timeStr);

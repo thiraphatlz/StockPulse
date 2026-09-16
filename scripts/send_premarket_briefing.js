@@ -9,6 +9,21 @@ const EMAILJS_PREMARKET_TEMPLATE_ID = process.env.EMAILJS_PREMARKET_TEMPLATE_ID 
 const ALERT_EMAIL = process.env.ALERT_EMAIL || 'thiraphatlaohiao1@gmail.com';
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://pxxtyzphnbbxrogikotc.supabase.co';
 const SUPABASE_ANON = process.env.SUPABASE_ANON || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4eHR5enBobmJieHJvZ2lrb3RjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY3Njg0NTQsImV4cCI6MjEwMjM0NDQ1NH0.w0tui-y9KFY-6qqZfM8ol2b3EuR3LP0sXZRjIYM6xVc';
+const DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL || ''; // optional — set as a GitHub Secret / Vercel env var to also post to Discord
+
+async function sendDiscordBriefing(report) {
+  if (!DISCORD_WEBHOOK_URL) return;
+  try {
+    const res = await fetch(DISCORD_WEBHOOK_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: report.textSummary.slice(0, 1900) })
+    });
+    if (!res.ok) console.warn('[StockPulse] Discord webhook failed:', res.status, await res.text());
+  } catch (e) {
+    console.warn('[StockPulse] Discord webhook error:', e.message);
+  }
+}
 
 export async function checkPremarketSentInSupabase(dateKey) {
   try {
@@ -297,7 +312,9 @@ export async function sendEmailJSBriefing(report, targetEmail = ALERT_EMAIL) {
   }
 
   console.log(`[StockPulse] ✅ Pre-Market Briefing email successfully delivered to ${targetEmail}!`);
-  
+
+  await sendDiscordBriefing(report);
+
   // Sync to Supabase so website and all devices know it has already been sent today
   try {
     const dateKey = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok' }).format(new Date());
