@@ -27,4 +27,5 @@ jobs:
           ALERT_EMAIL: ${{ secrets.ALERT_EMAIL || 'thiraphatlaohiao1@gmail.com' }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL || 'https://pxxtyzphnbbxrogikotc.supabase.co' }}
           SUPABASE_ANON: ${{ secrets.SUPABASE_ANON || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4eHR5enBobmJieHJvZ2lrb3RjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY3Njg0NTQsImV4cCI6MjEwMjM0NDQ1NH0.w0tui-y9KFY-6qqZfM8ol2b3EuR3LP0sXZRjIYM6xVc' }}
-          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+          DISCORD_CHANNEL_ID: ${{ secrets.DISCORD_CHANNEL_ID }}

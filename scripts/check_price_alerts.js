@@ -4,7 +4,7 @@
  * Reads active alerts from Supabase, checks current price, and notifies (Discord + Email) on trigger.
  */
 
-import { fetchQuoteYahoo } from './send_premarket_briefing.js';
+import { fetchQuoteYahoo, fetchNotificationSettings } from './send_premarket_briefing.js';
 
 const EMAILJS_PUBLIC_KEY = process.env.EMAILJS_PUBLIC_KEY || '8EBack4zwyOa1x49O';
 const EMAILJS_SERVICE_ID = process.env.EMAILJS_SERVICE_ID || 'service_u55ha9b';
@@ -12,7 +12,8 @@ const EMAILJS_ALERT_TEMPLATE_ID = process.env.EMAILJS_ALERT_TEMPLATE_ID || 'temp
 const ALERT_EMAIL = process.env.ALERT_EMAIL || 'thiraphatlaohiao1@gmail.com';
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://pxxtyzphnbbxrogikotc.supabase.co';
 const SUPABASE_ANON = process.env.SUPABASE_ANON || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4eHR5enBobmJieHJvZ2lrb3RjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY3Njg0NTQsImV4cCI6MjEwMjM0NDQ1NH0.w0tui-y9KFY-6qqZfM8ol2b3EuR3LP0sXZRjIYM6xVc';
-const DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL || '';
+const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN || '';
+const DISCORD_CHANNEL_ID = process.env.DISCORD_CHANNEL_ID || '';
 
 async function fetchActiveAlerts() {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/alerts?select=*&symbol=neq.__SYS_PREMARKET__`, {
@@ -30,16 +31,16 @@ async function deleteAlert(symbol, direction) {
 }
 
 async function sendDiscordAlert(content) {
-  if (!DISCORD_WEBHOOK_URL) return;
+  if (!DISCORD_BOT_TOKEN || !DISCORD_CHANNEL_ID) return;
   try {
-    const res = await fetch(DISCORD_WEBHOOK_URL, {
+    const res = await fetch(`https://discord.com/api/v10/channels/${DISCORD_CHANNEL_ID}/messages`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Authorization': `Bot ${DISCORD_BOT_TOKEN}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ content: content.slice(0, 1900) })
     });
-    if (!res.ok) console.warn('[PriceAlerts] Discord webhook failed:', res.status, await res.text());
+    if (!res.ok) console.warn('[PriceAlerts] Discord bot send failed:', res.status, await res.text());
   } catch (e) {
-    console.warn('[PriceAlerts] Discord webhook error:', e.message);
+    console.warn('[PriceAlerts] Discord bot send error:', e.message);
   }
 }
 
@@ -71,6 +72,7 @@ async function sendEmailAlert(symbol, name, direction, targetPrice, currentPrice
 
 async function main() {
   console.log('=== StockPulse Price Alert Checker ===');
+  const settings = await fetchNotificationSettings();
   const rows = await fetchActiveAlerts();
   if (!rows.length) { console.log('[PriceAlerts] No active alerts.'); return; }
 
@@ -93,13 +95,17 @@ async function main() {
       console.log(`[PriceAlerts] ${symbol} ${direction} ${alert.price} triggered @ ${price}`);
       const name = alert.name || symbol;
 
-      await sendDiscordAlert(`🔔 **${symbol}** ราคา${direction === 'above' ? 'ขึ้นเหนือ' : 'ลงต่ำกว่า'} ${alert.price}\nราคาปัจจุบัน: ${price.toFixed(2)}\n🕐 ${new Date().toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' })} ICT`);
+      if (settings.notifyDiscord) {
+        await sendDiscordAlert(`🔔 **${symbol}** ราคา${direction === 'above' ? 'ขึ้นเหนือ' : 'ลงต่ำกว่า'} ${alert.price}\nราคาปัจจุบัน: ${price.toFixed(2)}\n🕐 ${new Date().toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' })} ICT`);
+      }
 
-      try {
-        await sendEmailAlert(symbol, name, direction, alert.price, price, ALERT_EMAIL);
-        console.log(`[PriceAlerts] Email sent for ${symbol} ${direction}`);
-      } catch (e) {
-        console.warn(`[PriceAlerts] Email failed for ${symbol} ${direction}:`, e.message);
+      if (settings.notifyEmail) {
+        try {
+          await sendEmailAlert(symbol, name, direction, alert.price, price, ALERT_EMAIL);
+          console.log(`[PriceAlerts] Email sent for ${symbol} ${direction}`);
+        } catch (e) {
+          console.warn(`[PriceAlerts] Email failed for ${symbol} ${direction}:`, e.message);
+        }
       }
 
       await deleteAlert(symbol, direction);

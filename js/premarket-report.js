@@ -88,6 +88,36 @@
       }
     }
 
+    // Shared on/off flags for the server-side Discord bot + email cron jobs — GitHub Actions
+    // has no access to this browser's localStorage, so Settings pushes the toggle here instead.
+    async function loadNotificationSettingsFromSupabase() {
+      if (!SB) return;
+      try {
+        const { data, error } = await SB.from('alerts').select('*').eq('symbol', '__SYS_SETTINGS__').maybeSingle();
+        if (!error && data && data.name) {
+          const cfg = JSON.parse(data.name);
+          if (typeof cfg.notifyDiscord === 'boolean') { S.notifyDiscord = cfg.notifyDiscord; localStorage.setItem('stockpulse_notify_discord', cfg.notifyDiscord ? 'true' : 'false'); }
+          if (typeof cfg.notifyEmail === 'boolean') { S.notifyEmail = cfg.notifyEmail; localStorage.setItem('stockpulse_notify_email', cfg.notifyEmail ? 'true' : 'false'); }
+        }
+      } catch (e) {
+        console.warn('[Notification Settings Sync Error]:', e);
+      }
+    }
+
+    async function syncNotificationSettingsToSupabase() {
+      if (!SB) return;
+      try {
+        await SB.from('alerts').upsert({
+          symbol: '__SYS_SETTINGS__',
+          direction: 'above',
+          price: Date.now(),
+          name: JSON.stringify({ notifyDiscord: S.notifyDiscord, notifyEmail: S.notifyEmail })
+        }, { onConflict: 'symbol,direction' });
+      } catch (e) {
+        console.warn('[Notification Settings Save Error]:', e);
+      }
+    }
+
     function updateSettingsPremarketStatus() {
       const el = document.getElementById('settingsPremarketStatus');
       const titleEl = document.getElementById('settingsPremarketTitle');
@@ -282,7 +312,7 @@
 
     async function sendPreMarketBriefingEmail(isManual = false) {
       const email = S.alertEmail;
-      if (!S.notifyEmail && !S.notifyDiscord) {
+      if (!S.notifyEmail) {
         showToast('⚠️ No notification channel enabled (Go to Settings)', 'error');
         if (isManual) openSettings();
         return false;
@@ -324,16 +354,12 @@
         const sched = getPreMarketScheduleInfo();
         const saveDateKey = sched.targetDateKey || getBkkDateKey();
 
-        if (S.notifyDiscord) sendDiscordMessage(report.textSummary);
-
-        if (S.notifyEmail && typeof emailjs !== 'undefined' && EMAILJS_PUBLIC_KEY && EMAILJS_PUBLIC_KEY !== 'YOUR_PUBLIC_KEY') {
+        if (typeof emailjs !== 'undefined' && EMAILJS_PUBLIC_KEY && EMAILJS_PUBLIC_KEY !== 'YOUR_PUBLIC_KEY') {
           await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_PREMARKET_TEMPLATE_ID, params);
           showToast(`🚀 Pre-Market Briefing sent to ${email}!`, 'success');
-        } else if (S.notifyEmail) {
+        } else {
           console.log('[Pre-Market Briefing Report]:', params);
           showToast('🚀 Pre-Market Briefing generated! (EmailJS logged)', 'success');
-        } else {
-          showToast('🚀 Pre-Market Briefing sent to Discord!', 'success');
         }
         await markPreMarketSentToSupabase(saveDateKey, report.timeStr);
         _isSendingPreMarketBriefing = false;
@@ -375,7 +401,7 @@
         } catch (e) { }
       }
 
-      if (!S.notifyEmail && !S.notifyDiscord) {
+      if (!S.notifyEmail) {
         console.warn(`[Auto Scheduler] Pre-Market Briefing reached (${sched.timeLabel}) but no notification channel is enabled.`);
         return;
       }

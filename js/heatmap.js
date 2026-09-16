@@ -603,6 +603,7 @@
       localStorage.setItem('stockpulse_notify_email', S.notifyEmail ? 'true' : 'false');
       S.notifyDiscord = document.getElementById('settingsNotifyDiscord').checked;
       localStorage.setItem('stockpulse_notify_discord', S.notifyDiscord ? 'true' : 'false');
+      syncNotificationSettingsToSupabase();
       const toggle = document.getElementById('settingsPremarketToggle');
       if (toggle) {
         S.premarketAlert = toggle.checked;

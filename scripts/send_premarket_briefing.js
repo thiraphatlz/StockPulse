@@ -9,10 +9,11 @@ const EMAILJS_PREMARKET_TEMPLATE_ID = process.env.EMAILJS_PREMARKET_TEMPLATE_ID 
 const ALERT_EMAIL = process.env.ALERT_EMAIL || 'thiraphatlaohiao1@gmail.com';
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://pxxtyzphnbbxrogikotc.supabase.co';
 const SUPABASE_ANON = process.env.SUPABASE_ANON || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4eHR5enBobmJieHJvZ2lrb3RjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY3Njg0NTQsImV4cCI6MjEwMjM0NDQ1NH0.w0tui-y9KFY-6qqZfM8ol2b3EuR3LP0sXZRjIYM6xVc';
-const DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL || ''; // optional — set as a GitHub Secret / Vercel env var to also post to Discord
+const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN || ''; // optional — set as a GitHub Secret to also post to Discord
+const DISCORD_CHANNEL_ID = process.env.DISCORD_CHANNEL_ID || '';
 
 // Discord limits a message to 2000 chars — split long reports into multiple messages instead of truncating
-function splitForDiscord(text, maxLen = 1900) {
+export function splitForDiscord(text, maxLen = 1900) {
   if (text.length <= maxLen) return [text];
   const chunks = [];
   let remaining = text;
@@ -27,19 +28,32 @@ function splitForDiscord(text, maxLen = 1900) {
 }
 
 export async function sendDiscordBriefing(report) {
-  if (!DISCORD_WEBHOOK_URL) return;
+  if (!DISCORD_BOT_TOKEN || !DISCORD_CHANNEL_ID) return;
   for (const chunk of splitForDiscord(report.textSummary)) {
     try {
-      const res = await fetch(DISCORD_WEBHOOK_URL, {
+      const res = await fetch(`https://discord.com/api/v10/channels/${DISCORD_CHANNEL_ID}/messages`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Authorization': `Bot ${DISCORD_BOT_TOKEN}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ content: chunk })
       });
-      if (!res.ok) console.warn('[StockPulse] Discord webhook failed:', res.status, await res.text());
+      if (!res.ok) console.warn('[StockPulse] Discord bot send failed:', res.status, await res.text());
     } catch (e) {
-      console.warn('[StockPulse] Discord webhook error:', e.message);
+      console.warn('[StockPulse] Discord bot send error:', e.message);
     }
   }
+}
+
+export async function fetchNotificationSettings() {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/alerts?symbol=eq.__SYS_SETTINGS__&select=name&limit=1`, {
+      headers: { apikey: SUPABASE_ANON, Authorization: `Bearer ${SUPABASE_ANON}` }
+    });
+    if (res.ok) {
+      const rows = await res.json();
+      if (rows && rows[0] && rows[0].name) return JSON.parse(rows[0].name);
+    }
+  } catch (e) { }
+  return { notifyDiscord: true, notifyEmail: true };
 }
 
 export async function checkPremarketSentInSupabase(dateKey) {
@@ -295,42 +309,52 @@ export async function generatePreMarketReportData() {
 }
 
 export async function sendEmailJSBriefing(report, targetEmail = ALERT_EMAIL) {
-  const payload = {
-    service_id: EMAILJS_SERVICE_ID,
-    template_id: EMAILJS_PREMARKET_TEMPLATE_ID,
-    user_id: EMAILJS_PUBLIC_KEY,
-    template_params: {
-      to_email: targetEmail,
-      report_date: report.dateStr + ' • ' + report.timeStr,
-      leading_sector: `${report.leadingSector.name} (${report.leadingSector.etf})`,
-      leading_sector_chg: (report.leadingSector.dp >= 0 ? '+' : '') + report.leadingSector.dp.toFixed(2) + '%',
-      lagging_sector: `${report.laggingSector.name} (${report.laggingSector.etf})`,
-      lagging_sector_chg: (report.laggingSector.dp >= 0 ? '+' : '') + report.laggingSector.dp.toFixed(2) + '%',
-      sector_table_rows: report.sectorTableRows,
-      top_movers_html: report.topMoversHtml,
-      full_report_text: report.textSummary,
-      timestamp: report.timeStr
+  const settings = await fetchNotificationSettings();
+
+  if (settings.notifyEmail) {
+    const payload = {
+      service_id: EMAILJS_SERVICE_ID,
+      template_id: EMAILJS_PREMARKET_TEMPLATE_ID,
+      user_id: EMAILJS_PUBLIC_KEY,
+      template_params: {
+        to_email: targetEmail,
+        report_date: report.dateStr + ' • ' + report.timeStr,
+        leading_sector: `${report.leadingSector.name} (${report.leadingSector.etf})`,
+        leading_sector_chg: (report.leadingSector.dp >= 0 ? '+' : '') + report.leadingSector.dp.toFixed(2) + '%',
+        lagging_sector: `${report.laggingSector.name} (${report.laggingSector.etf})`,
+        lagging_sector_chg: (report.laggingSector.dp >= 0 ? '+' : '') + report.laggingSector.dp.toFixed(2) + '%',
+        sector_table_rows: report.sectorTableRows,
+        top_movers_html: report.topMoversHtml,
+        full_report_text: report.textSummary,
+        timestamp: report.timeStr
+      }
+    };
+
+    console.log(`[StockPulse] Sending email via EmailJS REST API to ${targetEmail}...`);
+    const res = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Origin': 'http://localhost'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(`EmailJS API failed (${res.status}): ${errText}`);
     }
-  };
 
-  console.log(`[StockPulse] Sending email via EmailJS REST API to ${targetEmail}...`);
-  const res = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Origin': 'http://localhost'
-    },
-    body: JSON.stringify(payload)
-  });
-
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`EmailJS API failed (${res.status}): ${errText}`);
+    console.log(`[StockPulse] ✅ Pre-Market Briefing email successfully delivered to ${targetEmail}!`);
+  } else {
+    console.log('[StockPulse] Email notifications disabled in Settings — skipping.');
   }
 
-  console.log(`[StockPulse] ✅ Pre-Market Briefing email successfully delivered to ${targetEmail}!`);
-
-  await sendDiscordBriefing(report);
+  if (settings.notifyDiscord) {
+    await sendDiscordBriefing(report);
+  } else {
+    console.log('[StockPulse] Discord notifications disabled in Settings — skipping.');
+  }
 
   // Sync to Supabase so website and all devices know it has already been sent today
   try {

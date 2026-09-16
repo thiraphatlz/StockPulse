@@ -296,6 +296,7 @@
         updateAlertStats();
         checkAndSendDailyPreMarketBriefing();
       });
+      loadNotificationSettingsFromSupabase();
       subscribeAlerts();
 
       // Listen for tab focus/visibility to trigger pre-market briefing if currently within active 20:15 window
