@@ -132,13 +132,14 @@ async function sendPortfolioFollowup(interaction, filterName) {
       if (r.status === 'fulfilled' && r.value[1]?.price) quotes[r.value[0]] = r.value[1].price;
     }
 
-    const lines = targets.map(pf => {
+    const sections = targets.map(pf => {
       const pfPositions = positions.filter(p => p.portfolio_id === pf.id);
       if (!pfPositions.length) return `**${pf.name}** — no positions`;
 
       let costUsd = 0, valUsd = 0, costThb = 0, valThb = 0;
-      for (const pos of pfPositions) {
+      const posLines = pfPositions.map(pos => {
         const isThai = pos.symbol.endsWith('.BK');
+        const cs = isThai ? '฿' : '$';
         const curPrice = quotes[pos.symbol] || null;
         const avgPrice = pos.avg_cost_usd;
         const invCur = pos.invested_currency || (isThai ? 'THB' : 'USD');
@@ -146,17 +147,29 @@ async function sendPortfolioFollowup(interaction, filterName) {
         const valNative = curPrice ? curPrice * pos.shares : null;
         const valPosUsd = valNative != null ? (isThai ? valNative / rate : valNative) : null;
         const valPosThb = valNative != null ? (isThai ? valNative : valNative * rate) : null;
+        const currentValInInvCur = invCur === 'THB' ? valPosThb : valPosUsd;
+        const plPct = (currentValInInvCur != null && invAmt > 0) ? ((currentValInInvCur - invAmt) / invAmt) * 100 : null;
+
         if (invCur === 'USD') { costUsd += invAmt; if (valPosUsd != null) valUsd += valPosUsd; }
         else { costThb += invAmt; if (valPosThb != null) valThb += valPosThb; }
-      }
 
-      const parts = [];
-      if (costUsd > 0) parts.push(`$${valUsd.toFixed(2)} (${valUsd - costUsd >= 0 ? '+' : ''}${(((valUsd - costUsd) / costUsd) * 100).toFixed(2)}%)`);
-      if (costThb > 0) parts.push(`฿${valThb.toFixed(2)} (${valThb - costThb >= 0 ? '+' : ''}${(((valThb - costThb) / costThb) * 100).toFixed(2)}%)`);
-      return `**${pf.name}** — ${pfPositions.length} position(s) — ${parts.join(', ') || 'no quotes yet'}`;
+        const priceStr = curPrice != null ? `${cs}${curPrice.toFixed(2)}` : 'no quote';
+        const plStr = plPct != null ? `${plPct >= 0 ? '+' : ''}${plPct.toFixed(2)}%` : '—';
+        return `• **${pos.symbol}** ${priceStr} (${plStr})`;
+      });
+
+      const totalParts = [];
+      if (costUsd > 0) totalParts.push(`$${valUsd.toFixed(2)} (${valUsd - costUsd >= 0 ? '+' : ''}${(((valUsd - costUsd) / costUsd) * 100).toFixed(2)}%)`);
+      if (costThb > 0) totalParts.push(`฿${valThb.toFixed(2)} (${valThb - costThb >= 0 ? '+' : ''}${(((valThb - costThb) / costThb) * 100).toFixed(2)}%)`);
+
+      return `**${pf.name}**\n${posLines.join('\n')}\nTotal: ${totalParts.join(', ') || 'no quotes yet'}`;
     });
 
-    await patchFollowup(base, lines.join('\n'));
+    const [first, ...rest] = splitForDiscord(sections.join('\n\n'));
+    await patchFollowup(base, first);
+    for (const chunk of rest) {
+      await fetch(base, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content: chunk, flags: 64 }) });
+    }
   } catch (e) {
     await patchFollowup(base, `❌ Failed to load portfolio: ${e.message}`);
   }
