@@ -11,17 +11,34 @@ const SUPABASE_URL = process.env.SUPABASE_URL || 'https://pxxtyzphnbbxrogikotc.s
 const SUPABASE_ANON = process.env.SUPABASE_ANON || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4eHR5enBobmJieHJvZ2lrb3RjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY3Njg0NTQsImV4cCI6MjEwMjM0NDQ1NH0.w0tui-y9KFY-6qqZfM8ol2b3EuR3LP0sXZRjIYM6xVc';
 const DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL || ''; // optional — set as a GitHub Secret / Vercel env var to also post to Discord
 
-async function sendDiscordBriefing(report) {
+// Discord limits a message to 2000 chars — split long reports into multiple messages instead of truncating
+function splitForDiscord(text, maxLen = 1900) {
+  if (text.length <= maxLen) return [text];
+  const chunks = [];
+  let remaining = text;
+  while (remaining.length > maxLen) {
+    let cut = remaining.lastIndexOf('\n', maxLen);
+    if (cut <= 0) cut = maxLen;
+    chunks.push(remaining.slice(0, cut));
+    remaining = remaining.slice(cut).replace(/^\n+/, '');
+  }
+  if (remaining) chunks.push(remaining);
+  return chunks;
+}
+
+export async function sendDiscordBriefing(report) {
   if (!DISCORD_WEBHOOK_URL) return;
-  try {
-    const res = await fetch(DISCORD_WEBHOOK_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content: report.textSummary.slice(0, 1900) })
-    });
-    if (!res.ok) console.warn('[StockPulse] Discord webhook failed:', res.status, await res.text());
-  } catch (e) {
-    console.warn('[StockPulse] Discord webhook error:', e.message);
+  for (const chunk of splitForDiscord(report.textSummary)) {
+    try {
+      const res = await fetch(DISCORD_WEBHOOK_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: chunk })
+      });
+      if (!res.ok) console.warn('[StockPulse] Discord webhook failed:', res.status, await res.text());
+    } catch (e) {
+      console.warn('[StockPulse] Discord webhook error:', e.message);
+    }
   }
 }
 
@@ -91,7 +108,7 @@ function isUSDST(date = new Date()) {
   }
 }
 
-async function fetchQuoteYahoo(symbol) {
+export async function fetchQuoteYahoo(symbol) {
   const url = `https://query2.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1m&range=1d&includePrePost=true`;
   const headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',

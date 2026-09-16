@@ -1,0 +1,30 @@
+name: Price Alert Checker
+
+on:
+  schedule:
+    # Every 15 minutes, Monday-Friday (UTC) — covers US + Thai market hours
+    - cron: '*/15 * * * 1-5'
+  workflow_dispatch: # Allows manual trigger from GitHub UI anytime
+
+jobs:
+  check-alerts:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Check Price Alerts
+        run: node scripts/check_price_alerts.js
+        env:
+          EMAILJS_PUBLIC_KEY: ${{ secrets.EMAILJS_PUBLIC_KEY || '8EBack4zwyOa1x49O' }}
+          EMAILJS_SERVICE_ID: ${{ secrets.EMAILJS_SERVICE_ID || 'service_u55ha9b' }}
+          EMAILJS_ALERT_TEMPLATE_ID: ${{ secrets.EMAILJS_ALERT_TEMPLATE_ID || 'template_k98tnwo' }}
+          ALERT_EMAIL: ${{ secrets.ALERT_EMAIL || 'thiraphatlaohiao1@gmail.com' }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL || 'https://pxxtyzphnbbxrogikotc.supabase.co' }}
+          SUPABASE_ANON: ${{ secrets.SUPABASE_ANON || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4eHR5enBobmJieHJvZ2lrb3RjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY3Njg0NTQsImV4cCI6MjEwMjM0NDQ1NH0.w0tui-y9KFY-6qqZfM8ol2b3EuR3LP0sXZRjIYM6xVc' }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
