@@ -5,6 +5,7 @@ import { fetchQuoteYahoo, generatePreMarketReportData, splitForDiscord } from '.
 export const config = { api: { bodyParser: false } };
 
 const DISCORD_PUBLIC_KEY = process.env.DISCORD_PUBLIC_KEY || '';
+const DISCORD_ALLOWED_USER_ID = process.env.DISCORD_ALLOWED_USER_ID || ''; // your Discord user ID — /portfolio is refused for anyone else
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://pxxtyzphnbbxrogikotc.supabase.co';
 const SUPABASE_ANON = process.env.SUPABASE_ANON || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4eHR5enBobmJieHJvZ2lrb3RjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY3Njg0NTQsImV4cCI6MjEwMjM0NDQ1NH0.w0tui-y9KFY-6qqZfM8ol2b3EuR3LP0sXZRjIYM6xVc';
 
@@ -70,25 +71,92 @@ async function handleAlerts() {
   return reply(rows.map(r => `• **${r.symbol}** ${r.direction} $${Number(r.price).toFixed(2)}`).join('\n'));
 }
 
+function followupBase(interaction) {
+  return `https://discord.com/api/v10/webhooks/${interaction.application_id}/${interaction.token}`;
+}
+
+async function patchFollowup(base, content) {
+  await fetch(`${base}/messages/@original`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ content })
+  });
+}
+
 async function sendPremarketFollowup(interaction) {
-  const base = `https://discord.com/api/v10/webhooks/${interaction.application_id}/${interaction.token}`;
+  const base = followupBase(interaction);
   try {
     const report = await generatePreMarketReportData();
     const [first, ...rest] = splitForDiscord(report.textSummary);
-    await fetch(`${base}/messages/@original`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content: first })
-    });
+    await patchFollowup(base, first);
     for (const chunk of rest) {
       await fetch(base, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content: chunk }) });
     }
   } catch (e) {
-    await fetch(`${base}/messages/@original`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content: `❌ Failed to generate briefing: ${e.message}` })
+    await patchFollowup(base, `❌ Failed to generate briefing: ${e.message}`);
+  }
+}
+
+async function fetchPortfoliosAndPositions() {
+  const [pfRes, posRes] = await Promise.all([
+    fetch(`${SUPABASE_URL}/rest/v1/portfolios?select=*&order=created_at`, { headers: { apikey: SUPABASE_ANON, Authorization: `Bearer ${SUPABASE_ANON}` } }),
+    fetch(`${SUPABASE_URL}/rest/v1/positions?select=*`, { headers: { apikey: SUPABASE_ANON, Authorization: `Bearer ${SUPABASE_ANON}` } })
+  ]);
+  return [pfRes.ok ? await pfRes.json() : [], posRes.ok ? await posRes.json() : []];
+}
+
+async function fetchUsdThbRate() {
+  try {
+    const res = await fetch('https://open.er-api.com/v6/latest/USD');
+    const d = await res.json();
+    return d?.rates?.THB || 36;
+  } catch (e) {
+    return 36;
+  }
+}
+
+async function sendPortfolioFollowup(interaction, filterName) {
+  const base = followupBase(interaction);
+  try {
+    const [portfolios, positions] = await fetchPortfoliosAndPositions();
+    const targets = filterName ? portfolios.filter(p => p.name.toLowerCase() === filterName.toLowerCase()) : portfolios;
+    if (!targets.length) return patchFollowup(base, filterName ? `❌ Portfolio "${filterName}" not found.` : 'No portfolios yet.');
+
+    const rate = await fetchUsdThbRate();
+    const symbols = [...new Set(positions.map(p => p.symbol))];
+    const quotes = {};
+    for (const sym of symbols) {
+      const q = await fetchQuoteYahoo(sym);
+      if (q?.price) quotes[sym] = q.price;
+    }
+
+    const lines = targets.map(pf => {
+      const pfPositions = positions.filter(p => p.portfolio_id === pf.id);
+      if (!pfPositions.length) return `**${pf.name}** — no positions`;
+
+      let costUsd = 0, valUsd = 0, costThb = 0, valThb = 0;
+      for (const pos of pfPositions) {
+        const isThai = pos.symbol.endsWith('.BK');
+        const curPrice = quotes[pos.symbol] || null;
+        const avgPrice = pos.avg_cost_usd;
+        const invCur = pos.invested_currency || (isThai ? 'THB' : 'USD');
+        const invAmt = pos.invested_amount ?? (pos.shares * avgPrice);
+        const valNative = curPrice ? curPrice * pos.shares : null;
+        const valPosUsd = valNative != null ? (isThai ? valNative / rate : valNative) : null;
+        const valPosThb = valNative != null ? (isThai ? valNative : valNative * rate) : null;
+        if (invCur === 'USD') { costUsd += invAmt; if (valPosUsd != null) valUsd += valPosUsd; }
+        else { costThb += invAmt; if (valPosThb != null) valThb += valPosThb; }
+      }
+
+      const parts = [];
+      if (costUsd > 0) parts.push(`$${valUsd.toFixed(2)} (${valUsd - costUsd >= 0 ? '+' : ''}${(((valUsd - costUsd) / costUsd) * 100).toFixed(2)}%)`);
+      if (costThb > 0) parts.push(`฿${valThb.toFixed(2)} (${valThb - costThb >= 0 ? '+' : ''}${(((valThb - costThb) / costThb) * 100).toFixed(2)}%)`);
+      return `**${pf.name}** — ${pfPositions.length} position(s) — ${parts.join(', ') || 'no quotes yet'}`;
     });
+
+    await patchFollowup(base, lines.join('\n'));
+  } catch (e) {
+    await patchFollowup(base, `❌ Failed to load portfolio: ${e.message}`);
   }
 }
 
@@ -119,6 +187,15 @@ export default async function handler(req, res) {
         res.status(200).json({ type: 5 }); // deferred — report takes longer than Discord's 3s ack window
         await sendPremarketFollowup(interaction);
         return;
+      case 'portfolio': {
+        const callerId = interaction.member?.user?.id || interaction.user?.id;
+        if (!DISCORD_ALLOWED_USER_ID || callerId !== DISCORD_ALLOWED_USER_ID) {
+          return res.status(200).json({ type: 4, data: { content: '❌ Not authorized.', flags: 64 } });
+        }
+        res.status(200).json({ type: 5, data: { flags: 64 } }); // deferred + ephemeral — only you see this
+        await sendPortfolioFollowup(interaction, opts.name);
+        return;
+      }
       default:
         return res.status(200).json(reply('Unknown command.'));
     }

@@ -27,7 +27,11 @@ const commands = [
     ]
   },
   { name: 'alerts', description: 'List active price alerts' },
-  { name: 'premarket', description: 'Generate the Pre-Market Sector Flow briefing now' }
+  { name: 'premarket', description: 'Generate the Pre-Market Sector Flow briefing now' },
+  {
+    name: 'portfolio', description: 'Show your portfolio value and P/L (only you can use this)',
+    options: [{ name: 'name', description: 'Show only this portfolio (default: all)', type: 3, required: false }]
+  }
 ];
 
 const res = await fetch(`https://discord.com/api/v10/applications/${DISCORD_APPLICATION_ID}/commands`, {
