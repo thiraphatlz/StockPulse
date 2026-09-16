@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import { waitUntil } from '@vercel/functions';
 import { fetchQuoteYahoo, generatePreMarketReportData, splitForDiscord } from '../scripts/send_premarket_briefing.js';
 
 // Vercel auto-parses JSON bodies by default, but Discord signature verification needs the exact raw bytes.
@@ -185,8 +186,10 @@ export default async function handler(req, res) {
       case 'alerts':
         return res.status(200).json(await handleAlerts());
       case 'premarket':
-        res.status(200).json({ type: 5 }); // deferred — report takes longer than Discord's 3s ack window
-        await sendPremarketFollowup(interaction);
+        // deferred — report takes longer than Discord's 3s ack window. Vercel doesn't guarantee code after
+        // res.json() keeps running, so the follow-up work must go through waitUntil, not a plain await.
+        res.status(200).json({ type: 5 });
+        waitUntil(sendPremarketFollowup(interaction));
         return;
       case 'portfolio': {
         const callerId = interaction.member?.user?.id || interaction.user?.id;
@@ -194,7 +197,7 @@ export default async function handler(req, res) {
           return res.status(200).json({ type: 4, data: { content: '❌ Not authorized.', flags: 64 } });
         }
         res.status(200).json({ type: 5, data: { flags: 64 } }); // deferred + ephemeral — only you see this
-        await sendPortfolioFollowup(interaction, opts.name);
+        waitUntil(sendPortfolioFollowup(interaction, opts.name));
         return;
       }
       default:
