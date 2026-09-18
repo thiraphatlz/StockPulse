@@ -1,0 +1,6 @@
+{
+  "crons": [
+    { "path": "/api/premarket-cron", "schedule": "15 13 * * 1-5" },
+    { "path": "/api/premarket-cron", "schedule": "15 14 * * 1-5" }
+  ]
+}
